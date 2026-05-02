@@ -500,7 +500,7 @@
                 const eventStr = eventRowForHolidays[j] || "";
                 const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
                 const isHoliday = (holidayStr.includes("공휴일") || holidayStr.includes("근로자") || holidayStr.includes("휴무") ||
-                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무") || eventStr.includes("간담회")) && 
+                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무")) && 
                   !(match && match[1].padStart(2, '0') === '05' && match[2].padStart(2, '0') === '12');
                 if (isHoliday) {
                   if (match) {
