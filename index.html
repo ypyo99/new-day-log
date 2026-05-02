@@ -3849,15 +3849,18 @@
                       <div className="max-h-[240px] md:max-h-[45vh] overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50">
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
                           {allNames.map(name => {
+                            const isSpecial = name === "금호벽산경로당";
                             const nameLen = name.length;
-                            const fontSizeClass = nameLen >= 8 ? 'text-[12px]' : nameLen >= 5 ? 'text-[14px]' : 'text-[16px]';
+                            // 금호벽산경로당은 줄바꿈을 하므로 글자수가 적은 것처럼 취급하여 폰트 크기를 유지
+                            const effectiveLen = isSpecial ? 4 : nameLen;
+                            const fontSizeClass = effectiveLen >= 8 ? 'text-[12px]' : effectiveLen >= 5 ? 'text-[14px]' : 'text-[16px]';
                             return (
                               <button
                                 key={name}
                                 onClick={() => setSelectedName(name === selectedName ? "" : name)}
-                                className={`px-0.5 py-1.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-[1.1] min-h-[48px] whitespace-pre-wrap ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
+                                className={`px-0.5 py-1.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-[1.1] min-h-[48px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
                               >
-                                {name.replace('금호벽산경로당', '금호벽산\n경로당')}
+                                {isSpecial ? <span>금호벽산<br/>경로당</span> : name}
                               </button>
                             );
                           })}
