@@ -3602,6 +3602,25 @@
       const [selectedName, setSelectedName] = useState("");
       const [isLoading, setIsLoading] = useState(true);
       const [loadProgress, setLoadProgress] = useState("");
+      const [filterConsonant, setFilterConsonant] = useState("");
+
+      const getChoSung = (name) => {
+        if (!name) return "";
+        const charCode = name.charCodeAt(0);
+        if (charCode < 0xAC00 || charCode > 0xD7A3) return name[0];
+        const choIndex = Math.floor(((charCode - 0xAC00) / 28) / 21);
+        // 쌍자음 위치를 기본 자음으로 대체하여 쌍자음을 로직에서 제거
+        const choList = ["ㄱ", "ㄱ", "ㄴ", "ㄷ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅂ", "ㅅ", "ㅅ", "ㅇ", "ㅈ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+        return choList[choIndex];
+      };
+
+      const filteredNames = useMemo(() => {
+        if (!filterConsonant) return allNames;
+        return allNames.filter(name => {
+          const cho = getChoSung(name);
+          return cho === filterConsonant;
+        });
+      }, [allNames, filterConsonant]);
 
       const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
 
@@ -3777,8 +3796,10 @@
 
       // 같은 날짜의 레코드를 병합 (선생님 이름 콤마 구분, 출결/메모는 한 번만)
       const filteredRecords = useMemo(() => {
-        if (!selectedName) return [];
+        if (!selectedName || selectedName.trim() === "") return [];
         const raw = allRecords.filter(r => r.name === selectedName);
+        if (raw.length === 0) return [];
+        
         const dateMap = new Map();
         raw.forEach(r => {
           const key = r.colDate.getTime();
@@ -3847,14 +3868,35 @@
                   ) : (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-[15px] md:text-[17px] text-gray-600 font-bold">대상자를 선택하세요 ({allNames.length}명)</p>
+                        <p className="text-[15px] md:text-[17px] text-gray-600 font-bold">대상자를 선택하세요 ({filteredNames.length}명)</p>
                         {selectedName && (
                           <button onClick={() => setSelectedName("")} className="text-[13px] md:text-[15px] text-teal-600 font-bold bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all touch-manipulation">선택 해제</button>
                         )}
                       </div>
+
+                      <div className="grid grid-cols-8 gap-1.5 mb-4 bg-teal-50/40 p-2 rounded-xl border border-teal-100 shadow-inner">
+                        {["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"].map(cho => (
+                          <button
+                            key={cho}
+                            onClick={() => {
+                              setFilterConsonant(cho === "전체" ? "" : cho);
+                              setSelectedName("");
+                            }}
+                            className={`h-11 sm:h-12 rounded-xl font-bold text-[17px] sm:text-[20px] transition-all active:scale-95 touch-manipulation border flex items-center justify-center ${
+                              cho === "전체" ? "col-span-2" : "col-span-1"
+                            } ${
+                              (cho === "전체" && !filterConsonant) || (filterConsonant === cho)
+                                ? 'bg-orange-600 text-white border-orange-700 shadow-md ring-2 ring-orange-200'
+                                : 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200 shadow-sm'
+                            }`}
+                          >
+                            {cho}
+                          </button>
+                        ))}
+                      </div>
                       <div className="max-h-[240px] md:max-h-[45vh] overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50">
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
-                          {allNames.map(name => {
+                          {filteredNames.map(name => {
                             const isSpecial = name === "금호벽산경로당";
                             const nameLen = name.length;
                             // 금호벽산경로당은 줄바꿈을 하므로 글자수가 적은 것처럼 취급하여 폰트 크기를 유지
