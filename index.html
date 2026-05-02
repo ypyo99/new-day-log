@@ -3882,8 +3882,8 @@
                               setFilterConsonant(cho === "전체" ? "" : cho);
                               setSelectedName("");
                             }}
-                            className={`h-11 sm:h-12 rounded-xl font-bold text-[17px] sm:text-[20px] transition-all active:scale-95 touch-manipulation border flex items-center justify-center ${
-                              cho === "전체" ? "col-span-2" : "col-span-1"
+                            className={`rounded-xl font-bold text-[17px] sm:text-[20px] transition-all active:scale-95 touch-manipulation border flex items-center justify-center ${
+                              cho === "전체" ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"
                             } ${
                               (cho === "전체" && !filterConsonant) || (filterConsonant === cho)
                                 ? 'bg-orange-600 text-white border-orange-700 shadow-md ring-2 ring-orange-200'
