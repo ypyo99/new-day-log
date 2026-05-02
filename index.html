@@ -1,0 +1,3748 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>성동노인종합복지관 디지털교육 서포터즈 업무일지 (통합본)</title>
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2563EB">
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#2563EB';
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 120px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('업무', 256, 200);
+      ctx.fillText('일지', 256, 360);
+
+      const iconUrl = canvas.toDataURL('image/png');
+
+      const manifest = {
+        name: "성동노인종합복지관 디지털교육 서포터즈",
+        short_name: "업무일지",
+        start_url: window.location.href.split('?')[0].split('#')[0],
+        display: "standalone",
+        background_color: "#f9fafb",
+        theme_color: "#2563EB",
+        icons: [
+          { src: iconUrl, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+          { src: iconUrl, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+        ]
+      };
+
+      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+      const manifestUrl = URL.createObjectURL(blob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+    });
+  </script>
+
+  <!-- 1. Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: {
+              350: '#fca55d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- 2. React 18 및 Babel 도구들 -->
+  <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- 3. PapaParse -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+  <!-- 4. 파이어베이스 설정 -->
+  <script>
+    const REAL_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCexqf1pBQqa2_N7DUCZ6FqhxyS8yS43Ds",
+      authDomain: "digitalsupport-36165.firebaseapp.com",
+      projectId: "digitalsupport-36165",
+      storageBucket: "digitalsupport-36165.appspot.com",
+      messagingSenderId: "657585874548",
+      appId: "1:657585874548:web:252af37d2c1dd751111321"
+    };
+
+    if (typeof window.__firebase_config === 'undefined' || window.__firebase_config.includes("local-dummy")) {
+      if (REAL_FIREBASE_CONFIG.apiKey !== "여기에_API키를_넣으세요") {
+        window.__firebase_config = JSON.stringify(REAL_FIREBASE_CONFIG);
+      } else {
+        window.__firebase_config = JSON.stringify({
+          apiKey: "AIzaSyCexqf1pBQqa2_N7DUCZ6FqhxyS8yS43Ds",
+          authDomain: "digitalsupport-36165.firebaseapp.com",
+          projectId: "digitalsupport-36165",
+          storageBucket: "digitalsupport-36165.appspot.com",
+          messagingSenderId: "657585874548",
+          appId: "1:657585874548:web:252af37d2c1dd751111321"
+        });
+      }
+    }
+    if (typeof window.__app_id === 'undefined') {
+      window.__app_id = 'default-app-id';
+    }
+  </script>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    try {
+      const firebaseConfig = JSON.parse(window.__firebase_config);
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      window.FirebaseAPI = {
+        auth, db,
+        signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+        doc, setDoc, updateDoc, onSnapshot
+      };
+
+      window.dispatchEvent(new Event('firebaseLoaded'));
+    } catch (e) {
+      console.error("⚠️ 파이어베이스 초기화 에러:", e);
+      window.dispatchEvent(new Event('firebaseLoaded'));
+    }
+  </script>
+
+</head>
+
+<body class="bg-gray-50">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef, useCallback } = window.React;
+
+    const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+
+    const SHEET_URLS = {
+      "1팀": "https://docs.google.com/spreadsheets/d/1xnKOOPcsTDsrxcXydxxEg3KO4hPJFyYkKmg749rZcv8/edit?gid=684276747#gid=684276747",
+      "2팀": "https://docs.google.com/spreadsheets/d/1xnKOOPcsTDsrxcXydxxEg3KO4hPJFyYkKmg749rZcv8/edit?gid=908458461#gid=908458461",
+      "3팀": "https://docs.google.com/spreadsheets/d/1xnKOOPcsTDsrxcXydxxEg3KO4hPJFyYkKmg749rZcv8/edit?gid=55984324#gid=55984324",
+      "기타참여자": "https://docs.google.com/spreadsheets/d/1e4g_HIsmAQbLK8n0eMz_RGX3okou75tqKSSAkbWDsBk/edit?gid=936021842#gid=936021842"
+    };
+
+    const getNoCacheUrl = (url) => {
+      if (!url) return "";
+      const parts = url.split('#');
+      if (parts.length === 2) {
+        return `${parts[0]}&t=${Date.now()}#${parts[1]}`;
+      }
+      return url;
+    };
+
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQDZVemcBUUhPxBHLgqruBdOkwONy-5NJFAVzYP0vkZQYmLYStx4EiKiGCNY3A8iofZQ/exec";
+
+    const User = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+    const MainCalendarIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>;
+    const Clock = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+    const Home = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
+    const SaveIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
+    const LogInIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2-2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" x2="3" y1="12" y2="12" /></svg>;
+    const EditIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
+    const ChevronLeft = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>;
+    const ChevronRight = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
+    const RefreshCw = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>;
+    const LucideCalendar = MainCalendarIcon;
+
+    const CalendarClockIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h5" /><circle cx="17.5" cy="17.5" r="5.5" /><path d="M17.5 14.5v3l2 2" /></svg>;
+    const CalendarDaysIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /><path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M12 18h.01" /><path d="M16 18h.01" /></svg>;
+    const UsersIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+    const PresentationIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h20" /><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" /><path d="m7 21 5-5 5 5" /></svg>;
+    const Sparkles = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" /></svg>;
+    const BookOpen = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>;
+
+    const VintageDivider = ({ className }) => (
+      <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M138 20 L141 10 L145 15 L150 8 L155 15 L159 10 L162 20 Z" />
+        <line x1="25" y1="15" x2="135" y2="15" />
+        <line x1="165" y1="15" x2="275" y2="15" />
+        <path d="M 25 15 C 10 5, 10 25, 25 15" />
+        <path d="M 75 15 C 70 8, 85 8, 80 15 C 75 22, 90 22, 85 15" />
+        <path d="M 120 15 Q 115 5 110 15 Q 115 20 120 15" />
+        <path d="M 275 15 C 290 5, 290 25, 275 15" />
+        <path d="M 225 15 C 230 8, 215 8, 220 15 C 225 22, 210 22, 215 15" />
+        <path d="M 180 15 Q 185 5 190 15 Q 185 20 180 15" />
+      </svg>
+    );
+
+    const teamList = ["1팀", "2팀", "3팀"];
+
+    const getLocalDateString = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const getSavedItem = (key, defaultValue) => {
+      try {
+        const item = window.localStorage.getItem(key);
+        return item ? item : defaultValue;
+      } catch (error) { return defaultValue; }
+    };
+    const setSavedItem = (key, value) => {
+      try {
+        if (value) window.localStorage.setItem(key, value);
+        else window.localStorage.removeItem(key);
+      } catch (error) { }
+    };
+
+    const getSessionItem = (key, defaultValue) => {
+      try {
+        const item = window.sessionStorage.getItem(key);
+        return item ? item : defaultValue;
+      } catch (error) { return defaultValue; }
+    };
+    const setSessionItem = (key, value) => {
+      try {
+        if (value) window.sessionStorage.setItem(key, value);
+        else window.sessionStorage.removeItem(key);
+      } catch (error) { }
+    };
+
+    const getInitialWeekday = () => {
+      const d = new Date();
+      if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+      else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+      return getLocalDateString(d);
+    };
+
+    const getDayName = (dateStr) => {
+      if (!dateStr) return '';
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      return days[new Date(dateStr).getDay()];
+    };
+
+    const formatStatusIfDate = (val) => {
+      if (val === undefined || val === null) return '';
+      const strVal = String(val);
+      const isIso = /^\d{4}-\d{2}-\d{2}T/.test(strVal);
+      const isGmt = /[a-zA-Z]{3} [a-zA-Z]{3} \d{1,2} \d{4}/.test(strVal);
+      if (isIso || isGmt) {
+        const d = new Date(strVal);
+        if (!isNaN(d.getTime())) {
+          return `${d.getMonth() + 1}/${d.getDate()}`;
+        }
+      }
+      return strVal;
+    };
+
+    const AnimatedRefreshButton = ({ onClick, isFetching }) => {
+      const [toggle, setToggle] = useState(false);
+      useEffect(() => {
+        const interval = setInterval(() => setToggle(prev => !prev), 2000);
+        return () => clearInterval(interval);
+      }, []);
+      return (
+        <button
+          onClick={onClick}
+          disabled={isFetching}
+          className="w-[80px] sm:w-[88px] h-[53px] sm:h-[62px] shrink-0 bg-white border-2 border-sky-300 hover:bg-sky-50 text-sky-700 font-bold rounded-xl shadow-md flex flex-col items-center justify-center transition-all disabled:opacity-50 active:scale-95 px-1 touch-manipulation"
+          title="선생님 목록 다시 읽어오기"
+        >
+          <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 mb-0.5 ${isFetching ? 'animate-spin' : ''}`} />
+          <span className="text-[16px] sm:text-[18px] tracking-tight whitespace-nowrap">{toggle ? '선생님목록' : '다시읽기'}</span>
+        </button>
+      );
+    };
+
+    // =====================================================================
+    // 🖥️ 1. 메인 업무일지 프로그램
+    // =====================================================================
+    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule }) {
+      const [selectedTeam, setSelectedTeam] = useState(() => getSavedItem('sungdong_team', ""));
+      const [currentUser, setCurrentUser] = useState(() => getSavedItem('sungdong_teacher', ""));
+      const [date, setDate] = useState(() => getInitialWeekday());
+      const [isLoggedIn, setIsLoggedIn] = useState(() => getSessionItem('sungdong_is_logged_in', "") === 'true');
+      const [refreshTrigger, setRefreshTrigger] = useState(0);
+      const [teachers, setTeachers] = useState([]);
+      const [allScheduleData, setAllScheduleData] = useState({});
+      const [isFetchingTeachers, setIsFetchingTeachers] = useState(false);
+      const [isFetchingSchedule, setIsFetchingSchedule] = useState(false);
+      const [isSyncing, setIsSyncing] = useState(false);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [records, setRecords] = useState([]);
+      const [errorMessage, setErrorMessage] = useState("");
+      const [showSavePopup, setShowSavePopup] = useState(false);
+      const [holidayDates, setHolidayDates] = useState([]);
+
+      const [showValidationError, setShowValidationError] = useState(false);
+      const [validationErrorMsg, setValidationErrorMsg] = useState("");
+
+      const [saveProgress, setSaveProgress] = useState([]);
+      const [isSaveComplete, setIsSaveComplete] = useState(false);
+
+      const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
+      const [repeatTargetDates, setRepeatTargetDates] = useState([]);
+
+      const [specialAlerts, setSpecialAlerts] = useState([]);
+
+      const [teamCsvText, setTeamCsvText] = useState("");
+
+      const [studentCounts, setStudentCounts] = useState({ 0: null, 1: null, 2: null });
+      const [selectedStudentDates, setSelectedStudentDates] = useState(null);
+
+      const lastTagClickRef = useRef({ time: 0, index: -1, sIdx: -1, tag: '' });
+
+      const touchStartX = useRef(null);
+      const touchStartY = useRef(null);
+      const mainTouchStartX = useRef(null);
+      const mainTouchStartY = useRef(null);
+      const [pullDistance, setPullDistance] = useState(0);
+
+      const isLoginReady = currentUser && currentUser.trim() !== "" && teachers.includes(currentUser) && !isFetchingTeachers && !isFetchingSchedule;
+
+      useEffect(() => {
+        document.documentElement.style.overscrollBehaviorY = 'none';
+        document.body.style.overscrollBehaviorY = 'none';
+        return () => {
+          document.documentElement.style.overscrollBehaviorY = 'auto';
+          document.body.style.overscrollBehaviorY = 'auto';
+        };
+      }, [isLoggedIn]);
+
+      useEffect(() => { setSavedItem('sungdong_team', selectedTeam); }, [selectedTeam]);
+      useEffect(() => { setSavedItem('sungdong_teacher', currentUser); }, [currentUser]);
+      useEffect(() => { setSessionItem('sungdong_is_logged_in', isLoggedIn ? 'true' : ''); }, [isLoggedIn]);
+
+      useEffect(() => {
+        const handleBeforeUnload = (e) => {
+          if (isSubmitting) {
+            e.preventDefault();
+            e.returnValue = '';
+          }
+        };
+
+        const handlePopState = (e) => {
+          if (isSubmitting) {
+            window.history.pushState(null, null, window.location.href);
+            alert("데이터 저장 중입니다.\n안전한 저장을 위해 잠시만 기다려주세요.");
+          }
+        };
+
+        if (isSubmitting) {
+          window.addEventListener('beforeunload', handleBeforeUnload);
+          window.history.pushState(null, null, window.location.href);
+          window.addEventListener('popstate', handlePopState);
+        }
+
+        return () => {
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+          window.removeEventListener('popstate', handlePopState);
+        };
+      }, [isSubmitting]);
+
+      const [logs, setLogs] = useState({
+        0: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" },
+        1: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" },
+        2: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" }
+      });
+
+      // 💡 시트 저장/인식에 사용될 데이터 기준 태그 (화면에만 '출석'으로 보이게 렌더링 로직으로 분리)
+      const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
+      const RENDER_TAGS = ['1', '결석', '취소', '선생님휴가'];
+
+      const getShifts = (team) => {
+        if (team === "3팀") return ["13:00~14:00", "14:00~15:00", "15:00~16:00"];
+        return ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
+      };
+
+      const fetchTeachersFromSheet = async (team) => {
+        setIsFetchingTeachers(true);
+        try {
+          const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getTeachers&team=${team}&t=${Date.now()}`);
+          if (response.ok) {
+            const data = await response.json();
+            const fetchedTeachers = data.teachers || [];
+            setTeachers(fetchedTeachers);
+            window.localStorage.setItem(`sungdong_teachers_${team}`, JSON.stringify(fetchedTeachers));
+          }
+        } catch (error) {
+          console.error("⚠️ 선생님 목록 로딩 에러:", error);
+        } finally {
+          setIsFetchingTeachers(false);
+        }
+      };
+
+      useEffect(() => {
+        if (!selectedTeam) { setTeachers([]); setCurrentUser(""); return; }
+        const cachedTeachers = window.localStorage.getItem(`sungdong_teachers_${selectedTeam}`);
+        if (cachedTeachers) {
+          try {
+            const parsed = JSON.parse(cachedTeachers);
+            if (parsed && parsed.length > 0) {
+              setTeachers(parsed);
+              return;
+            }
+          } catch (e) { }
+        }
+        fetchTeachersFromSheet(selectedTeam);
+      }, [selectedTeam]);
+
+      useEffect(() => {
+        if (!selectedTeam) {
+          setTeamCsvText("");
+          return;
+        }
+        const exportUrl = SHEET_URLS[selectedTeam] ? SHEET_URLS[selectedTeam].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
+        if (!exportUrl) return;
+
+        fetch(`${exportUrl}&t=${Date.now()}`)
+          .then(res => res.text())
+          .then(text => setTeamCsvText(text))
+          .catch(err => console.error("팀 CSV 로드 실패:", err));
+      }, [selectedTeam, refreshTrigger]);
+
+      // 상태를 시트 통계를 위해 알맞게 파싱하는 헬퍼 함수
+      const parseStudentSpecificStatus = (cellStatus, cellStudent, targetName) => {
+        const cellNames = cellStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+        const nameIdx = cellNames.indexOf(targetName);
+
+        if (nameIdx !== -1 && cellStatus.includes('/')) {
+          const rawParts = cellStatus.split(',').map(s => s.trim()).filter(Boolean);
+          let tagParts = [];
+          let memoParts = [];
+          let isMemoStarted = false;
+
+          for (let i = 0; i < rawParts.length; i++) {
+            const part = rawParts[i];
+            if (!isMemoStarted) {
+              const subParts = part.split('/').map(p => p.trim());
+              const isAllTags = subParts.every(p => {
+                if (p === "") return true;
+                const cleanP = p.replace(/\s+/g, '');
+                if (ATTENDANCE_TAGS.includes(cleanP)) return true;
+                const spaceParts = p.split(/\s+/);
+                return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
+              });
+              if (isAllTags) {
+                tagParts.push(part);
+              } else {
+                isMemoStarted = true;
+                memoParts.push(part);
+              }
+            } else {
+              memoParts.push(part);
+            }
+          }
+
+          if (tagParts.length > 0) {
+            const combinedTagStr = tagParts.join(',');
+            const slashSegments = combinedTagStr.split('/');
+            if (slashSegments.length > nameIdx) {
+              return slashSegments[nameIdx] + (memoParts.length > 0 ? ', ' + memoParts.join(', ') : '');
+            }
+          }
+        }
+        return cellStatus;
+      };
+
+      useEffect(() => {
+        if (!teamCsvText || !window.Papa || !date) return;
+
+        const students = [logs[0]?.student, logs[1]?.student, logs[2]?.student];
+        if (students.every(s => !s || !s.trim())) {
+          setStudentCounts({ 0: null, 1: null, 2: null });
+          // return을 제거하여 휴무일 파싱 로직이 정상적으로 실행되도록 수정
+        }
+
+        window.Papa.parse(teamCsvText, {
+          header: false,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const data = results.data;
+            let newCounts = { 0: null, 1: null, 2: null };
+
+            let headerRowIdx = -1;
+            for (let i = 0; i < Math.min(10, data.length); i++) {
+              if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
+                headerRowIdx = i; break;
+              }
+            }
+            if (headerRowIdx === -1) return;
+
+            // 공휴일 및 간담회 파싱 (4번째 행과 3번째 행)
+            let holidays = [];
+            const holidayRow = data[headerRowIdx + 2];
+            const eventRowForHolidays = data[headerRowIdx + 1];
+            const headerRowForHolidays = data[headerRowIdx];
+            if (holidayRow && eventRowForHolidays && headerRowForHolidays) {
+              for (let j = 4; j < headerRowForHolidays.length; j++) {
+                const cellStr = headerRowForHolidays[j] || "";
+                const holidayStr = holidayRow[j] || "";
+                const eventStr = eventRowForHolidays[j] || "";
+                const isHoliday = holidayStr.includes("공휴일") || holidayStr.includes("근로자") || holidayStr.includes("휴무") ||
+                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무") || eventStr.includes("간담회");
+                if (isHoliday) {
+                  const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+                  if (match) {
+                    const mm = String(match[1]).padStart(2, '0');
+                    const dd = String(match[2]).padStart(2, '0');
+                    holidays.push(`${mm}-${dd}`);
+                  }
+                }
+              }
+            }
+            setHolidayDates(prev => JSON.stringify(prev) === JSON.stringify(holidays) ? prev : holidays);
+
+            // [추가]: 해당 일자로부터 7일 내 '공휴일', '소양교육' 등 확인하여 알림 생성
+            const targetStartDate = new Date(date);
+            targetStartDate.setHours(0, 0, 0, 0);
+            const targetEndDate = new Date(targetStartDate);
+            targetEndDate.setDate(targetEndDate.getDate() + 7);
+
+            let alerts = [];
+            const eventRow = data[headerRowIdx + 1]; // 3rd row
+            const statusRow = data[headerRowIdx + 2]; // 4th row
+            const headerRowForAlerts = data[headerRowIdx]; // 2nd row (Dates)
+
+            if (eventRow && statusRow && headerRowForAlerts) {
+              for (let j = 4; j < headerRowForAlerts.length; j++) {
+                const cellStr = headerRowForAlerts[j] || "";
+                const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+                if (match) {
+                  const d = new Date(targetStartDate.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+                  d.setHours(0, 0, 0, 0);
+
+                  if (d >= targetStartDate && d < targetEndDate) {
+                    const eventName = (eventRow[j] || "").trim();
+                    const statusName = (statusRow[j] || "").trim();
+
+                    const isAlertEvent = statusName.includes("공휴일") || statusName.includes("소양교육") || statusName.includes("근로자") || statusName.includes("휴무") ||
+                      eventName.includes("공휴일") || eventName.includes("소양교육") || eventName.includes("근로자") || eventName.includes("휴무");
+                    if (isAlertEvent) {
+                      const mm = String(match[1]).padStart(2, '0');
+                      const dd = String(match[2]).padStart(2, '0');
+                      const dayName = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+                      alerts.push(`${mm}/${dd}(${dayName}) ${eventName} ${statusName}`.trim());
+                    }
+                  }
+                }
+              }
+            }
+            if (JSON.stringify(specialAlerts) !== JSON.stringify(alerts)) {
+              setSpecialAlerts(alerts);
+            }
+
+            const targetD = new Date(date);
+            targetD.setHours(0, 0, 0, 0);
+
+            const realToday = new Date();
+            realToday.setHours(0, 0, 0, 0);
+
+            const validColIndices = [];
+            const headerRow = data[headerRowIdx];
+            for (let j = 4; j < headerRow.length; j++) {
+              const cellStr = headerRow[j] || "";
+              const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+              if (match) {
+                const d = new Date(targetD.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+                d.setHours(0, 0, 0, 0);
+                if (d <= targetD) {
+                  validColIndices.push({ index: j, colDate: d });
+                }
+              }
+            }
+
+            students.forEach((studentStr, idx) => {
+              if (!studentStr || !studentStr.trim()) return;
+
+              const names = studentStr.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(s => s.length > 0);
+              let shiftCounts = [];
+
+              names.forEach(targetName => {
+                if (targetName.includes("보조강사") || targetName.includes("자체학습") || targetName.includes("대상자발굴") || targetName.includes("도선복지관")) return;
+
+                let count = 0;
+                let attendedDatesForStudent = [];
+
+                validColIndices.forEach(colInfo => {
+                  const j = colInfo.index;
+                  const colDate = colInfo.colDate;
+                  let foundStatuses = [];
+
+                  for (let i = headerRowIdx + 1; i < data.length; i++) {
+                    const row = data[i];
+                    if (!row || row.length < 4) continue;
+                    const category = row[3] ? row[3].replace(/\s+/g, '') : "";
+
+                    if (category === "대상") {
+                      const statusRow = (i + 2 < data.length) ? data[i + 2] : null;
+                      const cellStudent = row[j] ? row[j].trim() : "";
+                      const cellStatus = statusRow && statusRow[j] ? statusRow[j].trim() : "";
+
+                      if (cellStudent.includes(targetName)) {
+                        const finalStatus = parseStudentSpecificStatus(cellStatus, cellStudent, targetName);
+                        foundStatuses.push(finalStatus);
+                      }
+                    }
+                  }
+
+                  let hasSessionOnThisDay = false;
+
+                  if (foundStatuses.length > 0) {
+                    const nonEmpty = foundStatuses.filter(s => s !== "");
+                    const statusesToEval = nonEmpty.length > 0 ? nonEmpty : foundStatuses;
+
+                    const hasAbsence = statusesToEval.some(s => s.includes("결석"));
+                    const isCanceled = statusesToEval.some(s => s.includes("취소"));
+                    const isTeacherVacation = statusesToEval.some(s => s.includes("선생님휴가"));
+
+                    if (targetName.includes("경로당") && (hasAbsence || isCanceled)) {
+                      hasSessionOnThisDay = true;
+                    } else if (hasAbsence) {
+                      hasSessionOnThisDay = false;
+                    } else {
+                      const hasNumber = statusesToEval.some(s => {
+                        const parts = s.split(',').map(p => p.trim());
+                        return parts.some(part => /^[1-9]\d*/.test(part));
+                      });
+
+                      if (hasNumber) {
+                        hasSessionOnThisDay = true;
+                      } else {
+                        if (isCanceled || isTeacherVacation) {
+                          hasSessionOnThisDay = false;
+                        } else if (colDate < realToday) {
+                          hasSessionOnThisDay = false;
+                        } else {
+                          hasSessionOnThisDay = true;
+                        }
+                      }
+                    }
+                  }
+
+                  if (hasSessionOnThisDay) {
+                    count++;
+                    attendedDatesForStudent.push(colDate);
+                  }
+                });
+
+                if (count > 0) {
+                  shiftCounts.push({ name: targetName, count: count, dates: attendedDatesForStudent });
+                }
+              });
+
+              newCounts[idx] = shiftCounts.length > 0 ? shiftCounts : null;
+            });
+
+            setStudentCounts(newCounts);
+          }
+        });
+      }, [teamCsvText, date, logs[0]?.student, logs[1]?.student, logs[2]?.student]);
+
+      useEffect(() => {
+        if (!selectedTeam || !currentUser) { setAllScheduleData({}); return; }
+
+        let isMounted = true;
+
+        const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
+        const cachedSchedule = window.localStorage.getItem(cacheKey);
+        if (cachedSchedule) {
+          try {
+            setAllScheduleData(JSON.parse(cachedSchedule));
+          } catch (e) { }
+        }
+
+        const fetchScheduleAll = async () => {
+          if (isMounted) setIsSyncing(true);
+          if (isMounted && !cachedSchedule) setIsFetchingSchedule(true);
+          try {
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${selectedTeam}&teacher=${encodeURIComponent(currentUser)}&t=${Date.now()}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (isMounted) {
+                setAllScheduleData(data || {});
+                window.localStorage.setItem(cacheKey, JSON.stringify(data || {}));
+              }
+            }
+          } catch (error) { } finally {
+            if (isMounted) {
+              setIsFetchingSchedule(false);
+              setIsSyncing(false);
+            }
+          }
+        };
+        fetchScheduleAll();
+
+        return () => { isMounted = false; };
+      }, [selectedTeam, currentUser, refreshTrigger]);
+
+      useEffect(() => {
+        const shifts = getShifts(selectedTeam);
+        const todaysData = allScheduleData[date] || {};
+
+        setLogs(prevLogs => {
+          const newLogs = { ...prevLogs };
+          shifts.forEach((shift, index) => {
+            const fetchedData = todaysData[shift] || {};
+            const statusStr = formatStatusIfDate(fetchedData.status) || "";
+
+            const loadedStudent = (fetchedData.student === undefined || fetchedData.student === null) ? "" : fetchedData.student;
+            const loadedLocation = (fetchedData.location === undefined || fetchedData.location === null) ? "" : fetchedData.location;
+
+            // 💡 보조강사, 경로당 포함 시 인원수(headcount) 표시 플래그
+            const isShowHeadcount = loadedStudent.includes("보조강사") || loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
+
+            let loadedTags = [[]];
+            let memoParts = [];
+
+            const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
+            const isKyungrodang = loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
+
+            let tagParts = [];
+            let isMemoStarted = false;
+            let loadedHeadcount = "";
+            let startIndex = 0;
+
+            if (isKyungrodang && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
+              loadedHeadcount = rawParts[0];
+              startIndex = 1;
+            }
+
+            for (let i = startIndex; i < rawParts.length; i++) {
+              const part = rawParts[i];
+              if (!isMemoStarted) {
+                const subParts = part.split('/').map(p => p.trim());
+                const isAllTags = subParts.every(p => {
+                  if (p === "") return true;
+                  const spaceParts = p.split(/\s+/);
+                  return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
+                });
+
+                if (isAllTags) {
+                  tagParts.push(part);
+                } else {
+                  isMemoStarted = true;
+                  memoParts.push(part);
+                }
+              } else {
+                memoParts.push(part);
+              }
+            }
+
+            // 💡 [수정] 구 포맷 호환: 헤드카운트가 뒤에 붙어있던 경우
+            if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
+              const lastTag = tagParts[tagParts.length - 1];
+              if (/^\d{1,2}$/.test(lastTag)) {
+                if (isKyungrodang || tagParts.length > 1) {
+                  tagParts.pop();
+                  memoParts.unshift(lastTag);
+                }
+              }
+            }
+
+            if (tagParts.length > 0) {
+              const combinedTagStr = tagParts.join(',');
+              const studentTagStrs = combinedTagStr.split('/');
+              loadedTags = studentTagStrs.map(str =>
+                str.split(/[,\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
+              );
+            }
+
+            loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
+
+            // 💡 인원수 필드가 활성화 되어야 하고, 메모파트의 첫 부분이 숫자인 경우 분리
+            if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
+              if (/^\d{1,2}$/.test(memoParts[0].trim())) {
+                loadedHeadcount = memoParts[0].trim();
+                memoParts.shift(); // 메모 리스트에서 숫자 부분 제외
+              }
+            }
+
+            const loadedMemo = memoParts.join(', ');
+
+            newLogs[index] = {
+              student: loadedStudent,
+              status: statusStr,
+              location: loadedLocation,
+              selectedTags: loadedTags,
+              memo: loadedMemo,
+              headcount: loadedHeadcount
+            };
+          });
+          return newLogs;
+        });
+      }, [date, allScheduleData, selectedTeam]);
+
+      // 상태 스트링 조합을 위한 헬퍼 (hasChanges, performAutoSave 등에서 공통 사용)
+      const buildStatusString = (log) => {
+        let tagsStrings = [];
+        const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+        const maxRows = Math.max(1, studentNames.length);
+
+        for (let j = 0; j < maxRows; j++) {
+          const tags = (log.selectedTags && log.selectedTags[j]) ? log.selectedTags[j] : [];
+          const sorted = [...tags].sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b));
+          tagsStrings.push(sorted.length > 0 ? sorted.join(', ') : '');
+        }
+
+        // 💡 아무런 버튼도 눌리지 않았을 경우 (tagsStrings가 모두 빈 문자열인 경우) '/'를 생성하지 않음
+        let orderedTagsStr = "";
+        if (tagsStrings.some(s => s.length > 0)) {
+          orderedTagsStr = maxRows > 1 ? tagsStrings.join('/') : (tagsStrings[0] || "");
+        }
+
+        const isKyungrodang = (log.student || "").includes("경로당") || (log.location || "").includes("경로당");
+        const isShowHeadcount = (log.student || "").includes("보조강사") || isKyungrodang;
+
+        let result = [];
+        if (isKyungrodang) {
+          if (log.headcount) result.push(log.headcount);
+          if (orderedTagsStr) result.push(orderedTagsStr);
+          if (log.memo) result.push(log.memo);
+        } else {
+          if (orderedTagsStr) result.push(orderedTagsStr);
+          if (isShowHeadcount && log.headcount) {
+            if (log.memo) result.push(`${log.headcount}, ${log.memo}`);
+            else result.push(log.headcount);
+          } else if (log.memo) {
+            result.push(log.memo);
+          }
+        }
+
+        return result.join(', ');
+      };
+
+      const hasChanges = useMemo(() => {
+        const shifts = getShifts(selectedTeam);
+        const todaysOriginalData = allScheduleData[date] || {};
+        return shifts.some((shift, i) => {
+          const log = logs[i];
+          const original = todaysOriginalData[shift] || {};
+          const originalStatus = formatStatusIfDate(original.status);
+
+          const currentStatusStr = buildStatusString(log);
+
+          return (log.student || "") !== (original.student || "") ||
+            (log.location || "") !== (original.location || "") ||
+            currentStatusStr !== originalStatus;
+        });
+      }, [logs, allScheduleData, date, selectedTeam]);
+
+      const isEmptySchedule = useMemo(() => {
+        return Object.values(logs).every(log => !log.student?.trim() && !log.location?.trim());
+      }, [logs]);
+
+      const isMissingHeadcount = useMemo(() => {
+        return false; // 더 이상 경로당 인원수 빈값 체크를 하지 않음
+      }, [logs]);
+
+      const performAutoSave = async () => {
+        const shifts = getShifts(selectedTeam);
+        const todaysOriginalData = allScheduleData[date] || {};
+
+        const initialProgress = shifts.map((shiftTime, i) => {
+          const log = logs[i];
+          const original = todaysOriginalData[shiftTime] || {};
+          const originalStatus = formatStatusIfDate(original.status);
+
+          const currentStatusStr = buildStatusString(log);
+
+          const isChanged = (log.student || "") !== (original.student || "") ||
+            (log.location || "") !== (original.location || "") ||
+            currentStatusStr !== originalStatus;
+
+          return {
+            index: i,
+            isRepeat: false,
+            shift: shiftTime,
+            student: log.student || "미입력",
+            attendance: currentStatusStr || "입력 없음",
+            isChanged: isChanged,
+            status: isChanged ? '대기 중' : '변경 없음'
+          };
+        });
+
+        const changedIndices = initialProgress.filter(p => p.isChanged).map(p => p.index);
+
+        if (changedIndices.length === 0) return true;
+
+        // 💡 [추가된 유효성 검사]: 학생이 두 명 이상일 때 한 명만 체크되었는지 확인
+        for (let i of changedIndices) {
+          const log = logs[i];
+
+          const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+
+          if (studentNames.length >= 2) {
+            let checkedCount = 0;
+            for (let sIdx = 0; sIdx < studentNames.length; sIdx++) {
+              const tags = log.selectedTags[sIdx] || [];
+              if (tags.length > 0) checkedCount++;
+            }
+
+            // 한 명이라도 체크했는데, 모든 학생이 다 체크되지 않은 경우 (일부만 누락됨)
+            if (checkedCount > 0 && checkedCount < studentNames.length) {
+              setValidationErrorMsg(`[${shifts[i]}] 시간에 출결이 선택되지 않은 학생이 있습니다.\n두 명 모두 출결 상태를 체크해 주세요.`);
+              setShowValidationError(true);
+              return false; // 저장 로직을 즉시 중단합니다.
+            }
+          }
+        }
+
+        setSaveProgress(initialProgress);
+        setIsSaveComplete(false);
+        setShowSavePopup(true);
+        setIsSubmitting(true);
+
+        const fetchWithTimeout = async (url, timeoutMs = 15000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), timeoutMs);
+          try {
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            return response;
+          } catch (error) {
+            clearTimeout(id);
+            throw error;
+          }
+        };
+
+        const savePromises = changedIndices.map(async (i, mapIndex) => {
+          if (mapIndex > 0) await new Promise(res => setTimeout(res, mapIndex * 150));
+
+          const shiftTime = shifts[i];
+          const log = logs[i];
+
+          const currentStatusStr = buildStatusString(log);
+
+          const url = `${GOOGLE_SCRIPT_URL}?action=saveLog&team=${selectedTeam}&teacher=${encodeURIComponent(currentUser)}&date=${date}&shift=${encodeURIComponent(shiftTime)}&location=${encodeURIComponent(log.location || "")}&student=${encodeURIComponent(log.student || "")}&status=${encodeURIComponent(currentStatusStr)}&t=${Date.now()}`;
+
+          let lastError = null;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              setSaveProgress(prev => prev.map((item, idx) => idx === i ? { ...item, status: attempt === 1 ? '저장 중...' : `재시도 중...(${attempt}/3)` } : item));
+
+              const response = await fetchWithTimeout(url, 15000);
+              if (response.ok) {
+                const json = await response.json();
+                if (json && json.success === false) {
+                  throw new Error(json.message || "시트 내부 에러");
+                } else {
+                  setSaveProgress(prev => prev.map((item, idx) => idx === i ? { ...item, status: '저장 완료' } : item));
+                  return {
+                    index: i, id: Date.now() + parseInt(i), team: selectedTeam, teacher: currentUser, date: date, shift: shiftTime,
+                    student: log.student || "", location: log.location || "", status: currentStatusStr, submittedAt: new Date().toLocaleTimeString()
+                  };
+                }
+              } else {
+                throw new Error("⚠️ 네트워크 오류");
+              }
+            } catch (e) {
+              lastError = e;
+              if (attempt === 3) break;
+              const jitter = Math.floor(Math.random() * 500);
+              await new Promise(res => setTimeout(res, 1000 + jitter));
+            }
+          }
+
+          console.error(`[${shiftTime}] 저장 최종 실패:`, lastError);
+          setSaveProgress(prev => prev.map((item, idx) => idx === i ? { ...item, status: '저장 실패' } : item));
+          return null;
+        });
+
+        const resolvedResults = await Promise.all(savePromises);
+        const validRecords = resolvedResults.filter(record => record !== null);
+
+        if (validRecords.length > 0) {
+          setRecords(prev => [...validRecords.reverse(), ...prev]);
+
+          setAllScheduleData(prev => {
+            const newData = { ...prev };
+            if (!newData[date]) newData[date] = {};
+            validRecords.forEach(record => {
+              newData[date][record.shift] = { ...logs[record.index], status: record.status };
+            });
+            return newData;
+          });
+          setRefreshTrigger(prev => prev + 1);
+        } else {
+          setErrorMessage("⚠️ 저장에 실패한 항목이 있습니다.");
+          setTimeout(() => setErrorMessage(""), 3000);
+        }
+
+        setIsSubmitting(false);
+        setIsSaveComplete(true);
+        return true;
+      };
+
+      const handleInputBlur = () => {
+        setTimeout(() => {
+          window.scrollTo({
+            top: window.scrollY,
+            behavior: 'instant'
+          });
+        }, 50);
+      };
+
+      const handleLogout = () => { setIsLoggedIn(false); setRecords([]); };
+      const handleSubmit = async (e) => { e.preventDefault(); await performAutoSave(); };
+
+      const getTagClass = (index, sIdx, tag) => {
+        const isActive = logs[index].selectedTags && logs[index].selectedTags[sIdx] && logs[index].selectedTags[sIdx].includes(tag);
+
+        if (!isActive) {
+          return 'bg-white text-gray-700 font-bold border-[1.5px] border-gray-300 shadow-[0_2px_0_#9ca3af] active:shadow-[0_0px_0_#9ca3af] active:translate-y-[2px]';
+        }
+
+        const baseActiveStyle = 'text-white font-bold border-[1.5px] translate-y-[2px] shadow-[inset_0_3px_5px_rgba(0,0,0,0.5)]';
+
+        if (tag === '결석') return `bg-red-400 border-red-500 ${baseActiveStyle}`;
+        if (tag === '취소') return `bg-orange-350 border-orange-500 ${baseActiveStyle}`;
+        if (tag === '선생님휴가') return `bg-gray-500 border-gray-600 ${baseActiveStyle}`;
+        return `bg-blue-500 border-blue-700 ${baseActiveStyle}`;
+      };
+
+      const handleRepeatSchedule = () => {
+        if (isDataLoading) return;
+
+        const currentDayOfWeek = new Date(date).getDay();
+        const targetDates = availableDates.filter(d => d > date && new Date(d).getDay() === currentDayOfWeek);
+
+        if (targetDates.length === 0) {
+          setErrorMessage("⚠️ 이후 동일한 요일의 날짜가 없습니다.");
+          setTimeout(() => setErrorMessage(""), 3000);
+          return;
+        }
+
+        const shifts = getShifts(selectedTeam);
+        const validTargetDates = targetDates.filter(targetDate => {
+          const todaysOriginalData = allScheduleData[targetDate] || {};
+          let hasDifference = false;
+
+          shifts.forEach((shiftTime, i) => {
+            const log = logs[i];
+            const original = todaysOriginalData[shiftTime] || {};
+            const currentStudent = log.student || "";
+            const currentLocation = log.location || "";
+            const targetStudent = original.student || "";
+            const targetLocation = original.location || "";
+
+            if (currentStudent !== targetStudent || currentLocation !== targetLocation) {
+              hasDifference = true;
+            }
+          });
+
+          return hasDifference;
+        });
+
+        if (validTargetDates.length === 0) {
+          setErrorMessage(<span className="text-lg">⚠️ 이미 동일한 일정이 등록되어 있습니다.</span>);
+          setTimeout(() => setErrorMessage(""), 3000);
+          return;
+        }
+
+        setRepeatTargetDates(validTargetDates);
+        setShowRepeatConfirm(true);
+      };
+
+      const executeRepeatSchedule = async () => {
+        setShowRepeatConfirm(false);
+        setIsSubmitting(true);
+        setShowSavePopup(true);
+        setIsSaveComplete(false);
+
+        const shifts = getShifts(selectedTeam);
+        let allTasks = [];
+
+        repeatTargetDates.forEach((targetDate) => {
+          const todaysOriginalData = allScheduleData[targetDate] || {};
+
+          shifts.forEach((shiftTime, i) => {
+            const log = logs[i];
+            const original = todaysOriginalData[shiftTime] || {};
+
+            const currentStudent = log.student || "";
+            const currentLocation = log.location || "";
+            const targetStudent = original.student || "";
+            const targetLocation = original.location || "";
+
+            if (currentStudent !== targetStudent || currentLocation !== targetLocation) {
+              allTasks.push({
+                id: `${targetDate}_${i}`,
+                date: targetDate,
+                shift: shiftTime,
+                student: currentStudent,
+                location: currentLocation,
+                statusStr: "",
+                index: i
+              });
+            }
+          });
+        });
+
+        if (allTasks.length === 0) {
+          setSaveProgress([]);
+          setIsSubmitting(false);
+          setIsSaveComplete(true);
+          setShowSavePopup(false);
+          return;
+        }
+
+        setSaveProgress(allTasks.map(t => {
+          const mm = t.date.substring(5, 7);
+          const dd = t.date.substring(8, 10);
+          const dayName = getDayName(t.date);
+          return {
+            id: t.id,
+            isRepeat: true,
+            dateDisplay: `${mm}/${dd}(${dayName})`,
+            timeDisplay: t.shift,
+            student: t.student || "미입력",
+            status: '대기 중'
+          };
+        }));
+
+        const fetchWithTimeout = async (url, timeoutMs = 15000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), timeoutMs);
+          try {
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            return response;
+          } catch (error) {
+            clearTimeout(id);
+            throw error;
+          }
+        };
+
+        const validRecords = [];
+        const chunkSize = 3;
+
+        for (let idx = 0; idx < allTasks.length; idx += chunkSize) {
+          const chunkTasks = allTasks.slice(idx, idx + chunkSize);
+
+          const chunkPromises = chunkTasks.map(async (task, chunkIdx) => {
+            if (chunkIdx > 0) await new Promise(res => setTimeout(res, chunkIdx * 150));
+
+            const url = `${GOOGLE_SCRIPT_URL}?action=saveLog&team=${selectedTeam}&teacher=${encodeURIComponent(currentUser)}&date=${task.date}&shift=${encodeURIComponent(task.shift)}&location=${encodeURIComponent(task.location)}&student=${encodeURIComponent(task.student)}&status=${encodeURIComponent(task.statusStr)}&t=${Date.now()}`;
+
+            let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+              try {
+                setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: attempt === 1 ? '저장 중...' : `재시도 중...(${attempt}/3)` } : item));
+
+                const response = await fetchWithTimeout(url, 15000);
+                if (response.ok) {
+                  const json = await response.json();
+                  if (json && json.success === false) {
+                    throw new Error(json.message || "시트 내부 에러");
+                  } else {
+                    setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 완료' } : item));
+                    return task;
+                  }
+                } else {
+                  throw new Error("네트워크 오류");
+                }
+              } catch (e) {
+                lastError = e;
+                if (attempt === 3) {
+                  setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 실패' } : item));
+                  return null;
+                } else {
+                  const jitter = Math.floor(Math.random() * 500);
+                  await new Promise(res => setTimeout(res, 1000 + jitter));
+                }
+              }
+            }
+            return null;
+          });
+
+          const resolvedChunk = await Promise.all(chunkPromises);
+          resolvedChunk.forEach(record => {
+            if (record !== null) validRecords.push(record);
+          });
+
+          if (idx + chunkSize < allTasks.length) {
+            await new Promise(res => setTimeout(res, 300));
+          }
+        }
+
+        if (validRecords.length > 0) {
+          setAllScheduleData(prev => {
+            const newData = { ...prev };
+            validRecords.forEach(record => {
+              if (!newData[record.date]) newData[record.date] = {};
+              newData[record.date][record.shift] = {
+                student: record.student,
+                location: record.location,
+                status: record.statusStr
+              };
+            });
+            return newData;
+          });
+          setRefreshTrigger(prev => prev + 1);
+        }
+
+        setIsSubmitting(false);
+        setIsSaveComplete(true);
+      };
+
+      const availableDates = useMemo(() => {
+        const dates = Object.keys(allScheduleData).sort();
+        return dates.filter(d => !holidayDates.includes(d.substring(5)));
+      }, [allScheduleData, holidayDates]);
+      const minDate = availableDates.length > 0 ? availableDates[0] : "";
+      const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
+
+      const isDataLoading = isFetchingSchedule || isSyncing || isSubmitting;
+
+      useEffect(() => {
+        if (availableDates.length === 0) return;
+
+        if (!availableDates.includes(date)) {
+          const futureDates = availableDates.filter(d => d > date);
+          if (futureDates.length > 0) {
+            setDate(futureDates[0]);
+          } else {
+            const pastDates = availableDates.filter(d => d < date);
+            if (pastDates.length > 0) {
+              setDate(pastDates[pastDates.length - 1]);
+            }
+          }
+        }
+      }, [availableDates, date]);
+
+      const handlePrevDay = async () => {
+        if (isDataLoading) return;
+        await performAutoSave();
+        const pastDates = availableDates.filter(d => d < date);
+        if (pastDates.length > 0) {
+          setDate(pastDates[pastDates.length - 1]);
+        } else {
+          setErrorMessage("⚠️ 데이터의 시작 날짜입니다. 이전 기록이 없습니다.");
+          setTimeout(() => setErrorMessage(""), 3000);
+        }
+      };
+
+      const handleNextDay = async () => {
+        if (isDataLoading) return;
+        await performAutoSave();
+        const futureDates = availableDates.filter(d => d > date);
+        if (futureDates.length > 0) {
+          setDate(futureDates[0]);
+        } else {
+          setErrorMessage("⚠️ 데이터의 마지막 날짜입니다. 이후 기록이 없습니다.");
+          setTimeout(() => setErrorMessage(""), 3000);
+        }
+      };
+
+      const handleTodayClick = async () => {
+        if (isDataLoading) return;
+        await performAutoSave();
+        const todayStr = getInitialWeekday();
+
+        let targetStr = todayStr;
+        if (availableDates.length > 0 && !availableDates.includes(todayStr)) {
+          const futureDates = availableDates.filter(d => d > todayStr);
+          if (futureDates.length > 0) {
+            targetStr = futureDates[0];
+          } else {
+            const pastDates = availableDates.filter(d => d < todayStr);
+            if (pastDates.length > 0) {
+              targetStr = pastDates[pastDates.length - 1];
+            }
+          }
+        }
+
+        if (minDate && targetStr < minDate) {
+          setErrorMessage("⚠️ 오늘(또는 대체 근무일) 날짜가 데이터 시작일보다 이전입니다.");
+          setTimeout(() => setErrorMessage(""), 3000);
+          return;
+        }
+        if (maxDate && targetStr > maxDate) {
+          setErrorMessage("⚠️ 오늘(또는 대체 근무일) 날짜가 데이터 종료일보다 이후입니다.");
+          setTimeout(() => setErrorMessage(""), 3000);
+          return;
+        }
+        setDate(targetStr);
+      };
+
+      const handleDateChange = async (e) => {
+        const s = e.target.value;
+        if (!s || isDataLoading) return;
+        await performAutoSave();
+        if (minDate && s < minDate) {
+          setErrorMessage(`⚠️ 기록은 ${minDate}부터 가능합니다.`);
+          setTimeout(() => setErrorMessage(""), 3000);
+          return;
+        }
+        if (maxDate && s > maxDate) {
+          setErrorMessage(`⚠️ 기록은 ${maxDate}까지만 가능합니다.`);
+          setTimeout(() => setErrorMessage(""), 3000);
+          return;
+        }
+        const d = new Date(s);
+        if (d.getDay() === 0 || d.getDay() === 6) { setErrorMessage("⚠️ 주말(토, 일요일)은 선택할 수 없습니다."); setTimeout(() => setErrorMessage(""), 3000); return; }
+        setErrorMessage(""); setDate(s);
+      };
+
+      const handleLogChange = (index, field, value) => {
+        setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
+      };
+
+      // 개별 학생별 출결 관리 로직 반영
+      const toggleTag = (index, sIdx, tag) => {
+        const now = Date.now();
+        const lastClick = lastTagClickRef.current;
+        if (lastClick.index === index && lastClick.sIdx === sIdx && lastClick.tag === tag && now - lastClick.time < 400) return;
+
+        lastTagClickRef.current = { time: now, index, sIdx, tag };
+
+        setLogs(prev => {
+          const newLogs = { ...prev };
+          const log = newLogs[index];
+
+          // UI에 출력되어야 하는 최대 줄 수 보장
+          const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+          const maxRows = Math.max(1, studentNames.length);
+          let currentTagsArray = [...(log.selectedTags || [])];
+          while (currentTagsArray.length < maxRows) currentTagsArray.push([]);
+
+          const exclusiveTags = ['1', '2', '결석'];
+
+          if (tag === '선생님휴가') {
+            // 어느 하나라도 선생님휴가가 체크되어 있으면 모두 해제, 아니면 모두에 추가
+            const isAnySelected = currentTagsArray.some(tags => tags.includes('선생님휴가'));
+            if (isAnySelected) {
+              currentTagsArray = currentTagsArray.map(tags => tags.filter(t => t !== '선생님휴가'));
+            } else {
+              currentTagsArray = currentTagsArray.map(tags => {
+                // 형의 요청: 선생님휴가를 눌러도 기존 다른 버튼 상태(출석, 결석 등)는 건드리지 않고 그대로 유지
+                let newTags = [...tags];
+                if (!newTags.includes('선생님휴가')) newTags.push('선생님휴가');
+                return newTags;
+              });
+            }
+          } else {
+            // 특정 학생의 태그만 수정
+            let newTags = [...(currentTagsArray[sIdx] || [])];
+            if (newTags.includes(tag)) {
+              newTags = newTags.filter(t => t !== tag);
+            } else {
+              if (exclusiveTags.includes(tag)) {
+                newTags = newTags.filter(t => !exclusiveTags.includes(t));
+              }
+              newTags.push(tag);
+            }
+            currentTagsArray[sIdx] = newTags;
+          }
+
+          newLogs[index].selectedTags = currentTagsArray;
+          return newLogs;
+        });
+      };
+
+      const handleLogin = (e) => {
+        if (e) e.preventDefault();
+        if (!isLoginReady) return;
+
+        if (currentUser && !isFetchingSchedule) {
+          const availDates = Object.keys(allScheduleData).sort();
+          const todayStr = getInitialWeekday();
+          let targetDate = todayStr;
+
+          if (availDates.length > 0 && !availDates.includes(todayStr)) {
+            const futureDates = availDates.filter(d => d > todayStr);
+            if (futureDates.length > 0) targetDate = futureDates[0];
+            else {
+              const pastDates = availDates.filter(d => d < todayStr);
+              if (pastDates.length > 0) targetDate = pastDates[pastDates.length - 1];
+            }
+          }
+
+          setDate(targetDate);
+          setIsLoggedIn(true);
+          setRefreshTrigger(prev => prev + 1);
+        }
+      };
+
+      const handleMainTouchStart = (e) => {
+        mainTouchStartX.current = e.touches[0].clientX;
+        mainTouchStartY.current = e.touches[0].clientY;
+        setPullDistance(0);
+      };
+
+      const handleMainTouchMove = (e) => {
+        if (mainTouchStartX.current === null || mainTouchStartY.current === null) return;
+        const touchEndX = e.touches[0].clientX;
+        const touchEndY = e.touches[0].clientY;
+        const deltaX = touchEndX - mainTouchStartX.current;
+        const deltaY = touchEndY - mainTouchStartY.current;
+
+        if (deltaY > 0 && deltaY > Math.abs(deltaX) * 2) {
+          setPullDistance(Math.min(deltaY, 400));
+        } else {
+          setPullDistance(0);
+        }
+      };
+
+      const handleMainTouchEnd = (e) => {
+        if (mainTouchStartX.current === null || mainTouchStartY.current === null) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchEndX - mainTouchStartX.current;
+        const deltaY = touchEndY - mainTouchStartY.current;
+
+        if (deltaY > 300 && deltaY > Math.abs(deltaX) * 2) {
+          window.location.reload();
+        } else {
+          setPullDistance(0);
+        }
+        mainTouchStartX.current = null;
+        mainTouchStartY.current = null;
+      };
+
+      const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+      };
+
+      const handleTouchEnd = (e) => {
+        if (touchStartX.current === null || touchStartY.current === null) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchStartX.current - touchEndX;
+        const deltaY = touchStartY.current - touchEndY;
+
+        if (isDataLoading) {
+          touchStartX.current = null;
+          touchStartY.current = null;
+          return;
+        }
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 150) {
+          if (deltaX > 0) handleNextDay();
+          else handlePrevDay();
+        }
+        touchStartX.current = null;
+        touchStartY.current = null;
+      };
+
+      if (!isLoggedIn) {
+        return (
+          <div
+            className="fixed inset-0 overflow-y-auto overflow-x-hidden bg-white sm:bg-gray-100 flex flex-col items-center sm:py-10"
+            onTouchStart={handleMainTouchStart}
+            onTouchMove={handleMainTouchMove}
+            onTouchEnd={handleMainTouchEnd}
+          >
+            <div
+              className="absolute left-0 right-0 flex items-center justify-center pointer-events-none z-50 pt-safe-4"
+              style={{
+                transform: `translateY(${pullDistance > 0 ? (pullDistance * 0.4) : -50}px)`,
+                opacity: pullDistance > 10 ? Math.min(pullDistance / 300, 1) : 0,
+                transition: pullDistance === 0 ? 'all 0.3s ease-out' : 'none'
+              }}
+            >
+              <div className="flex items-center justify-center bg-white shadow-lg border border-sky-200 p-3 rounded-full">
+                <RefreshCw className={`w-8 h-8 ${pullDistance > 300 ? 'text-blue-600 animate-spin' : 'text-gray-400'}`} />
+              </div>
+            </div>
+
+            <div
+              className="flex flex-col flex-1 sm:flex-none w-full max-w-md bg-white px-5 pb-8 pt-safe-6 sm:px-8 sm:pb-10 sm:pt-safe-8 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 sm:min-h-[600px] shrink-0 sm:my-auto"
+              style={{
+                transform: `translateY(${pullDistance * 0.1}px)`,
+                transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none'
+              }}
+            >
+              <div className="text-center mb-5 sm:mb-8 shrink-0 mt-2 sm:mt-0">
+                <div className="flex justify-center mb-2 sm:mb-4">
+                  <img src="Logo_of_Seoul.png" alt="서울시 로고" className="h-8 sm:h-10 object-contain" onError={(e) => e.target.style.display = 'none'} />
+                </div>
+                <div className="flex items-center justify-center mb-1 sm:mb-2">
+                  <h1 className="text-2xl sm:text-4xl font-black text-blue-600">성동노인종합복지관</h1>
+                </div>
+                <h2 className="text-[clamp(14px,4.5vw,18px)] sm:text-2xl font-bold text-red-600 whitespace-nowrap tracking-tighter">디지털교육서포터즈 업무일지 시스템</h2>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:gap-4 shrink-0">
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl">1. 팀 선택</label>
+                  <select className="w-full h-[53px] sm:h-[62px] px-3 sm:px-4 border border-sky-300 rounded-xl text-xl sm:text-2xl bg-sky-100 text-blue-700 outline-none font-bold shadow-md focus:ring-2 focus:ring-blue-400" value={selectedTeam} onChange={(e) => {
+                    setSelectedTeam(e.target.value);
+                    setCurrentUser("");
+                  }}>
+                    <option value="">팀을 선택하세요</option>
+                    {teamList.map(team => <option key={team} value={team}>{team}</option>)}
+                  </select>
+                </div>
+                {selectedTeam && (
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl flex justify-between items-end">
+                      <span>2. 선생님 선택</span>
+                      {isFetchingTeachers && <span className="text-base sm:text-lg text-red-600 font-bold flex items-center mb-1 animate-pulse"><Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />로딩 중...</span>}
+                    </label>
+                    <div className="flex gap-2">
+                      <select className="flex-1 h-[53px] sm:h-[62px] px-3 sm:px-4 border border-sky-300 rounded-xl text-xl sm:text-2xl bg-sky-100 text-blue-700 outline-none font-bold shadow-md focus:ring-2 focus:ring-blue-400" value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
+                        <option value="">선생님을 선택하세요</option>
+                        {teachers.map(name => <option key={name} value={name}>{name.replace(/\n/g, ' ')}</option>)}
+                      </select>
+
+                      <AnimatedRefreshButton
+                        onClick={() => fetchTeachersFromSheet(selectedTeam)}
+                        isFetching={isFetchingTeachers}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-1 sm:pt-2 flex">
+                  {!isLoginReady ? (
+                    <div className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-gray-400 border-2 border-gray-400 cursor-not-allowed shadow-md opacity-90 select-none min-h-[60px]">
+                      {isFetchingSchedule ? <><Clock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2 animate-spin" /> 데이터 확인 중...</> : <><EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성 시작하기</>}
+                    </div>
+                  ) : (
+                    <button onClick={handleLogin} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md touch-manipulation min-h-[60px]">
+                      <EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성 시작하기
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="py-3 sm:py-4 flex justify-center items-center shrink-0 mt-1">
+                <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
+              </div>
+
+              <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-[180px]">
+                {selectedTeam ? (
+                  <>
+                    <button onClick={() => onNavigateToDailySchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[60px]">
+                      <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 오늘 일정 보기
+                    </button>
+                    <a href={getNoCacheUrl(SHEET_URLS[selectedTeam])} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 min-h-[60px]">
+                      <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 전체 일정 보기
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[60px]">
+                      <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 오늘 일정 보기
+                    </button>
+                    <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[60px]">
+                      <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 전체 일정 보기
+                    </button>
+                  </>
+                )}
+                <a href={getNoCacheUrl(SHEET_URLS["기타참여자"])} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-emerald-700 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 shadow-md transition-all active:scale-95 min-h-[60px]">
+                  <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 수업 희망자 및 기타 참여자 관리
+                </a>
+                <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-purple-700 bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[60px]">
+                  <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
+                </button>
+              </div>
+
+              <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
+                v260502
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-[100dvh] bg-gray-50 font-sans pb-6">
+          <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative">
+            <div className="flex items-center">
+              <div className="flex flex-col">
+                <div className="flex items-center mb-1">
+                  <img src="Logo_of_Seoul.png" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+                  <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
+                </div>
+                <p className="text-base font-bold text-yellow-300">디지털교육 서포터즈</p>
+                <p className="text-base opacity-95 flex items-center mt-1 font-bold">
+                  <User className="w-4 h-4 mr-1" /> [{selectedTeam}] {currentUser.replace(/\n/g, ' ')} 선생님
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={(e) => {
+                if (isSubmitting) {
+                  e.preventDefault();
+                  alert("데이터 저장 중입니다. 잠시만 기다려주세요.");
+                  return;
+                }
+                handleLogout();
+              }}
+              className={`text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation ${isSubmitting ? 'bg-blue-800 text-gray-400 opacity-60 cursor-not-allowed' : 'bg-blue-800 text-white opacity-90 active:scale-95'}`}
+            >
+              <Home className="w-5 h-5 mb-1" /> 처음으로
+            </button>
+          </header>
+
+          <main
+            className="w-full max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto flex flex-col px-4 sm:px-6 md:px-8 pt-2 mt-1 pb-32"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <section className="bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col h-auto">
+
+              <div className="bg-white px-5 pt-3 pb-2 relative rounded-t-2xl">
+                <h2 className="text-xl font-bold text-gray-800 mb-1 border-b pb-2 flex items-center justify-between">
+                  <span className="flex items-center"><MainCalendarIcon className="w-5 h-5 mr-2 text-blue-500" /> 근무기록 입력</span>
+
+                  <div className="flex items-center">
+                    {(isDataLoading) ? (
+                      <span className="text-sm sm:text-lg text-red-600 font-bold flex items-center animate-pulse tracking-tight">
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />
+                        <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
+                        <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleRepeatSchedule}
+                        disabled={hasChanges || isEmptySchedule}
+                        className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || isEmptySchedule ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
+                        title={hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." : isEmptySchedule ? "복제할 일정이 없습니다. 학생이름과 장소를 먼저 입력해 주세요." : "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."}
+                      >
+                        <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
+                      </button>
+                    )}
+                  </div>
+                </h2>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-md sm:max-w-xl mx-auto mb-1">
+                    <button type="button" onClick={handlePrevDay} disabled={isDataLoading} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-gray-700 shrink-0 transition-all">
+                      <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
+                    </button>
+
+                    <div className="flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm overflow-hidden transition-all">
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={handleDateChange}
+                        disabled={isDataLoading}
+                        onClick={(e) => {
+                          try {
+                            if (!isDataLoading && e.target.showPicker) e.target.showPicker();
+                          } catch (err) { }
+                        }}
+                        min={minDate || undefined}
+                        max={maxDate || undefined}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
+                        title="달력 열기"
+                      />
+                      <div className={`flex items-center justify-center pointer-events-none relative z-0 ${isDataLoading ? 'opacity-50' : ''} -translate-y-[1px] whitespace-nowrap px-1`}>
+                        <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap">{parseInt(date.substring(5, 7), 10)}/{parseInt(date.substring(8, 10), 10)}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                          <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                          <line x1="16" x2="16" y1="2" y2="6" />
+                          <line x1="8" x2="8" y1="2" y2="6" />
+                          <line x1="3" x2="21" y1="10" y2="10" />
+                        </svg>
+                        <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0">({getDayName(date)})</span>
+                      </div>
+                    </div>
+
+                    <button type="button" onClick={handleTodayClick} disabled={isDataLoading} className="text-[13px] sm:text-[15px] px-3 sm:px-4 h-10 sm:h-12 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap shrink-0 transition-all">오늘</button>
+                    <button type="button" onClick={handleNextDay} disabled={isDataLoading} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-gray-700 shrink-0 transition-all">
+                      <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
+                    </button>
+                  </div>
+                  {errorMessage && <div className="text-red-600 font-bold text-sm text-center pb-2">{errorMessage}</div>}
+
+                  {/* [추가]: 경로당 등 참석인원 미입력 시 안내 메시지 */}
+                  {isMissingHeadcount && !isDataLoading && (
+                    <div className="mt-2 animate-fadeIn">
+                      <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3 sm:p-4 text-red-800 shadow-sm flex items-center justify-center">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <p className="font-extrabold text-[15px] sm:text-[18px] text-red-700">
+                          교육 참석인원을 입력하세요.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* [추가]: 해당 일자로부터 7일 내 공휴일/소양교육 안내 박스 */}
+                  {specialAlerts.length > 0 && (
+                    <div className="mt-2 animate-fadeIn">
+                      <div className="bg-orange-100 border-2 border-orange-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 text-gray-800 shadow-sm overflow-hidden">
+                        <div className="flex items-start gap-1.5 sm:gap-3 w-full">
+                          <div className="bg-orange-300 p-1 sm:p-1.5 rounded-lg shrink-0">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          </div>
+                          <div className="flex flex-col gap-0.5 sm:gap-1 w-full min-w-0">
+                            <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight flex items-center gap-1 sm:gap-2">
+                              📅 주요 일정 안내
+                            </h4>
+                            <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
+                              {specialAlerts.map((msg, idx) => (
+                                <p key={idx} className="font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight text-blue-700 tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block">
+                                  • {msg}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 💡 [추가]: 해당 일자에 스케줄이 없을 때 표시되는 안내 메시지 */}
+                  {isEmptySchedule && !isDataLoading && (
+                    <div className="mt-2 animate-fadeIn">
+                      <div className="bg-orange-100 border-2 border-orange-300 rounded-xl p-4 text-orange-800 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-orange-300 p-1.5 rounded-lg shrink-0">
+                            <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <p className="font-bold text-[15px] sm:text-[17px] leading-snug break-keep text-orange-900">
+                            대체근무인 경우, 대상자 이름, 장소, 출석 사항 등을 입력/체크하고 화면 하단의 <span className="text-blue-700 font-extrabold">'구글 시트에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-5 pb-5 pt-3">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    {getShifts(selectedTeam).map((shift, index) => {
+                      const isOnlyNumber = /^\d+$/.test(logs[index].memo?.trim());
+                      const isInfoMissing = !logs[index].student?.trim() && !logs[index].location?.trim();
+                      const locLen = (logs[index].location || "").length;
+
+                      const locTextSize = locLen >= 9 ? "text-[15px] sm:text-[15px] md:text-[16px] landscape:text-[17px] md:landscape:text-[18px]" : locLen >= 8 ? "text-[16px] sm:text-[16px] md:text-[18px] landscape:text-[18px] md:landscape:text-[20px]" : locLen >= 7 ? "text-[17px] sm:text-[17px] md:text-[20px] landscape:text-[20px] md:landscape:text-[22px]" : locLen >= 6 ? "text-[18px] sm:text-[19px] md:text-[22px] landscape:text-[22px] md:landscape:text-[24px]" : "text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px]";
+
+                      const counts = studentCounts[index];
+
+                      // 학생이름을 파싱해서 몇 개의 줄(row)이 필요한지 계산합니다.
+                      const studentNames = (logs[index].student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+                      const displayRowsCount = Math.max(1, studentNames.length);
+
+                      // 💡 학생이 두 명 이상일 때 초록색 바탕을 주기 위한 조건 추가
+                      const isMultipleStudents = studentNames.length >= 2;
+
+                      // 💡 인원수 입력 칸 표시 여부 판단 로직
+                      const isShowHeadcount = (logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+
+                      return (
+                        <div key={index} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300'}`}>
+                          <div className={`flex items-center text-blue-700 font-bold mb-2 sm:mb-3 text-lg sm:text-xl transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
+                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" /> <span className="shrink-0">{shift}</span>
+
+                            {counts && counts.length > 0 ? (
+                              <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
+                                {counts.map((c, cIdx) => {
+                                  let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
+                                  if (c.count >= 10) sessionColorClass = "bg-purple-900 text-white border-purple-950 font-black shadow-inner";
+                                  else if (c.count >= 7) sessionColorClass = "bg-purple-500 text-white border-purple-600 font-extrabold";
+
+                                  return (
+                                    <button
+                                      key={cIdx}
+                                      type="button"
+                                      onClick={() => setSelectedStudentDates(c)}
+                                      className={`${sessionColorClass} border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:brightness-95 active:scale-95`}
+                                    >
+                                      {c.count}회차
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
+                              <input
+                                type="text"
+                                placeholder="대상자 이름"
+                                value={logs[index].student}
+                                onChange={(e) => handleLogChange(index, 'student', e.target.value)}
+                                onBlur={handleInputBlur}
+                                disabled={isDataLoading}
+                                className={`flex-[1.5] min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 placeholder-gray-500 border-gray-400' : 'bg-blue-800 placeholder-blue-200 border-transparent'}`}
+                              />
+                              <input
+                                type="text"
+                                placeholder="장소"
+                                value={logs[index].location}
+                                onChange={(e) => handleLogChange(index, 'location', e.target.value)}
+                                onBlur={handleInputBlur}
+                                disabled={isDataLoading}
+                                className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 placeholder-gray-500 border-gray-400' : 'bg-blue-800 placeholder-blue-200 border-transparent'}`}
+                              />
+                            </div>
+
+                            {/* 학생 인원수만큼 출결 버튼 줄 생성 */}
+                            {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
+                              return (
+                                <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-2 pt-2 border-t border-dashed border-blue-200' : ''}`}>
+                                  <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
+                                    {RENDER_TAGS.map(tag => {
+                                      const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
+
+                                      // 💡 출석, 결석, 취소 버튼 비활성화 및 블러 처리
+                                      const isKyungrodangIncluded = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+                                      const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
+
+                                      return (
+                                        <button
+                                          key={tag}
+                                          type="button"
+                                          onClick={() => toggleTag(index, sIdx, tag)}
+                                          disabled={isDataLoading || isInfoMissing || isBlurTarget}
+                                          className={
+                                            "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
+                                            fontSizeClass +
+                                            " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
+                                            (isBlurTarget
+                                              ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
+                                              : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
+                                          }
+                                        >
+                                          {tag === '1' ? '출석' : tag}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            <div className="flex gap-2 w-full !mt-[10px]">
+                              {isShowHeadcount && (
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength="2"
+                                  placeholder="인원"
+                                  value={logs[index].headcount || ""}
+                                  onChange={(e) => {
+                                    // 숫자만 입력 가능하도록 정규식 처리
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    handleLogChange(index, 'headcount', val);
+                                  }}
+                                  onBlur={handleInputBlur}
+                                  disabled={isDataLoading || isInfoMissing}
+                                  className="w-16 md:w-20 py-0.5 sm:py-1 md:py-1.5 px-2 text-center border border-sky-300 rounded-xl bg-sky-100 outline-none font-bold text-gray-800 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg md:text-xl shrink-0"
+                                />
+                              )}
+                              <input
+                                type="text"
+                                placeholder="메모만 입력"
+                                value={logs[index].memo}
+                                onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
+                                onBlur={handleInputBlur}
+                                disabled={isDataLoading || isInfoMissing}
+                                className={`flex-1 min-w-0 py-0.5 sm:py-1 md:py-1.5 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-pink-800 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${isOnlyNumber ? 'text-xl md:text-2xl' : 'text-lg md:text-xl'}`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button type="submit" disabled={isDataLoading || !hasChanges} className={`w-full py-4 md:py-5 mt-4 md:mt-6 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-all active:scale-95 flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}>
+                    {isSubmitting ? <><Clock className="w-6 h-6 mr-2 animate-spin" />저장 중...</> : <><SaveIcon className="w-6 h-6 mr-2" />구글 시트에 저장하기</>}
+                  </button>
+                </form>
+              </div>
+            </section>
+          </main>
+
+          {/* 저장 및 유효성 에러 팝업 등 모달 영역 */}
+          {showValidationError && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4 animate-fadeIn">
+              <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full overflow-hidden">
+                <div className="bg-red-500 py-4 px-6 text-center flex items-center justify-center gap-2">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  <h3 className="text-xl font-bold text-white tracking-wide">입력 확인</h3>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-800 font-bold text-[17px] sm:text-[19px] mb-6 text-center leading-relaxed whitespace-pre-line">
+                    {validationErrorMsg}
+                  </p>
+                  <button
+                    onClick={() => setShowValidationError(false)}
+                    className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-[18px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showSavePopup && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+                <div className="bg-blue-600 py-4 px-6 text-center">
+                  <h3 className="text-2xl font-bold text-white tracking-wide">
+                    {isSaveComplete ? "데이터 저장 완료" : "구글 시트 저장 중..."}
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <div className="flex flex-col gap-4 mb-6 max-h-[50vh] overflow-y-auto pr-2">
+                    {saveProgress.map((prog, idx) => {
+                      if (prog.isRepeat) {
+                        return (
+                          <div key={idx} className="flex justify-between items-center w-full pb-4 border-b border-dashed border-gray-200 last:border-0 last:pb-0">
+                            <div className="flex flex-col gap-1.5 flex-1 pr-2">
+                              <span className="text-blue-800 font-extrabold text-[19px] tracking-tight">
+                                <span className="text-gray-500 mr-1.5 font-bold text-[19px]">{prog.dateDisplay}</span>
+                                {prog.student}
+                              </span>
+                              <span className="text-indigo-600 font-bold text-lg leading-relaxed">
+                                {prog.timeDisplay}
+                              </span>
+                            </div>
+                            <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
+                              {prog.status}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      const att = prog.attendance || "";
+                      let attColor = "text-gray-700";
+                      if (att.includes("결석") || att.includes("취소")) {
+                        attColor = "text-red-600 font-bold";
+                      } else if (att.includes("선생님휴가")) {
+                        attColor = "text-gray-400 font-bold";
+                      }
+
+                      return (
+                        <div key={idx} className="flex justify-between items-center w-full pb-4 border-b border-dashed border-gray-200 last:border-0 last:pb-0">
+                          <div className="flex flex-col gap-1.5 flex-1 pr-2">
+                            <span className="text-blue-800 font-extrabold text-[19px] tracking-tight">
+                              {prog.student}
+                            </span>
+                            <span className={`text-lg font-bold break-all leading-relaxed ${attColor}`}>
+                              {prog.attendance}
+                            </span>
+                          </div>
+                          <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
+                            {prog.status}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setShowSavePopup(false)}
+                    disabled={!isSaveComplete}
+                    className={`w-full py-3 rounded-xl font-bold text-xl shadow-md transition-colors touch-manipulation ${isSaveComplete ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                  >
+                    {isSaveComplete ? "확인" : "잠시만 기다려주세요..."}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showRepeatConfirm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+                <div className="bg-indigo-600 py-4 px-6 text-center">
+                  <h3 className="text-xl font-bold text-white tracking-wide">확인해 주세요!</h3>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-3 text-center leading-relaxed">
+                    아래 <span className="text-indigo-600 text-[18px] sm:text-[20px]">{repeatTargetDates.length}</span>일 동안의 스케줄에<br />
+                    [학생이름]과 [장소]를<br />복제할까요?
+                  </p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 max-h-[25vh] overflow-y-auto">
+                    {repeatTargetDates.map(d => (
+                      <div key={d} className="text-[18px] sm:text-[20px] font-bold text-blue-600 text-center py-1">
+                        - {d} ({getDayName(d)})
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-red-600 text-[18px] sm:text-[20px] font-bold mb-6 text-center leading-tight">
+                    ※ 주의: 기존에 작성된 출결기록과 메모는<br /> 모두 지워집니다.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowRepeatConfirm(false)}
+                      className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={executeRepeatSchedule}
+                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                    >
+                      일정 복제 시작
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedStudentDates && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentDates(null)}>
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+                <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
+                  <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
+                  <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </div>
+                <div className="p-3 sm:p-4 overflow-y-auto">
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                    {selectedStudentDates.dates.map((d, idx) => {
+                      const today = new Date();
+                      const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+                      return (
+                        <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
+                          {d.getMonth() + 1}/{d.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.getDay()]})
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {selectedStudentDates.dates.length === 0 && (
+                    <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+
+
+    // =====================================================================
+    // 🏫 2. 평생교육실 예약 프로그램
+    // =====================================================================
+    function ClassroomApp({ onNavigateBack }) {
+      const firebaseAPI = window.FirebaseAPI || {};
+      const { auth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = firebaseAPI;
+
+      const [user, setUser] = useState(null);
+      const [firebaseErrorMsg, setFirebaseErrorMsg] = useState("");
+
+      const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+        const d = new Date();
+        const day = d.getDay();
+        if (day === 0) d.setDate(d.getDate() + 1);
+        else if (day === 6) d.setDate(d.getDate() + 2);
+
+        const newDay = d.getDay();
+        const diff = d.getDate() - newDay + (newDay === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+      });
+
+      const adjustedTodayStr = useMemo(() => {
+        const d = new Date();
+        const day = d.getDay();
+        if (day === 0) d.setDate(d.getDate() + 1);
+        else if (day === 6) d.setDate(d.getDate() + 2);
+        return getLocalDateString(d);
+      }, []);
+
+      const [schedule, setSchedule] = useState(() => {
+        try {
+          const cached = window.localStorage.getItem('classroom_schedule_backup');
+          return cached ? JSON.parse(cached) : {};
+        } catch (e) { return {}; }
+      });
+
+      const [memo, setMemo] = useState(() => {
+        return window.localStorage.getItem('classroom_memo_backup') || "";
+      });
+
+      const [isTyping, setIsTyping] = useState(false);
+      const isTypingRef = useRef(false);
+      const [isManagerMode, setIsManagerMode] = useState(false);
+      const isManagerModeRef = useRef(false);
+      const [showPwdModal, setShowPwdModal] = useState(false);
+      const [pwdInput, setPwdInput] = useState("");
+      const [pwdError, setPwdError] = useState(false);
+      const pwdInputRef = useRef(null);
+
+      const touchStartX = useRef(null);
+      const touchStartY = useRef(null);
+
+      useEffect(() => {
+        document.documentElement.style.overscrollBehaviorY = 'none';
+        document.body.style.overscrollBehaviorY = 'none';
+        return () => {
+          document.documentElement.style.overscrollBehaviorY = 'auto';
+          document.body.style.overscrollBehaviorY = 'auto';
+        };
+      }, []);
+
+      useEffect(() => {
+        if (showPwdModal && pwdInputRef.current) {
+          pwdInputRef.current.focus();
+        }
+      }, [showPwdModal]);
+
+      useEffect(() => {
+        isManagerModeRef.current = isManagerMode;
+      }, [isManagerMode]);
+
+      const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+      };
+
+      const handleTouchEnd = (e) => {
+        if (touchStartX.current === null || touchStartY.current === null) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchStartX.current - touchEndX;
+        const deltaY = touchStartY.current - touchEndY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 150) {
+          if (deltaX > 0) changeWeek(1);
+          else changeWeek(-1);
+        }
+        touchStartX.current = null;
+        touchStartY.current = null;
+      };
+
+      const timeSlots = [
+        "09:30 - 10:30", "10:30 - 11:30", "11:30 - 12:30",
+        "13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00"
+      ];
+      const weekDays = ['월', '화', '수', '목', '금'];
+
+      useEffect(() => {
+        const initAuth = async () => {
+          try {
+            if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+              await signInWithCustomToken(auth, window.__initial_auth_token);
+            } else { await signInAnonymously(auth); }
+          } catch (error) { console.error("⚠️ 인증 에러:", error); }
+        };
+        if (auth) {
+          initAuth();
+          const unsubscribe = onAuthStateChanged(auth, setUser);
+          return () => unsubscribe();
+        }
+      }, [auth]);
+
+      useEffect(() => {
+        if (!window.FirebaseAPI || !window.FirebaseAPI.db) return;
+        const { db, doc, onSnapshot } = window.FirebaseAPI;
+
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', 'main_data');
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const fbData = docSnap.data();
+            if (!isManagerModeRef.current) {
+              setSchedule(fbData.data || {});
+              window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(fbData.data || {}));
+
+              if (!isTypingRef.current) {
+                setMemo((prevMemo) => {
+                  const newMemo = fbData.memo || "";
+                  if (prevMemo !== newMemo) {
+                    window.localStorage.setItem('classroom_memo_backup', newMemo);
+                    return newMemo;
+                  }
+                  return prevMemo;
+                });
+              }
+            }
+          }
+        }, (error) => { console.error("데이터 읽기 에러:", error); });
+
+        return () => unsubscribe();
+      }, []);
+
+      const saveBulkChanges = (changes) => {
+        if (Object.keys(changes).length === 0) return;
+        const optimisticData = {};
+        Object.keys(changes).forEach(k => {
+          const cleanKey = k.replace('data.', '');
+          optimisticData[cleanKey] = changes[k];
+        });
+        const newSchedule = { ...schedule, ...optimisticData };
+        setSchedule(newSchedule);
+        window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(newSchedule));
+      };
+
+      const getScheduleKey = (dateStr, timeSlot) => {
+        return `${dateStr}_${timeSlot.replace(/\s+/g, '').replace(/~/g, '-').replace(/:/g, '')}`;
+      };
+
+      const toggleAvailability = (dateStr, timeSlot) => {
+        if (!isManagerMode) return;
+        const key = getScheduleKey(dateStr, timeSlot);
+        const currentValue = schedule[key];
+
+        let newValue;
+        if (!currentValue) {
+          newValue = true;
+        } else if (currentValue === true) {
+          newValue = 'nangman';
+        } else if (currentValue === 'nangman') {
+          newValue = 'pending';
+        } else {
+          newValue = false;
+        }
+        const newSchedule = { ...schedule, [key]: newValue };
+        setSchedule(newSchedule);
+        window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(newSchedule));
+      };
+
+      const toggleAll = () => {
+        if (!isManagerMode) return;
+        const currentDays = getCurrentWeekDays();
+        const allKeys = [];
+        currentDays.forEach(day => {
+          const ds = formatDateString(day);
+          timeSlots.forEach(slot => allKeys.push(getScheduleKey(ds, slot)));
+        });
+
+        const allActive = allKeys.every(k => schedule[k] === true);
+        const allNangman = allKeys.every(k => schedule[k] === 'nangman');
+        const allPending = allKeys.every(k => schedule[k] === 'pending');
+
+        let newValue;
+        if (allActive) newValue = 'nangman';
+        else if (allNangman) newValue = 'pending';
+        else if (allPending) newValue = false;
+        else newValue = true;
+
+        const changes = {};
+        allKeys.forEach(k => { changes[`data.${k}`] = newValue; });
+        saveBulkChanges(changes);
+      };
+
+      const toggleWholeDay = (dateStr) => {
+        if (!isManagerMode) return;
+        const dayKeys = timeSlots.map(slot => getScheduleKey(dateStr, slot));
+        const allActive = dayKeys.every(k => schedule[k] === true);
+        const allNangman = dayKeys.every(k => schedule[k] === 'nangman');
+        const allPending = dayKeys.every(k => schedule[k] === 'pending');
+
+        let newValue;
+        if (allActive) newValue = 'nangman';
+        else if (allNangman) newValue = 'pending';
+        else if (allPending) newValue = false;
+        else newValue = true;
+
+        const changes = {};
+        dayKeys.forEach(k => { changes[`data.${k}`] = newValue; });
+        saveBulkChanges(changes);
+      };
+
+      const toggleWholeWeek = (timeSlot) => {
+        if (!isManagerMode) return;
+        const currentDays = getCurrentWeekDays();
+        const weekKeys = currentDays.map(day => getScheduleKey(formatDateString(day), timeSlot));
+        const allActive = weekKeys.every(k => schedule[k] === true);
+        const allNangman = weekKeys.every(k => schedule[k] === 'nangman');
+        const allPending = weekKeys.every(k => schedule[k] === 'pending');
+
+        let newValue;
+        if (allActive) newValue = 'nangman';
+        else if (allNangman) newValue = 'pending';
+        else if (allPending) newValue = false;
+        else newValue = true;
+
+        const changes = {};
+        weekKeys.forEach(k => { changes[`data.${k}`] = newValue; });
+        saveBulkChanges(changes);
+      };
+
+      useEffect(() => {
+        if (!isTyping) return;
+        const timer = setTimeout(() => {
+          window.localStorage.setItem('classroom_memo_backup', memo);
+          setIsTyping(false);
+          isTypingRef.current = false;
+        }, 1000);
+        return () => clearTimeout(timer);
+      }, [memo, isTyping]);
+
+      const formatDateString = (date) => getLocalDateString(date);
+
+      const getCurrentWeekDays = () => {
+        const days = [];
+        for (let i = 0; i < 5; i++) {
+          const d = new Date(currentWeekStart);
+          d.setDate(currentWeekStart.getDate() + i);
+          days.push(d);
+        }
+        return days;
+      };
+
+      const changeWeek = (offsetWeeks) => {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() + (offsetWeeks * 7));
+        setCurrentWeekStart(newDate);
+      };
+
+      const handleCurrentWeekClick = () => {
+        const d = new Date();
+        const day = d.getDay();
+        if (day === 0) d.setDate(d.getDate() + 1);
+        else if (day === 6) d.setDate(d.getDate() + 2);
+
+        const newDay = d.getDay();
+        const diff = d.getDate() - newDay + (newDay === 0 ? -6 : 1);
+        setCurrentWeekStart(new Date(d.setDate(diff)));
+      };
+
+      const handleManagerClick = async () => {
+        if (navigator.vibrate) navigator.vibrate(50);
+
+        if (isManagerMode) {
+          if (window.FirebaseAPI && window.FirebaseAPI.db) {
+            const { db, doc, setDoc } = window.FirebaseAPI;
+            try {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', 'main_data');
+              await setDoc(docRef, { data: schedule, memo: memo }, { merge: true });
+              setFirebaseErrorMsg("");
+            } catch (error) {
+              console.error("⚠️ 파이어베이스 일괄 저장 오류:", error);
+              setFirebaseErrorMsg(`⚠️ 저장 실패: 파이어베이스 권한(보안 규칙)이나 설정이 잘못되었습니다. (${error.message})`);
+              return;
+            }
+          }
+          setIsManagerMode(false);
+        }
+        else { setShowPwdModal(true); setPwdInput(""); setPwdError(false); }
+      };
+
+      const checkPassword = () => {
+        if (pwdInput === "qqq") { setIsManagerMode(true); setShowPwdModal(false); }
+        else setPwdError(true);
+      };
+
+      const currentDays = getCurrentWeekDays();
+      const startMonth = currentDays[0].getMonth() + 1;
+      const startDay = currentDays[0].getDate();
+      const endMonth = currentDays[4].getMonth() + 1;
+      const endDay = currentDays[4].getDate();
+
+      return (
+        <div className="min-h-[100dvh] flex flex-col bg-gray-50 font-sans text-gray-800">
+
+          <div className="shrink-0 bg-blue-600 px-4 pb-4 pt-safe-4 md:px-8 md:pb-6 md:pt-safe-6 text-white relative flex flex-col items-center justify-center shadow-md z-20">
+            <h1 className="text-lg md:text-xl font-bold flex items-center gap-2 mb-4 mt-1 md:mt-0">
+              <LucideCalendar className="w-6 h-6 md:w-8 md:h-8" /> 평생교육실2 사용 현황
+            </h1>
+            <div className="flex w-full justify-center">
+              <button onClick={handleManagerClick} className={`px-6 py-2 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation ${isManagerMode ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}>
+                {isManagerMode ? '저장/담당자 모드 종료' : '담당자 로그인'}
+              </button>
+            </div>
+            <button onClick={onNavigateBack} className="absolute right-4 md:right-6 safe-top-btn text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
+              <Home className="w-5 h-5 mb-1" /> 처음으로
+            </button>
+          </div>
+
+          <div className="flex-1 flex flex-col p-3 md:p-8 pb-10">
+            <div className="max-w-5xl w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden border flex flex-col">
+
+              <div className="shrink-0 z-10 bg-white px-4 pt-4 pb-2 md:px-6 md:pt-6 md:pb-3 shadow-sm relative">
+                <div className="bg-white rounded-xl p-3 md:p-4 border border-gray-200 flex flex-col items-center shadow-sm">
+                  {firebaseErrorMsg && (
+                    <div className="w-full mb-3 p-3 bg-red-100 text-red-700 font-bold rounded-lg border border-red-300 text-[14px] md:text-sm text-center">
+                      🚨 {firebaseErrorMsg}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-md mx-auto mb-2">
+                    <button onClick={() => changeWeek(-1)} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
+                      <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
+                    </button>
+                    <div className="flex-1 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm overflow-hidden px-1 transition-all">
+                      <h2 className="font-extrabold text-[#1e3a8a] text-[16px] min-[360px]:text-[18px] sm:text-[20px] tracking-tighter whitespace-nowrap text-center -translate-y-[1px]">{startMonth}/{startDay} ~ {endMonth}/{endDay}</h2>
+                    </div>
+                    <button onClick={handleCurrentWeekClick} className="text-[13px] sm:text-[15px] px-3 sm:px-4 h-10 sm:h-12 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 touch-manipulation whitespace-nowrap shrink-0 transition-all">이번 주</button>
+                    <button onClick={() => changeWeek(1)} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
+                      <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
+                    </button>
+                  </div>
+                  <p className="text-[14px] landscape:text-xl md:text-2xl text-gray-600 text-center mt-2">
+                    <span className="bg-green-200 text-green-900 font-semibold px-2 py-0.5 rounded-md">사용 가능</span>으로 표시된 시간대에 이용할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="flex-1 px-2 min-[360px]:px-4 pb-4 pt-2 md:px-6 md:pb-6 md:pt-3 bg-gray-50/30"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div className="border-2 border-gray-400 rounded-lg shadow-sm overflow-hidden">
+                  <table className="w-full table-fixed text-center border-collapse">
+                    <thead>
+                      <tr className="bg-sky-100 border-b-2 border-gray-400">
+                        <th
+                          onClick={toggleAll}
+                          title={isManagerMode ? "클릭 시 이번 주 전체 선택/해제" : ""}
+                          className={`pt-1 pb-1.5 px-0 border-r border-gray-400 font-extrabold text-gray-700 w-[14%] sm:w-28 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation ${isManagerMode ? 'cursor-pointer hover:bg-sky-200' : ''}`}
+                        >
+                          <span>시간</span><br /><span>날짜</span>
+                        </th>
+                        {currentDays.map((day, i) => {
+                          const dateStr = formatDateString(day);
+                          const isToday = dateStr === adjustedTodayStr;
+                          return (
+                            <th
+                              key={i}
+                              onClick={() => toggleWholeDay(dateStr)}
+                              title={isManagerMode ? "클릭 시 해당 요일 전체 선택/해제" : ""}
+                              className={`pt-0.5 pb-1.5 px-0 font-extrabold text-gray-900 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation tracking-tighter sm:tracking-normal ${isManagerMode ? 'cursor-pointer hover:bg-sky-200' : ''} ${isToday ? 'border-x-[4px] sm:border-x-[6px] border-t-[4px] sm:border-t-[6px] border-blue-600 relative z-10' : 'border-r border-gray-400'}`}
+                            >
+                              {day.getMonth() + 1}/{day.getDate()}<br className="block md:hidden" /> ({weekDays[i]})
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeSlots.map((time, ti) => (
+                        <tr key={ti} className={`${ti === 2 ? 'border-b-[3px] border-gray-500' : 'border-b border-gray-400 last:border-0'}`}>
+                          <td
+                            onClick={() => toggleWholeWeek(time)}
+                            title={isManagerMode ? "클릭 시 해당 시간대 전체 요일 선택/해제" : ""}
+                            className={`p-0.5 sm:p-1.5 bg-sky-100 border-r border-gray-400 font-bold select-none text-[10px] min-[360px]:text-[11px] landscape:text-[21px] md:text-[23px] tracking-tighter sm:tracking-normal touch-manipulation ${ti >= 3 ? 'text-orange-600' : 'text-blue-700'} ${isManagerMode ? 'cursor-pointer hover:bg-sky-200' : ''}`}
+                          >
+                            <div className="block sm:hidden leading-none">{time.split(' - ')[0]}<br />~<br />{time.split(' - ')[1]}</div>
+                            <div className="hidden sm:block">{time}</div>
+                          </td>
+                          {currentDays.map((day, di) => {
+                            const dateStr = formatDateString(day);
+                            const key = getScheduleKey(dateStr, time);
+                            const state = schedule[key];
+                            const isToday = dateStr === adjustedTodayStr;
+                            const isLastRow = ti === timeSlots.length - 1;
+
+                            const cellBg = state === true ? 'bg-green-200' : state === 'nangman' ? 'bg-blue-600' : state === 'pending' ? 'bg-gray-300' : 'bg-pink-50';
+                            const textCol = state === true ? 'text-green-900' : state === 'nangman' ? 'text-white' : state === 'pending' ? 'text-gray-800' : 'text-pink-800';
+                            const cellPadding = state === 'nangman' ? 'px-0 py-1' : 'p-0.5 sm:p-2';
+                            const cellContent = state === true ? <>사용<br />가능</> : state === 'nangman' ? <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span> : state === 'pending' ? <span>미정</span> : <>사용<br />불가</>;
+
+                            return (
+                              <td key={di} onClick={() => toggleAvailability(dateStr, time)}
+                                className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${isManagerMode ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-blue-600 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-blue-600 relative z-10') : 'border-r border-gray-400'}`}>
+                                <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol}`}>
+                                  {cellContent}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-6 bg-gray-100 p-4 rounded-xl border border-gray-200 shadow-inner">
+                  <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2 text-sm landscape:text-[20px] md:text-[22px]">📢 공지 및 메모</h3>
+                  <textarea
+                    value={memo}
+                    onChange={(e) => {
+                      if (!isManagerMode) return;
+                      setMemo(e.target.value);
+                      setIsTyping(true);
+                      isTypingRef.current = true;
+                    }}
+                    readOnly={!isManagerMode}
+                    placeholder={isManagerMode ? "모든 선생님 화면에 실시간으로 보입니다." : "담당자 모드에서만 작성 가능합니다."}
+                    className={`w-full p-3 md:p-4 border rounded-xl font-bold h-24 md:h-32 outline-none transition-all text-sm landscape:text-[20px] md:text-[22px] text-black bg-white ${isManagerMode ? 'border-blue-300' : 'border-gray-300'}`}
+                  />
+                  {isTyping && <div className="text-[10px] text-blue-500 mt-1 font-bold animate-pulse text-right">자동 저장 중...</div>}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {showPwdModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">담당자 암호</h3>
+                <input ref={pwdInputRef} autoFocus type="password" value={pwdInput} onChange={(e) => { const val = e.target.value; setPwdInput(val); if (val === 'qqq') { setIsManagerMode(true); setShowPwdModal(false); } }} onKeyDown={(e) => e.key === 'Enter' && checkPassword()} className="w-full border-2 p-3 rounded-lg mb-4 text-center text-2xl tracking-widest outline-none focus:border-blue-500" placeholder="••••" />
+                {pwdError && <p className="text-red-500 text-xs text-center mb-4">비밀번호가 틀렸습니다.</p>}
+                <div className="flex gap-2">
+                  <button onClick={() => setShowPwdModal(false)} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold touch-manipulation">취소</button>
+                  <button onClick={checkPassword} className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold touch-manipulation">확인</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+
+
+    // =====================================================================
+    // ✨ 교육 요약 & 인사이트 컴포넌트
+    // =====================================================================
+    function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
+      const contents = useMemo(() => {
+        if (!data || data.length === 0) return [];
+        return data
+          .filter(row => row.status && row.status.length > 2 && !/^\d+$/.test(row.status) && !row.status.includes("복지관으로 이동"))
+          .map(row => ({
+            teacher: row.teacher,
+            content: row.status,
+            student: row.student
+          }));
+      }, [data]);
+
+      const themes = [
+        { name: 'AI & 스마트 도구', keywords: ['Gemini', 'AI', 'GPT', '제미나이', '구글렌즈', '클로바', '챗지피티', '인공지능', '이미지', '파파고', '번역', '음성인식', '스마트렌즈', '빅스비', '시리', '챗봇'], icon: '✨', color: 'bg-indigo-50 text-indigo-700 border-indigo-100', baseInsight: '최신 AI 도구 활용이 두드러졌습니다. 단순 검색을 넘어 이미지 생성 및 문제 해결 단계로 교육이 고도화되고 있습니다.' },
+        { name: '기기 & 보안 설정', keywords: ['와이파이', '블루투스', '화면', '소리', '벨소리', '알림', '글자', '업데이트', '비밀번호', '잠금', '보안', '용량', '배터리', '설정', '스미싱', '보이스피싱', '스팸', '바이러스', '백신'], icon: '⚙️', color: 'bg-gray-50 text-gray-700 border-gray-200', baseInsight: '스마트폰 기본 설정 및 보안 교육이 진행되어, 어르신들의 안전하고 편리한 스마트폰 사용 환경이 마련되었습니다.' },
+        { name: '교통 & 이동', keywords: ['지도', '카카오T', '카카오티', '택시', '코레일', '따릉이', 'SRT', '고속버스', '길찾기', '내비게이션', '지하철', '버스', '노선', '승차권', '티켓', '기차', '예매'], icon: '🚲', color: 'bg-green-50 text-green-700 border-green-100', baseInsight: '교통 앱 활용 교육을 통해 어르신들의 이동 편의성과 자립적인 외출 능력이 크게 향상되었습니다.' },
+        { name: '금융 & 결제', keywords: ['페이', '이체', '은행', '지로', '보험', '증권', '토스', '카드', '서울페이', '제로페이', '카카오페이', '삼성페이', '네이버페이', '계좌', '송금', '환전'], icon: '💰', color: 'bg-yellow-50 text-yellow-700 border-yellow-100', baseInsight: '모바일 금융 및 간편 결제 교육이 진행되었습니다. 안전한 디지털 금융 활용을 위한 보안 주의사항도 함께 강조되었습니다.' },
+        { name: '소셜 & 커뮤니케이션', keywords: ['카카오톡', '카톡', '메시지', '문자', '이메일', '페이스톡', '밴드', '인스타그램', '페이스북', '유선', '연락처', '전화', '단톡방', '오픈채팅'], icon: '💬', color: 'bg-blue-50 text-blue-700 border-blue-100', baseInsight: '다양한 메신저와 SNS 활용법이 중점적으로 다루어져 어르신들의 온라인 소통 창구가 넓어졌습니다.' },
+        { name: '미디어 & 콘텐츠', keywords: ['유튜브', '유트브', '사진', '영상', '편집', '갤러리', '숏츠', '릴스', '틱톡', '키네마스터', 'VITA', '캡처', '촬영', '음악', '멜론', '라디오', '팟캐스트'], icon: '🎥', color: 'bg-red-50 text-red-700 border-red-100', baseInsight: '사진/영상 촬영 및 편집 교육을 통해 디지털 콘텐츠 창작에 대한 높은 흥미와 성취감을 보였습니다.' },
+        { name: '쇼핑 & 배달', keywords: ['배민', '배달의민족', '요기요', '쿠팡', '당근', '당근마켓', '중고나라', '쇼핑', '마트', '장보기', '이마트', '홈플러스', 'G마켓', '11번가', '주문', '키오스크', '무인'], icon: '🛒', color: 'bg-orange-50 text-orange-700 border-orange-100', baseInsight: '비대면 쇼핑, 배달 앱 및 키오스크 활용 교육이 이루어져 일상생활의 디지털 자립도가 높아졌습니다.' },
+        { name: '공공행정 & 의료', keywords: ['정부24', '홈택스', '주민등록', '증명서', '민원', '국세청', '보조금', '복지로', 'PASS', '패스', '모바일신분증', '병원', '약국', '건강', '만보기', '혈압', '진료', '똑닥', '예방'], icon: '🏥', color: 'bg-teal-50 text-teal-700 border-teal-100', baseInsight: '공공 서비스 앱과 의료/건강 관리 앱 교육이 진행되어, 생활에 필수적인 디지털 행정 및 건강 관리 역량이 강화되었습니다.' }
+      ];
+
+      const categorized = useMemo(() => {
+        return themes.map(theme => {
+          const matched = contents.filter(c => theme.keywords.some(k => c.content.toLowerCase().includes(k.toLowerCase())));
+          return { ...theme, items: matched };
+        }).filter(t => t.items.length > 0);
+      }, [contents]);
+
+      const uncategorized = useMemo(() => {
+        return contents.filter(c => !themes.some(theme => theme.keywords.some(k => c.content.toLowerCase().includes(k.toLowerCase()))));
+      }, [contents]);
+
+      const attendanceStats = useMemo(() => {
+        if (!data || data.length === 0) return null;
+        let total = 0, attended = 0, absent = 0, canceled = 0;
+        const absentReasons = [];
+
+        data.forEach(row => {
+          const student = (row.student || "").trim();
+          const isAssistant = student.includes("보조강사");
+
+          // 학생이름이 비어있거나, 다른 제외 조건인 경우 리턴
+          if (!student || student.includes("자체학습") || student.includes("대상자발굴")) return;
+
+          const status = (row.status || "").trim();
+
+          // 보조강사인 경우, 진행내역(status)이 비어있으면 전체 수업 통계에서 아예 제외
+          if (isAssistant && !status) return;
+
+          // 복지관 이동, 선생님 휴가 등은 수업 카운트에서 제외
+          if (status.includes("복지관으로 이동") || status.includes("선생님휴가")) return;
+
+          // 학생이름이 비어있지 않은 실제 수업이므로 전체 수업 건수에 포함
+          // (보조강사라도 데이터값이 있으므로 포함됨)
+          total++;
+
+          if (status.includes("결석")) {
+            absent++;
+            if (status.includes("병원") || status.includes("진료")) absentReasons.push("병원 진료");
+            else if (status.includes("행사") || status.includes("일정") || status.includes("집안")) absentReasons.push("개인 일정");
+            else if (status.includes("여행")) absentReasons.push("여행");
+          } else if (status.includes("취소") || status.includes("중단")) {
+            canceled++;
+          } else if (status) {
+            // 보조강사이거나 상태(메모)가 비어있지 않으면 출석으로 간주
+            const isAttended = isAssistant || /^[1-9]\d*/.test(status) || status.length > 2 || status === "1" || status === "출석";
+            if (isAttended) attended++;
+          }
+        });
+
+        const validTotalForRate = attended + absent + canceled; // 취소 및 결석이 포함된 실제 진행된 수업 수
+        const rate = validTotalForRate > 0 ? Math.round((attended / validTotalForRate) * 100) : 0;
+        return { total, attended, absent, canceled, rate, absentReasons: [...new Set(absentReasons)] };
+      }, [data]);
+
+      const dynamicInsights = useMemo(() => {
+        const insights = [];
+
+        // 1. Attendance Analysis
+        if (attendanceStats) {
+          if (attendanceStats.rate >= 90) {
+            insights.push(`오늘 **${team}**은 **${attendanceStats.rate}%**의 높은 참여율을 기록하며 교육 열기가 매우 높았습니다.`);
+          } else if (attendanceStats.rate < 70 && attendanceStats.absent > 0) {
+            const reasons = attendanceStats.absentReasons.length > 0 ? attendanceStats.absentReasons.join(', ') : '개인 일정';
+            insights.push(`오늘은 **${reasons}** 등의 사유로 결석이 다소 발생했으나, 출석하신 어르신들은 밀도 높은 1:1 맞춤형 수업을 진행했습니다.`);
+          }
+        }
+
+        // 2. Theme Based Analysis
+        const sorted = [...categorized].sort((a, b) => b.items.length - a.items.length);
+        if (sorted.length > 0) {
+          const top = sorted[0];
+          // Find specific keywords mentioned
+          const foundKeywords = [];
+          top.items.forEach(item => {
+            top.keywords.forEach(kw => {
+              if (item.content.toLowerCase().includes(kw.toLowerCase()) && !foundKeywords.includes(kw)) {
+                foundKeywords.push(kw);
+              }
+            });
+          });
+
+          let themeText = `**[${top.name}]** 분야가 오늘 교육의 핵심이었습니다. `;
+          if (foundKeywords.length > 0) {
+            themeText += `특히 **${foundKeywords.slice(0, 3).join(', ')}** 등에 대한 실질적인 활용법 교육이 활발히 이루어졌습니다. `;
+          }
+          themeText += top.baseInsight;
+          insights.push(themeText);
+        }
+
+        // 3. Multi-Theme Connection
+        if (sorted.length >= 2) {
+          const name1 = sorted[0].name;
+          const name2 = sorted[1].name;
+          const getParticle = (name) => {
+            // 명시적으로 받침이 있는 테마 이름들
+            if (name.includes('설정') || name.includes('이동') || name.includes('커뮤니케이션') || name.includes('배달')) return '과';
+            return '와';
+          };
+          const particle = getParticle(name1);
+          insights.push(`**${name1}**${particle} **${name2}** 등 여러 영역을 넘나드는 복합적인 디지털 교육이 진행되어 어르신들의 종합적인 활용 능력이 강화되었습니다.`);
+        }
+
+        // 4. Specific Patterns
+        const allContent = contents.map(c => c.content).join(' ');
+        if (allContent.includes('키오스크') && (allContent.includes('페이') || allContent.includes('이체'))) {
+          insights.push(`실생활 결제와 직결되는 **키오스크 및 금융 앱** 연계 교육이 진행되어 어르신들의 독립적인 일상생활 수행 능력이 크게 향상될 것으로 기대됩니다.`);
+        }
+        if (allContent.includes('Gemini') || allContent.includes('제미나이') || allContent.includes('AI')) {
+          insights.push(`**생성형 AI(Gemini 등)**를 활용한 최첨단 교육이 시도되어, 어르신들이 최신 디지털 트렌드에 발맞추어 나가는 모습이 인상적입니다.`);
+        }
+
+        return insights.length > 0 ? insights : ["현재 기록된 데이터로 보아 기초 디지털 역량 강화에 집중하고 있는 시기입니다."];
+      }, [categorized, attendanceStats, team, contents]);
+
+      if (contents.length === 0 && (!attendanceStats || attendanceStats.total === 0)) {
+        return (
+          <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-10 text-center animate-fadeIn">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-50 rounded-full mb-6">
+              <BookOpen className="w-10 h-10 text-gray-200" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-400 mb-2">오늘 기록된 상세 교육 내용이 없습니다.</h3>
+            <p className="text-gray-400 text-base">서포터즈들의 활동 기록이 입력되면 AI 기반 요약이 자동으로 생성됩니다.</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="mt-8 animate-fadeIn mb-0" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
+                  <Sparkles className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-black text-xl leading-tight">오늘의 교육 요약 & 인사이트</h3>
+                  <p className="text-blue-100 text-sm font-medium opacity-90">{team} 활동 보고</p>
+                </div>
+              </div>
+              <div className="hidden sm:block bg-blue-500/30 px-3 py-1 rounded-full border border-white/20 text-white text-xs font-bold uppercase tracking-wider">
+                AI Analytics
+              </div>
+            </div>
+
+            <div className="p-6 md:p-8">
+              {attendanceStats && (
+                <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex flex-col items-center justify-center shadow-sm">
+                    <span className="text-blue-600 text-xs font-black mb-1 uppercase tracking-wider">전체 수업</span>
+                    <span className="text-2xl font-black text-blue-900">{attendanceStats.total}건</span>
+                  </div>
+                  <div className="bg-green-50 rounded-2xl p-4 border border-green-100 flex flex-col items-center justify-center shadow-sm">
+                    <span className="text-green-600 text-xs font-black mb-1 uppercase tracking-wider">출석 완료</span>
+                    <span className="text-2xl font-black text-green-900">{attendanceStats.attended}건</span>
+                  </div>
+                  <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex flex-col items-center justify-center shadow-sm">
+                    <span className="text-red-600 text-xs font-black mb-1 uppercase tracking-wider">결석/취소</span>
+                    <span className="text-2xl font-black text-red-900">{attendanceStats.absent + attendanceStats.canceled}건</span>
+                  </div>
+                  <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100 flex flex-col items-center justify-center shadow-sm">
+                    <span className="text-purple-600 text-xs font-black mb-1 uppercase tracking-wider">출석률</span>
+                    <span className="text-2xl font-black text-purple-900">{attendanceStats.rate}%</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-0">
+                <div className="space-y-5">
+                  <h4 className="font-black text-gray-800 flex items-center gap-2 text-lg">
+                    <div className="w-2 h-7 bg-blue-500 rounded-full"></div>
+                    핵심 교육 테마
+                  </h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {categorized.map((t, i) => (
+                      <div key={i} className={`px-4 py-2.5 rounded-2xl border-2 font-bold text-sm flex items-center gap-2.5 shadow-sm transition-all hover:scale-105 ${t.color}`}>
+                        <span className="text-lg">{t.icon}</span>
+                        {t.name}
+                        <span className="bg-white/60 px-2 py-0.5 rounded-lg text-xs border border-current/10">{t.items.length}건</span>
+                      </div>
+                    ))}
+                    {uncategorized.length > 0 && (
+                      <div className="px-4 py-2.5 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-700 font-bold text-sm flex items-center gap-2.5 shadow-sm">
+                        <span className="text-lg">📝</span> 기타 실습
+                        <span className="bg-white/60 px-2 py-0.5 rounded-lg text-xs border border-gray-200">{uncategorized.length}건</span>
+                      </div>
+                    )}
+                    {categorized.length === 0 && uncategorized.length === 0 && (
+                      <div className="px-4 py-2.5 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-bold text-sm flex items-center shadow-sm w-full justify-center">
+                        기록된 상세 교육 내용(메모)이 없습니다.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <h4 className="font-black text-gray-800 flex items-center gap-2 text-lg">
+                    <div className="w-2 h-7 bg-indigo-500 rounded-full"></div>
+                    오늘의 인사이트
+                  </h4>
+                  {dynamicInsights.length > 0 ? (
+                    <div className="bg-indigo-50/50 rounded-2xl p-5 border-2 border-indigo-100 shadow-inner">
+                      <ul className="space-y-4">
+                        {dynamicInsights.map((insight, i) => (
+                          <li key={i} className="flex gap-3 text-[15px] md:text-[16px] text-gray-700 leading-relaxed">
+                            <span className="text-indigo-500 mt-1.5 font-black shrink-0">●</span>
+                            <p className="font-medium" dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<span className="text-indigo-800 font-extrabold">$1</span>') }}></p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 text-gray-500 text-center font-medium">
+                      인사이트를 분석할 충분한 데이터가 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
+            </div>
+          </div>
+        </div>
+      );
+    }
+    function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamChange }) {
+      const [selectedTeam, setSelectedTeam] = useState(initialTeam || "1팀");
+
+      const [currentDisplayDate, setCurrentDisplayDate] = useState(() => {
+        try {
+          const savedDate = window.sessionStorage.getItem('sungdong_daily_schedule_date');
+          if (savedDate) {
+            const parsedDate = new Date(parseInt(savedDate, 10));
+            if (!isNaN(parsedDate.getTime())) return parsedDate;
+          }
+        } catch (e) { }
+
+        let d = new Date();
+        d.setHours(0, 0, 0, 0);
+        if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+        else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+        return d;
+      });
+
+      useEffect(() => {
+        try {
+          window.sessionStorage.setItem('sungdong_daily_schedule_date', currentDisplayDate.getTime().toString());
+        } catch (e) { }
+      }, [currentDisplayDate]);
+
+      const [scheduleData, setScheduleData] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [notice, setNotice] = useState("");
+      const [minDate, setMinDate] = useState(null);
+      const [maxDate, setMaxDate] = useState(null);
+      const [availableDates, setAvailableDates] = useState([]);
+
+      const [globalCsvText, setGlobalCsvText] = useState("");
+      const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+      const [selectedStudentDates, setSelectedStudentDates] = useState(null);
+
+      const touchStartX = useRef(null);
+      const touchStartY = useRef(null);
+
+      const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
+
+      useEffect(() => {
+        document.documentElement.style.overscrollBehaviorY = 'auto';
+        document.body.style.overscrollBehaviorY = 'auto';
+      }, []);
+
+      const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+      };
+
+      const handleTouchEnd = (e) => {
+        if (touchStartX.current === null || touchStartY.current === null) return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchStartX.current - touchEndX;
+        const deltaY = touchStartY.current - touchEndY;
+
+        if (isLoading) {
+          touchStartX.current = null;
+          touchStartY.current = null;
+          return;
+        }
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 150) {
+          if (deltaX > 0) handleDateChange(1);
+          else handleDateChange(-1);
+        }
+
+        touchStartX.current = null;
+        touchStartY.current = null;
+      };
+
+      const fetchTeamData = useCallback((teamName) => {
+        setIsLoading(true);
+        setScheduleData([]);
+        setNotice("");
+
+        const exportUrl = SHEET_URLS[teamName] ? SHEET_URLS[teamName].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
+
+        fetch(`${exportUrl}&t=${Date.now()}`)
+          .then(response => {
+            if (!response.ok) throw new Error('⚠️ 네트워크 응답에 문제가 있습니다.');
+            return response.text();
+          })
+          .then(csvText => {
+            setGlobalCsvText(csvText);
+          })
+          .catch(error => {
+            alert(`⚠️ [${teamName}] 데이터를 불러오는데 실패했습니다. 시트 권한을 확인해주세요!\n상세 에러: ` + error.message);
+            setIsLoading(false);
+          });
+      }, []);
+
+      useEffect(() => {
+        fetchTeamData(selectedTeam);
+      }, [selectedTeam, fetchTeamData]);
+
+      useEffect(() => {
+        if (!globalCsvText || !window.Papa) return;
+
+        window.Papa.parse(globalCsvText, {
+          header: false,
+          skipEmptyLines: true,
+          complete: function (results) {
+            const data = results.data;
+
+            if (data.length > 0 && data[0].length > 0 && typeof data[0][0] === 'string' && data[0][0].toLowerCase().includes("<html")) {
+              alert(`⚠️ [${selectedTeam}] 구글 시트 권한이 닫혀있어요! 시트 우측 상단의 [공유] 설정을 확인해주세요.`);
+              setIsLoading(false);
+              setIsInitialLoad(false);
+              return;
+            }
+
+            let headerRowIndex = -1;
+            let dateColumnIndex = -1;
+            let parsedAvailableDates = [];
+
+            for (let i = 0; i < Math.min(10, data.length); i++) {
+              if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
+                headerRowIndex = i;
+                const headerRow = data[i];
+                const holidayRow = data[i + 2];
+                let firstDateStr = "";
+                let lastDateStr = "";
+
+                for (let j = 4; j < headerRow.length; j++) {
+                  if (headerRow[j] && headerRow[j].trim() !== "") {
+                    let isHoliday = false;
+                    if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일")) {
+                      isHoliday = true;
+                    }
+
+                    if (!isHoliday) {
+                      if (!firstDateStr) firstDateStr = headerRow[j].trim();
+                      lastDateStr = headerRow[j].trim();
+
+                      const match = headerRow[j].match(/(\d+)\s*[/.]\s*(\d+)/);
+                      if (match) {
+                        const d = new Date();
+                        d.setMonth(parseInt(match[1]) - 1);
+                        d.setDate(parseInt(match[2]));
+                        d.setHours(0, 0, 0, 0);
+                        parsedAvailableDates.push(d);
+                      }
+                    }
+                  }
+                }
+
+                parsedAvailableDates.sort((a, b) => a.getTime() - b.getTime());
+                setAvailableDates(parsedAvailableDates);
+
+                const parseSheetDateStr = (str) => {
+                  if (!str) return null;
+                  const match = str.match(/(\d+)\/(\d+)/);
+                  if (match) {
+                    const d = new Date();
+                    d.setMonth(parseInt(match[1]) - 1);
+                    d.setDate(parseInt(match[2]));
+                    d.setHours(0, 0, 0, 0);
+                    return d;
+                  }
+                  return null;
+                };
+                setMinDate(parseSheetDateStr(firstDateStr));
+                setMaxDate(parseSheetDateStr(lastDateStr));
+                break;
+              }
+            }
+
+            if (headerRowIndex === -1) {
+              setScheduleData([]);
+              setNotice("⚠️ 시트 양식이 맞지 않습니다.");
+              setIsLoading(false);
+              setIsInitialLoad(false);
+              return;
+            }
+
+            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+            const day = dayNames[currentDisplayDate.getDay()];
+            let targetSearchDateStr = `${currentDisplayDate.getMonth() + 1}/${currentDisplayDate.getDate()}(${day})`;
+            let actualDisplayDate = new Date(currentDisplayDate);
+
+            const targetM = currentDisplayDate.getMonth() + 1;
+            const targetD = currentDisplayDate.getDate();
+
+            let isHolidayToday = false;
+
+            for (let j = 4; j < data[headerRowIndex].length; j++) {
+              const headerCell = data[headerRowIndex][j] || "";
+              const match = headerCell.match(/(\d+)\s*[/.]\s*(\d+)/);
+              if (match) {
+                const cellM = parseInt(match[1], 10);
+                const cellD = parseInt(match[2], 10);
+                if (cellM === targetM && cellD === targetD) {
+                  const holidayRow = data[headerRowIndex + 2];
+                  if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일")) {
+                    isHolidayToday = true;
+                  } else {
+                    dateColumnIndex = j;
+                    targetSearchDateStr = headerCell.trim();
+                  }
+                  break;
+                }
+              }
+            }
+
+            if (isHolidayToday) {
+              const targetTime = currentDisplayDate.getTime();
+              const futureDates = parsedAvailableDates.filter(d => d.getTime() > targetTime);
+              if (futureDates.length > 0) {
+                setCurrentDisplayDate(new Date(futureDates[0]));
+                setNotice("⚠️ 선택하신 날짜는 공휴일이므로 다음 유효한 날짜로 이동했습니다.");
+                return;
+              } else {
+                const pastDates = parsedAvailableDates.filter(d => d.getTime() < targetTime);
+                if (pastDates.length > 0) {
+                  setCurrentDisplayDate(new Date(pastDates[pastDates.length - 1]));
+                  setNotice("⚠️ 선택하신 날짜는 공휴일이므로 이전 유효한 날짜로 이동했습니다.");
+                  return;
+                }
+              }
+            }
+
+            if (dateColumnIndex === -1) {
+              const targetTime = currentDisplayDate.getTime();
+              const futureDates = parsedAvailableDates.filter(d => d.getTime() > targetTime);
+              if (futureDates.length > 0) {
+                setCurrentDisplayDate(new Date(futureDates[0]));
+                setNotice("⚠️ 해당 날짜의 데이터가 없어 다음 유효한 날짜로 이동했습니다.");
+                return;
+              } else {
+                const pastDates = parsedAvailableDates.filter(d => d.getTime() < targetTime);
+                if (pastDates.length > 0) {
+                  setCurrentDisplayDate(new Date(pastDates[pastDates.length - 1]));
+                  setNotice("⚠️ 해당 날짜의 데이터가 없어 이전 유효한 날짜로 이동했습니다.");
+                  return;
+                } else {
+                  setScheduleData([]);
+                  setNotice(`⚠️ 해당 날짜(${targetSearchDateStr})의 데이터가 없습니다.`);
+                  setIsLoading(false);
+                  setIsInitialLoad(false);
+                  return;
+                }
+              }
+            }
+
+            const realToday = new Date();
+            realToday.setHours(0, 0, 0, 0);
+            const currentYear = realToday.getFullYear();
+
+            const getStudentCounts = (targetStudentName, maxColIndex, fullData, headerIdx) => {
+              if (!targetStudentName) return null;
+
+              const names = targetStudentName.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(s => s.length > 0);
+              let results = [];
+
+              names.forEach(searchName => {
+                if (searchName.includes("보조강사") || searchName.includes("자체학습") || searchName.includes("대상자발굴") || searchName.includes("도선복지관")) return;
+
+                let count = 0;
+                let attendedDatesForStudent = [];
+
+                for (let j = 4; j <= maxColIndex; j++) {
+                  const headerStr = fullData[headerIdx][j] || "";
+                  const match = headerStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+                  let colDate = new Date(0);
+                  if (match) {
+                    colDate = new Date(currentYear, parseInt(match[1]) - 1, parseInt(match[2]));
+                    colDate.setHours(0, 0, 0, 0);
+                  }
+
+                  let foundStatuses = [];
+
+                  for (let i = headerIdx + 1; i < fullData.length; i++) {
+                    const row = fullData[i];
+                    if (!row || row.length < 4) continue;
+                    const category = row[3] ? row[3].replace(/\s+/g, '') : "";
+
+                    if (category === "대상") {
+                      const statusRow = (i + 2 < fullData.length) ? fullData[i + 2] : null;
+                      const cellStudent = row[j] ? row[j].trim() : "";
+                      const cellStatus = statusRow && statusRow[j] ? statusRow[j].trim() : "";
+
+                      let finalStatus = cellStatus;
+                      const cellNames = cellStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+                      const nameIdx = cellNames.indexOf(searchName);
+
+                      if (nameIdx !== -1 && cellStatus.includes('/')) {
+                        const rawParts = cellStatus.split(',').map(s => s.trim()).filter(Boolean);
+                        let tagParts = [];
+                        let memoParts = [];
+                        let isMemoStarted = false;
+
+                        for (let i = 0; i < rawParts.length; i++) {
+                          const part = rawParts[i];
+                          if (!isMemoStarted) {
+                            const subParts = part.split('/').map(p => p.trim());
+                            const isAllTags = subParts.every(p => {
+                              if (p === "") return true;
+                              const cleanP = p.replace(/\s+/g, '');
+                              if (ATTENDANCE_TAGS.includes(cleanP)) return true;
+                              const spaceParts = p.split(/\s+/);
+                              return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
+                            });
+                            if (isAllTags) {
+                              tagParts.push(part);
+                            } else {
+                              isMemoStarted = true;
+                              memoParts.push(part);
+                            }
+                          } else {
+                            memoParts.push(part);
+                          }
+                        }
+
+                        if (tagParts.length > 0) {
+                          const combinedTagStr = tagParts.join(',');
+                          const slashSegments = combinedTagStr.split('/');
+                          if (slashSegments.length > nameIdx) {
+                            finalStatus = slashSegments[nameIdx] + (memoParts.length > 0 ? ', ' + memoParts.join(', ') : '');
+                          }
+                        }
+                      }
+
+                      if (cellStudent.includes(searchName)) {
+                        foundStatuses.push(finalStatus);
+                      }
+                    }
+                  }
+
+                  let hasSessionOnThisDay = false;
+
+                  if (foundStatuses.length > 0) {
+                    const nonEmpty = foundStatuses.filter(s => s !== "");
+                    const statusesToEval = nonEmpty.length > 0 ? nonEmpty : foundStatuses;
+
+                    const hasAbsence = statusesToEval.some(s => s.includes("결석"));
+
+                    if (hasAbsence) {
+                      hasSessionOnThisDay = false;
+                    } else {
+                      const hasNumber = statusesToEval.some(s => {
+                        const parts = s.split(',').map(p => p.trim());
+                        return parts.some(part => /^[1-9]\d*/.test(part));
+                      });
+
+                      if (hasNumber) {
+                        hasSessionOnThisDay = true;
+                      } else {
+                        const isCanceled = statusesToEval.some(s => s.includes("취소") || s.includes("선생님휴가"));
+                        if (isCanceled) {
+                          hasSessionOnThisDay = false;
+                        } else if (colDate < realToday) {
+                          hasSessionOnThisDay = false;
+                        } else {
+                          hasSessionOnThisDay = true;
+                        }
+                      }
+                    }
+                  }
+
+                  if (hasSessionOnThisDay) {
+                    count++;
+                    attendedDatesForStudent.push(colDate);
+                  }
+                }
+                if (count > 0) {
+                  results.push({ name: searchName, count: count, dates: attendedDatesForStudent });
+                }
+              });
+              return results.length > 0 ? results : null;
+            };
+
+            let currentGroup = "";
+            let currentTeacher = "";
+            let currentTime = "";
+            let currentStudent = "";
+            let currentStatus = "";
+            let currentLocation = "";
+            let parsedData = [];
+
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+              const row = data[i];
+              if (!row || row.length < 4) continue;
+
+              if (row[0] && row[0].trim() !== "") currentGroup = row[0].trim();
+              if (row[1] && row[1].trim() !== "") currentTeacher = row[1].trim();
+              if (row[2] && row[2].trim() !== "") currentTime = row[2].trim();
+
+              const category = row[3] ? row[3].replace(/\s+/g, '') : "";
+              const targetCellData = row[dateColumnIndex] ? row[dateColumnIndex].trim() : "";
+
+              if (category === "대상") {
+                currentStudent = targetCellData;
+              } else if (category === "장소") {
+                currentLocation = targetCellData;
+              } else if (category.includes("진행")) {
+                currentStatus = targetCellData;
+
+                const sessionCounts = getStudentCounts(currentStudent, dateColumnIndex, data, headerRowIndex);
+
+                parsedData.push({
+                  group: currentGroup,
+                  teacher: currentTeacher,
+                  time: currentTime,
+                  student: currentStudent,
+                  status: currentStatus,
+                  location: currentLocation,
+                  sessionCounts: sessionCounts
+                });
+
+                currentStudent = "";
+                currentLocation = "";
+                currentStatus = "";
+              }
+            }
+
+            for (let i = 0; i < parsedData.length; i++) {
+              parsedData[i].rowspan = { group: 1, teacher: 1, time: 1 };
+              parsedData[i].render = { group: true, teacher: true, time: true };
+            }
+
+            const colsToMerge = ['group', 'teacher', 'time'];
+            for (let c = 0; c < colsToMerge.length; c++) {
+              const col = colsToMerge[c];
+              let startRow = 0;
+              while (startRow < parsedData.length) {
+                let count = 1;
+                for (let nextRow = startRow + 1; nextRow < parsedData.length; nextRow++) {
+                  let sameAsParent = true;
+                  for (let p = 0; p < c; p++) {
+                    if (parsedData[startRow][colsToMerge[p]] !== parsedData[nextRow][colsToMerge[p]]) {
+                      sameAsParent = false;
+                      break;
+                    }
+                  }
+                  if (sameAsParent && parsedData[startRow][col] === parsedData[nextRow][col]) {
+                    count++;
+                    parsedData[nextRow].render[col] = false;
+                  } else {
+                    break;
+                  }
+                }
+                parsedData[startRow].rowspan[col] = count;
+                startRow += count;
+              }
+            }
+
+            setScheduleData(parsedData);
+            setIsLoading(false);
+            setIsInitialLoad(false);
+          }
+        });
+      }, [globalCsvText, currentDisplayDate, isInitialLoad, selectedTeam]);
+
+      const handleDateChange = (daysToAdd) => {
+        if (availableDates.length > 0) {
+          const currentT = currentDisplayDate.getTime();
+
+          if (daysToAdd < 0) {
+            const pastDates = availableDates.filter(d => d.getTime() < currentT);
+            if (pastDates.length > 0) {
+              setCurrentDisplayDate(pastDates[pastDates.length - 1]);
+              setIsInitialLoad(false);
+              setNotice("");
+            } else {
+              setNotice("⚠️ 데이터의 시작 날짜입니다. 이전 기록이 없습니다.");
+            }
+          } else {
+            const futureDates = availableDates.filter(d => d.getTime() > currentT);
+            if (futureDates.length > 0) {
+              setCurrentDisplayDate(futureDates[0]);
+              setIsInitialLoad(false);
+              setNotice("");
+            } else {
+              setNotice("⚠️ 데이터의 마지막 날짜입니다. 이후 기록이 없습니다.");
+            }
+          }
+          return;
+        }
+
+        let tempDate = new Date(currentDisplayDate);
+        do {
+          tempDate.setDate(tempDate.getDate() + daysToAdd);
+        } while (tempDate.getDay() === 0 || tempDate.getDay() === 6);
+        tempDate.setHours(0, 0, 0, 0);
+
+        if (daysToAdd < 0 && minDate && tempDate < minDate) {
+          setNotice("⚠️ 시트의 첫 번째 일정입니다. 이전 날짜가 없습니다.");
+          return;
+        }
+        if (daysToAdd > 0 && maxDate && tempDate > maxDate) {
+          setNotice("※ 시트의 마지막 일정입니다. 다음 날짜가 없습니다.");
+          return;
+        }
+        setCurrentDisplayDate(tempDate);
+        setIsInitialLoad(false);
+        setNotice("");
+      };
+
+      const handleToday = () => {
+        let d = new Date();
+        d.setHours(0, 0, 0, 0);
+        if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+        else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+        setCurrentDisplayDate(d);
+        setIsInitialLoad(false);
+        setNotice("");
+      };
+
+      const handleDatePick = (e) => {
+        if (!e.target.value) return;
+        const parts = e.target.value.split('-');
+        const selectedDate = new Date(parts[0], parseInt(parts[1]) - 1, parts[2]);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        if (minDate && selectedDate < minDate) {
+          setNotice("⚠️ 시트의 첫 번째 일정보다 이전 날짜입니다.");
+          return;
+        }
+        if (maxDate && selectedDate > maxDate) {
+          setNotice("※ 시트의 마지막 일정보다 이후 날짜입니다.");
+          return;
+        }
+        setCurrentDisplayDate(selectedDate);
+        setIsInitialLoad(false);
+        setNotice("");
+      };
+
+      const y = currentDisplayDate.getFullYear();
+      const m = String(currentDisplayDate.getMonth() + 1).padStart(2, '0');
+      const d = String(currentDisplayDate.getDate()).padStart(2, '0');
+      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+      const day = dayNames[currentDisplayDate.getDay()];
+      const datePickerValue = `${y}-${m}-${d}`;
+
+      return (
+        <div className="min-h-[100dvh] flex flex-col bg-gray-50 font-sans text-gray-800 overflow-y-auto">
+          <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative">
+            <div className="max-w-5xl mx-auto px-4 pb-4 pt-safe-4 flex justify-between items-start">
+              <div>
+                <div className="flex items-center mb-1">
+                  <img src="Logo_of_Seoul.png" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+                  <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
+                </div>
+                <p className="text-base font-bold text-yellow-300 mb-1">디지털교육 서포터즈</p>
+              </div>
+              <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
+                <Home className="w-5 h-5 mb-1" /> 처음으로
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col pb-0">
+            <div className="max-w-5xl w-full mx-auto flex-1 flex flex-col p-3 md:p-6 pb-0 mt-2">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
+
+                <div className="shrink-0 z-30 bg-white px-4 md:px-6 pt-4 md:pt-6 pb-4 shadow-[0_4px_10px_-2px_rgba(0,0,0,0.1)] relative">
+
+                  <div className="flex flex-row items-center justify-between gap-1 sm:gap-4 mb-0 border-b border-gray-100 pb-0.5 w-full">
+                    <h2 className="text-[16px] min-[360px]:text-[18px] landscape:text-[22px] md:text-xl font-bold flex items-center gap-1 md:gap-2 text-gray-800 whitespace-nowrap shrink-0 tracking-tighter sm:tracking-normal">
+                      <LucideCalendar className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
+                      오늘의 수업 일정
+                    </h2>
+
+                    <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm shrink-0">
+                      {["1팀", "2팀", "3팀"].map(team => (
+                        <button key={team} onClick={() => {
+                          setSelectedTeam(team);
+                          setIsInitialLoad(true);
+                          if (onTeamChange) onTeamChange(team);
+                        }} className={`px-2 min-[360px]:px-3 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[13px] min-[360px]:text-[15px] landscape:text-[18px] md:text-lg font-semibold transition ${selectedTeam === team ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                          {team}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="text-center min-h-[18px] mt-0 mb-0.5 flex items-center justify-center">
+                    {isLoading ? (
+                      <div className="flex items-center justify-center text-[#DC2626] font-bold text-sm md:text-base animate-pulse tracking-tight">
+                        <Clock className="w-5 h-5 md:w-6 md:h-6 mr-1.5 animate-spin" />
+                        최신 데이터 확인 중...
+                      </div>
+                    ) : notice ? (
+                      <span className="text-red-500 text-sm md:text-base font-bold">{notice}</span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-md mx-auto">
+                    <button onClick={() => handleDateChange(-1)} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
+                      <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
+                    </button>
+
+                    <div className="flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm overflow-hidden transition-all">
+                      <input
+                        type="date"
+                        value={datePickerValue}
+                        onChange={handleDatePick}
+                        onClick={(e) => {
+                          try {
+                            if (e.target.showPicker) e.target.showPicker();
+                          } catch (err) { }
+                        }}
+                        min={minDate ? `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}` : undefined}
+                        max={maxDate ? `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}` : undefined}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        title="달력 열기"
+                      />
+                      <div className={`flex items-center justify-center pointer-events-none relative z-0 -translate-y-[1px] whitespace-nowrap px-1`}>
+                        <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] landscape:text-[22px] sm:text-[20px] tracking-tighter whitespace-nowrap">{currentDisplayDate.getMonth() + 1}/{currentDisplayDate.getDate()}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                          <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                          <line x1="16" x2="16" y1="2" y2="6" />
+                          <line x1="8" x2="8" y1="2" y2="6" />
+                          <line x1="3" x2="21" y1="10" y2="10" />
+                        </svg>
+                        <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] landscape:text-[22px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0">({day})</span>
+                      </div>
+                    </div>
+
+                    <button onClick={handleToday} className="text-[13px] sm:text-[15px] px-3 sm:px-4 h-10 sm:h-12 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 touch-manipulation whitespace-nowrap shrink-0 transition-all">오늘</button>
+                    <button onClick={() => handleDateChange(1)} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
+                      <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  className="flex-1 flex flex-col overflow-hidden px-4 md:px-6 pb-4 md:pb-6 pt-3 bg-gray-50/30"
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-400 w-full flex-1 flex flex-col overflow-hidden">
+                    <div className="overflow-auto relative rounded-xl flex-1">
+                      <table className="w-full table-fixed text-center border-collapse">
+                        <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-blue-500">
+                          <tr className="bg-blue-600 text-white text-sm landscape:text-[17px] md:text-base leading-normal">
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[10%] md:w-[10%] break-keep bg-blue-600">조</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[20%] md:w-[18%] break-keep sticky left-0 z-30 bg-blue-600 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">선생님</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[17%] md:w-[18%] break-keep bg-blue-600">시간</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[37%] md:w-[38%] break-keep bg-blue-600 text-white">학생(장소)</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[16%] md:w-[16%] break-keep bg-blue-600 text-white">회차</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-gray-700 text-xs md:text-sm">
+                          {scheduleData.length === 0 ? (
+                            <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white"></td></tr>
+                          ) : (
+                            scheduleData.map((row, index) => {
+                              const isNewTeacher = index > 0 && row.render.teacher;
+                              const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
+
+                              const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
+
+                              let statusColorClass = "text-black font-bold";
+                              if (row.status) {
+                                const hasAbsenceOrCancel = row.status.includes("결석") || row.status.includes("취소");
+                                const hasVacation = row.status.includes("휴가");
+                                if (hasAbsenceOrCancel) {
+                                  statusColorClass = "text-red-600 font-bold";
+                                } else if (hasVacation) {
+                                  statusColorClass = "text-gray-800 font-bold";
+                                }
+                              }
+
+                              let locationTextClass = "text-gray-700";
+                              if (row.location && row.location.length >= 4) {
+                                locationTextClass = "text-gray-700 text-[10px] md:text-xs tracking-tighter";
+                              }
+
+                              let studentCellBg = "";
+                              const combinedText = (row.student || "") + " " + (row.location || "");
+                              if (combinedText.includes("보조강사")) {
+                                studentCellBg = "bg-[#FFFF00]";
+                              } else {
+                                const pinkLocs = ["도선복지관", "방문", "사근복지관", "삼부", "경로당", "성원"];
+                                if (row.location && pinkLocs.some(loc => row.location.includes(loc))) {
+                                  studentCellBg = "bg-pink-100";
+                                }
+                              }
+
+                              const locTextForDisplay = row.location ? row.location.trim() : "";
+                              const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !(row.student || "").includes("보조강사");
+
+                              const hasKiosk = ((row.student || "") + (locTextForDisplay)).includes("키오스크");
+                              const stuLen = (row.student || "").length;
+
+                              let dynamicStuSizeClass = hasKiosk ? "text-[14px] md:text-[15px] landscape:text-[18px]" : "text-[15px] md:text-[17px] landscape:text-[19px]";
+                              if (stuLen >= 9) {
+                                dynamicStuSizeClass = "text-[11px] min-[360px]:text-[12px] md:text-[14px] landscape:text-[16px] tracking-tighter";
+                              } else if (stuLen >= 6) {
+                                dynamicStuSizeClass = "text-[13px] min-[360px]:text-[14px] md:text-[15px] landscape:text-[17px] tracking-tight";
+                              }
+
+                              return (
+                                <tr key={index} className="border-b border-gray-400 hover:bg-blue-50 transition bg-white">
+                                  {row.render.group && <td className={`${tdClass} font-medium text-gray-800 text-[1.2em] landscape:text-[1.5em]`} rowSpan={row.rowspan.group} style={topBorderStyle}>{typeof row.group === 'string' ? row.group.replace('조', '').trim() : row.group}</td>}
+
+                                  {row.render.teacher && (
+                                    <td className={`${tdClass} bg-blue-100 font-bold text-gray-900 text-[16px] landscape:text-[20px] md:text-[18px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`} rowSpan={row.rowspan.teacher} style={topBorderStyle}>
+                                      {typeof row.teacher === 'string' ? (
+                                        row.teacher.trim().split(/\s+/).map((namePart, idx) => (
+                                          <div key={idx} className="leading-tight whitespace-nowrap">{namePart}</div>
+                                        ))
+                                      ) : (
+                                        <div className="leading-tight whitespace-nowrap">{row.teacher}</div>
+                                      )}
+                                    </td>
+                                  )}
+
+                                  {row.render.time && (
+                                    <td className={`${tdClass} text-gray-700 text-[14px] landscape:text-[18px] md:text-[17px] tracking-tighter`} rowSpan={row.rowspan.time} style={topBorderStyle}>
+                                      {typeof row.time === 'string' && row.time.includes('~') ? (
+                                        <>
+                                          <div className="flex md:hidden landscape:hidden w-full justify-center items-center leading-tight whitespace-nowrap">
+                                            {row.time.split('~')[0].trim()}~
+                                          </div>
+                                          <div className="hidden md:flex landscape:flex w-full justify-center items-center leading-tight whitespace-nowrap text-center">
+                                            {row.time.replace(/\s+/g, '')}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="flex w-full justify-center items-center whitespace-nowrap text-center">{row.time}</div>
+                                      )}
+                                    </td>
+                                  )}
+
+                                  <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
+                                    <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
+                                      <span className="whitespace-nowrap text-center">{(row.student || "").replace(/\n/g, ' ')}</span>
+                                      {showLocationText && (
+                                        <span className="whitespace-nowrap text-center mt-0.5">({locTextForDisplay})</span>
+                                      )}
+                                    </div>
+                                    <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
+                                      {row.status}
+                                    </div>
+                                  </td>
+
+                                  <td className={`${tdClass} font-bold text-center text-[13px] landscape:text-[16px] md:text-[15px] transition-colors`} style={topBorderStyle}>
+                                    {row.sessionCounts ? (
+                                      <div className="flex flex-col w-full justify-center items-center gap-1">
+                                        {row.sessionCounts.map((sc, scIdx) => {
+                                          let sessionCellBg = "bg-gray-300";
+                                          let sessionTextCol = "text-black";
+
+                                          if (sc.count >= 10) {
+                                            sessionCellBg = "bg-purple-900";
+                                            sessionTextCol = "text-white";
+                                          } else if (sc.count >= 7) {
+                                            sessionCellBg = "bg-purple-400";
+                                            sessionTextCol = "text-white";
+                                          }
+
+                                          return (
+                                            <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1.5 py-0.5 rounded w-full whitespace-nowrap ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
+                                              {sc.count}회차
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <span className="text-purple-700">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <SummarySection
+                  data={scheduleData}
+                  date={currentDisplayDate}
+                  team={selectedTeam}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                />
+
+              </div>
+            </div>
+          </div>
+
+          {selectedStudentDates && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentDates(null)}>
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+                <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
+                  <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
+                  <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </div>
+                <div className="p-3 sm:p-4 overflow-y-auto">
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                    {selectedStudentDates.dates.map((d, idx) => {
+                      const today = new Date();
+                      const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+                      return (
+                        <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
+                          {d.getMonth() + 1}/{d.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.getDay()]})
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {selectedStudentDates.dates.length === 0 && (
+                    <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+
+
+    // =====================================================================
+    // 🔀 3. 총괄 부모 컴포넌트
+    // =====================================================================
+    function RootApp() {
+      const [isFirebaseLoaded, setIsFirebaseLoaded] = useState(!!window.FirebaseAPI);
+      const [currentView, setCurrentView] = useState(() => getSessionItem('sungdong_current_view', 'main'));
+      const [selectedTeamForSchedule, setSelectedTeamForSchedule] = useState(() => getSavedItem('sungdong_schedule_team', ''));
+
+      useEffect(() => {
+        if (!isFirebaseLoaded) {
+          const handleLoad = () => setIsFirebaseLoaded(true);
+          window.addEventListener('firebaseLoaded', handleLoad);
+          return () => window.removeEventListener('firebaseLoaded', handleLoad);
+        }
+      }, [isFirebaseLoaded]);
+
+      useEffect(() => { setSessionItem('sungdong_current_view', currentView); }, [currentView]);
+      useEffect(() => { setSavedItem('sungdong_schedule_team', selectedTeamForSchedule); }, [selectedTeamForSchedule]);
+
+      useEffect(() => {
+        if (!isFirebaseLoaded || !window.FirebaseAPI) return;
+
+        const { auth, db, signInAnonymously, signInWithCustomToken, onAuthStateChanged, doc, onSnapshot } = window.FirebaseAPI;
+        let unsubscribeData = null;
+
+        const initAuthAndPreload = async () => {
+          try {
+            if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+              await signInWithCustomToken(auth, window.__initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          } catch (error) {
+            console.error("⚠️ 데이터 사전 로드 인증 에러:", error);
+          }
+        };
+
+        initAuthAndPreload();
+
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+          if (unsubscribeData) {
+            unsubscribeData();
+            unsubscribeData = null;
+          }
+
+          if (user) {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', 'main_data');
+            unsubscribeData = onSnapshot(docRef,
+              (docSnap) => {
+              },
+              (error) => {
+                console.error("⚠️ 데이터 사전 로드 에러:", error);
+              }
+            );
+          }
+        });
+
+        return () => {
+          unsubscribeAuth();
+          if (unsubscribeData) unsubscribeData();
+        };
+      }, [isFirebaseLoaded]);
+
+      if (!isFirebaseLoaded) {
+        return (
+          <div className="fixed inset-0 overflow-hidden bg-[#f9fafb] flex flex-col z-50">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-[120px] h-[120px] bg-[#2563EB] rounded-3xl flex flex-col items-center justify-center text-white font-bold text-3xl shadow-xl animate-pulse">
+                <div className="mb-1">업무</div>
+                <div>일지</div>
+              </div>
+            </div>
+            <div className="pb-12 text-center animate-fadeIn">
+              <h1 className="text-3xl font-black text-gray-800 mb-1">성동노인종합복지관</h1>
+              <h2 className="text-xl font-bold text-gray-600">디지털교육 서포터즈</h2>
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'classroom') {
+        return <ClassroomApp onNavigateBack={() => setCurrentView('main')} />;
+      }
+
+      if (currentView === 'dailySchedule') {
+        return <DailyScheduleApp initialTeam={selectedTeamForSchedule} onNavigateBack={() => setCurrentView('main')} onTeamChange={(team) => setSelectedTeamForSchedule(team)} />;
+      }
+
+      return <MainApp
+        onNavigateToClassroom={() => setCurrentView('classroom')}
+        onNavigateToDailySchedule={(team) => {
+          setSelectedTeamForSchedule(team);
+          try { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); } catch (e) { }
+          setCurrentView('dailySchedule');
+        }}
+      />;
+    }
+
+    const root = window.ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<RootApp />);
+  </script>
+
+  <style>
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    input[type="date"].opacity-0::-webkit-calendar-picker-indicator {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      width: auto;
+      height: auto;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .pt-safe-4 {
+      padding-top: calc(1rem + env(safe-area-inset-top)) !important;
+    }
+
+    .pt-safe-6 {
+      padding-top: calc(1.5rem + env(safe-area-inset-top)) !important;
+    }
+
+    .safe-top-btn {
+      top: calc(1rem + env(safe-area-inset-top)) !important;
+    }
+
+    @media (min-width: 640px) {
+      .sm\:pt-safe-8 {
+        padding-top: calc(2rem + env(safe-area-inset-top)) !important;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .md\:pt-safe-8 {
+        padding-top: calc(2rem + env(safe-area-inset-top)) !important;
+      }
+
+      .safe-top-btn {
+        top: calc(1.5rem + env(safe-area-inset-top)) !important;
+      }
+    }
+  </style>
+</body>
+
+</html>
