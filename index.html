@@ -3615,12 +3615,21 @@
       };
 
       const filteredNames = useMemo(() => {
-        if (!filterConsonant) return allNames;
+        if (!filterConsonant || filterConsonant.trim() === "") return allNames;
         return allNames.filter(name => {
           const cho = getChoSung(name);
           return cho === filterConsonant;
         });
       }, [allNames, filterConsonant]);
+
+      const availableConsonants = useMemo(() => {
+        const set = new Set();
+        allNames.forEach(name => {
+          const cho = getChoSung(name);
+          if (cho) set.add(cho);
+        });
+        return set;
+      }, [allNames]);
 
       const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
 
@@ -3875,24 +3884,32 @@
                       </div>
 
                       <div className="grid grid-cols-8 gap-1.5 mb-4 bg-teal-50/40 p-2 rounded-xl border border-teal-100 shadow-inner">
-                        {["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"].map(cho => (
-                          <button
-                            key={cho}
-                            onClick={() => {
-                              setFilterConsonant(cho === "전체" ? "" : cho);
-                              setSelectedName("");
-                            }}
-                            className={`rounded-xl font-bold text-[17px] sm:text-[20px] transition-all active:scale-95 touch-manipulation border flex items-center justify-center ${
-                              cho === "전체" ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"
-                            } ${
-                              (cho === "전체" && !filterConsonant) || (filterConsonant === cho)
-                                ? 'bg-orange-600 text-white border-orange-700 shadow-md ring-2 ring-orange-200'
-                                : 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200 shadow-sm'
-                            }`}
-                          >
-                            {cho}
-                          </button>
-                        ))}
+                        {["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"].map(cho => {
+                          const isDisabled = cho !== "전체" && !availableConsonants.has(cho);
+                          const isActive = (cho === "전체" && !filterConsonant) || (filterConsonant === cho);
+                          
+                          return (
+                            <button
+                              key={cho}
+                              disabled={isDisabled}
+                              onClick={() => {
+                                setFilterConsonant(cho === "전체" ? "" : cho);
+                                setSelectedName("");
+                              }}
+                              className={`rounded-xl font-bold text-[17px] sm:text-[20px] transition-all touch-manipulation border flex items-center justify-center ${
+                                cho === "전체" ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"
+                              } ${
+                                isDisabled 
+                                  ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed opacity-50'
+                                  : isActive
+                                    ? 'bg-orange-600 text-white border-orange-700 shadow-md ring-2 ring-orange-200 active:scale-95'
+                                    : 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200 shadow-sm active:scale-95'
+                              }`}
+                            >
+                              {cho}
+                            </button>
+                          );
+                        })}
                       </div>
                       <div className="max-h-[240px] md:max-h-[45vh] overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50">
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
