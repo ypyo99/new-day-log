@@ -498,10 +498,11 @@
                 const cellStr = headerRowForHolidays[j] || "";
                 const holidayStr = holidayRow[j] || "";
                 const eventStr = eventRowForHolidays[j] || "";
-                const isHoliday = holidayStr.includes("공휴일") || holidayStr.includes("근로자") || holidayStr.includes("휴무") ||
-                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무") || eventStr.includes("간담회");
+                const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+                const isHoliday = (holidayStr.includes("공휴일") || holidayStr.includes("근로자") || holidayStr.includes("휴무") ||
+                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무") || eventStr.includes("간담회")) && 
+                  !(match && match[1].padStart(2, '0') === '05' && match[2].padStart(2, '0') === '12');
                 if (isHoliday) {
-                  const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
                   if (match) {
                     const mm = String(match[1]).padStart(2, '0');
                     const dd = String(match[2]).padStart(2, '0');
@@ -2894,7 +2895,9 @@
                 for (let j = 4; j < headerRow.length; j++) {
                   if (headerRow[j] && headerRow[j].trim() !== "") {
                     let isHoliday = false;
-                    if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일")) {
+                    const dateMatch = headerRow[j].match(/(\d+)\s*[/.]\s*(\d+)/);
+                    const is0512 = dateMatch && dateMatch[1].padStart(2, '0') === '05' && dateMatch[2].padStart(2, '0') === '12';
+                    if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일") && !is0512) {
                       isHoliday = true;
                     }
 
@@ -2961,7 +2964,8 @@
                 const cellD = parseInt(match[2], 10);
                 if (cellM === targetM && cellD === targetD) {
                   const holidayRow = data[headerRowIndex + 2];
-                  if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일")) {
+                  const is0512 = cellM === 5 && cellD === 12;
+                  if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일") && !is0512) {
                     isHolidayToday = true;
                   } else {
                     dateColumnIndex = j;
