@@ -1737,7 +1737,7 @@
 
               <div className="px-5 pb-5 pt-3">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-4">
+                  <div className="space-y-7">
                     {getShifts(selectedTeam).map((shift, index) => {
                       const isOnlyNumber = /^\d+$/.test(logs[index].memo?.trim());
                       const isInfoMissing = !logs[index].student?.trim() && !logs[index].location?.trim();
@@ -1783,7 +1783,7 @@
                               </div>
                             ) : null}
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-4">
                             <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
                               <input
                                 type="text"
@@ -1806,40 +1806,42 @@
                             </div>
 
                             {/* 학생 인원수만큼 출결 버튼 줄 생성 */}
-                            {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
-                              return (
-                                <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-2 pt-2 border-t border-dashed border-blue-200' : ''}`}>
-                                  <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
-                                    {RENDER_TAGS.map(tag => {
-                                      const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
-
-                                      // 💡 출석, 결석, 취소 버튼 비활성화 및 블러 처리
-                                      const isKyungrodangIncluded = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
-                                      const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
-
-                                      return (
-                                        <button
-                                          key={tag}
-                                          type="button"
-                                          onClick={() => toggleTag(index, sIdx, tag)}
-                                          disabled={isDataLoading || isInfoMissing || isBlurTarget}
-                                          className={
-                                            "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
-                                            fontSizeClass +
-                                            " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
-                                            (isBlurTarget
-                                              ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
-                                              : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
-                                          }
-                                        >
-                                          {tag === '1' ? '출석' : tag}
-                                        </button>
-                                      );
-                                    })}
+                            <div className="space-y-1.5 !mt-3">
+                              {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
+                                return (
+                                  <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-1.5 pt-1.5 border-t border-dashed border-blue-200' : ''}`}>
+                                    <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
+                                      {RENDER_TAGS.map(tag => {
+                                        const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
+  
+                                        // 💡 출석, 결석, 취소 버튼 비활성화 및 블러 처리
+                                        const isKyungrodangIncluded = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+                                        const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
+  
+                                        return (
+                                          <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => toggleTag(index, sIdx, tag)}
+                                            disabled={isDataLoading || isInfoMissing || isBlurTarget}
+                                            className={
+                                              "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
+                                              fontSizeClass +
+                                              " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
+                                              (isBlurTarget
+                                                ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
+                                                : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
+                                            }
+                                          >
+                                            {tag === '1' ? '출석' : tag}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
 
                             <div className="flex gap-2 w-full !mt-[10px]">
                               {isShowHeadcount && (
