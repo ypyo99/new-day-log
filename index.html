@@ -3841,22 +3841,26 @@
                   ) : (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-[15px] md:text-[17px] text-gray-500 font-bold">대상자를 선택하세요 ({allNames.length}명)</p>
+                        <p className="text-[15px] md:text-[17px] text-gray-600 font-bold">대상자를 선택하세요 ({allNames.length}명)</p>
                         {selectedName && (
                           <button onClick={() => setSelectedName("")} className="text-[13px] md:text-[15px] text-teal-600 font-bold bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all touch-manipulation">선택 해제</button>
                         )}
                       </div>
                       <div className="max-h-[240px] md:max-h-[45vh] overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50">
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
-                          {allNames.map(name => (
-                            <button
-                              key={name}
-                              onClick={() => setSelectedName(name === selectedName ? "" : name)}
-                              className={`px-1 py-2 rounded-lg text-[16px] md:text-[17px] font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-tight ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:bg-teal-50 hover:border-teal-300 shadow-sm'}`}
-                            >
-                              {name}
-                            </button>
-                          ))}
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
+                          {allNames.map(name => {
+                            const nameLen = name.length;
+                            const fontSizeClass = nameLen >= 8 ? 'text-[12px]' : nameLen >= 5 ? 'text-[14px]' : 'text-[16px]';
+                            return (
+                              <button
+                                key={name}
+                                onClick={() => setSelectedName(name === selectedName ? "" : name)}
+                                className={`px-0.5 py-1.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-[1.1] min-h-[48px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
