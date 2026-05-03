@@ -1755,8 +1755,8 @@
                       // 💡 학생이 두 명 이상일 때 초록색 바탕을 주기 위한 조건 추가
                       const isMultipleStudents = studentNames.length >= 2;
 
-                      // 💡 인원수 입력 칸 표시 여부 판단 로직
-                      const isShowHeadcount = (logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+                      // 💡 인원수 입력 칸 표시 여부 판단 로직 (학생이 2명 이상이면 인원 필드 대신 개별 체크 사용)
+                      const isShowHeadcount = ((logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당")) && displayRowsCount < 2;
 
                       return (
                         <div key={index} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300'}`}>
@@ -2557,40 +2557,50 @@
         const absentReasons = [];
 
         data.forEach(row => {
-          const student = (row.student || "").trim();
-          const isAssistant = student.includes("보조강사");
+          const studentStr = (row.student || "").trim();
+          if (!studentStr || studentStr.includes("자체학습") || studentStr.includes("대상자발굴")) return;
 
-          // 학생이름이 비어있거나, 다른 제외 조건인 경우 리턴
-          if (!student || student.includes("자체학습") || student.includes("대상자발굴")) return;
+          const statusStr = (row.status || "").trim();
+          if (statusStr.includes("복지관으로 이동") || statusStr.includes("선생님휴가")) return;
 
-          const status = (row.status || "").trim();
+          const studentNames = studentStr.split(/[/,]/).map(s => s.trim()).filter(Boolean);
+          const statusParts = statusStr.includes('/') ? statusStr.split('/') : [statusStr];
 
-          // 보조강사인 경우, 진행내역(status)이 비어있으면 전체 수업 통계에서 아예 제외
-          if (isAssistant && !status) return;
+          // 💡 학생이 2명 이상이면 인원 필드 대신 개별 체크를 사용하므로 headcount 로직 제외
+          const isShowHeadcount = (studentStr.includes("보조강사") || studentStr.includes("경로당") || (row.location || "").includes("경로당")) && studentNames.length < 2;
 
-          // 복지관 이동, 선생님 휴가 등은 수업 카운트에서 제외
-          if (status.includes("복지관으로 이동") || status.includes("선생님휴가")) return;
+          studentNames.forEach((name, idx) => {
+            const isAssistant = name.includes("보조강사");
+            if (isAssistant && !statusStr) return;
 
-          // 학생이름이 비어있지 않은 실제 수업이므로 전체 수업 건수에 포함
-          // (보조강사라도 데이터값이 있으므로 포함됨)
-          total++;
+            let studentStatus = (statusParts.length > idx) ? statusParts[idx].trim() : statusParts[0].trim();
+            
+            // 인원수(headcount) 추출
+            let headcount = 1;
+            if (isShowHeadcount) {
+              const hcMatch = studentStatus.match(/^(\d+)/);
+              if (hcMatch) {
+                headcount = parseInt(hcMatch[1], 10);
+              }
+            }
 
-          if (status.includes("결석")) {
-            absent++;
-            if (status.includes("병원") || status.includes("진료")) absentReasons.push("병원 진료");
-            else if (status.includes("행사") || status.includes("일정") || status.includes("집안")) absentReasons.push("개인 일정");
-            else if (status.includes("여행")) absentReasons.push("여행");
-          } else if (status.includes("취소") || status.includes("중단")) {
-            canceled++;
-          } else if (status) {
-            // 보조강사이거나 상태(메모)가 비어있지 않으면 출석으로 간주
-            const isAttended = isAssistant || /^[1-9]\d*/.test(status) || status.length > 2 || status === "1" || status === "출석";
-            if (isAttended) attended++;
-          }
+            total += headcount;
+            
+            if (studentStatus.includes("결석")) {
+              absent += headcount;
+              if (studentStatus.includes("병원") || studentStatus.includes("진료")) absentReasons.push("병원 진료");
+              else if (studentStatus.includes("행사") || studentStatus.includes("일정") || studentStatus.includes("집안")) absentReasons.push("개인 일정");
+              else if (studentStatus.includes("여행")) absentReasons.push("여행");
+            } else if (studentStatus.includes("취소") || studentStatus.includes("중단")) {
+              canceled += headcount;
+            } else if (studentStatus) {
+              const isAttended = isAssistant || /^[1-9]\d*/.test(studentStatus) || studentStatus.length > 2 || studentStatus === "1" || studentStatus === "출석";
+              if (isAttended) attended += headcount;
+            }
+          });
         });
 
-        const validTotalForRate = attended + absent + canceled; // 취소 및 결석이 포함된 실제 진행된 수업 수
-        const rate = validTotalForRate > 0 ? Math.round((attended / validTotalForRate) * 100) : 0;
+        const rate = total > 0 ? Math.round((attended / total) * 100) : 0;
         return { total, attended, absent, canceled, rate, absentReasons: [...new Set(absentReasons)] };
       }, [data]);
 
@@ -2688,16 +2698,16 @@
               {attendanceStats && (
                 <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex flex-col items-center justify-center shadow-sm">
-                    <span className="text-blue-600 text-xs font-black mb-1 uppercase tracking-wider">전체 수업</span>
-                    <span className="text-2xl font-black text-blue-900">{attendanceStats.total}건</span>
+                    <span className="text-blue-600 text-xs font-black mb-1 uppercase tracking-wider">전체 학생</span>
+                    <span className="text-2xl font-black text-blue-900">{attendanceStats.total}명</span>
                   </div>
                   <div className="bg-green-50 rounded-2xl p-4 border border-green-100 flex flex-col items-center justify-center shadow-sm">
                     <span className="text-green-600 text-xs font-black mb-1 uppercase tracking-wider">출석 완료</span>
-                    <span className="text-2xl font-black text-green-900">{attendanceStats.attended}건</span>
+                    <span className="text-2xl font-black text-green-900">{attendanceStats.attended}명</span>
                   </div>
                   <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex flex-col items-center justify-center shadow-sm">
                     <span className="text-red-600 text-xs font-black mb-1 uppercase tracking-wider">결석/취소</span>
-                    <span className="text-2xl font-black text-red-900">{attendanceStats.absent + attendanceStats.canceled}건</span>
+                    <span className="text-2xl font-black text-red-900">{attendanceStats.absent + attendanceStats.canceled}명</span>
                   </div>
                   <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100 flex flex-col items-center justify-center shadow-sm">
                     <span className="text-purple-600 text-xs font-black mb-1 uppercase tracking-wider">출석률</span>
