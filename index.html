@@ -3888,7 +3888,11 @@
                           placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)"
                           value={searchTerm}
                           onChange={(e) => {
-                            setSearchTerm(e.target.value);
+                            const val = e.target.value;
+                            setSearchTerm(val);
+                            if (val.trim() !== "") {
+                              setSelectedName("");
+                            }
                           }}
                           className="w-full pl-10 pr-10 py-2 rounded-xl border-2 border-teal-300 focus:border-teal-500 focus:ring-4 focus:ring-teal-50 outline-none transition-all text-[15px] font-bold shadow-sm placeholder:text-gray-400"
                         />
@@ -3978,7 +3982,7 @@
                   )}
                 </div>
 
-                {selectedName && stats && !(searchTerm && filteredNames.length === 0) && (
+                {selectedName && stats && (
                   <div className="px-4 md:px-6 pb-3">
                     <div className="grid grid-cols-4 gap-2 md:gap-3">
                       <div className="bg-teal-200 rounded-xl p-2.5 md:p-3 text-center border border-teal-300">
@@ -4001,7 +4005,7 @@
                   </div>
                 )}
 
-                {selectedName && !(searchTerm && filteredNames.length === 0) && (
+                {selectedName && (
                   <div className="px-4 md:px-6 pb-5">
                     {filteredRecords.length === 0 ? (
                       <div className="text-center py-8 text-gray-400 font-bold text-base">학습 참여 기록이 없습니다.</div>
