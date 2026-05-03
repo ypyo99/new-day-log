@@ -500,7 +500,7 @@
                 const eventStr = eventRowForHolidays[j] || "";
                 const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
                 const isHoliday = (holidayStr.includes("공휴일") || holidayStr.includes("근로자") || holidayStr.includes("휴무") ||
-                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무")) && 
+                  eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무")) &&
                   !(match && match[1].padStart(2, '0') === '05' && match[2].padStart(2, '0') === '12');
                 if (isHoliday) {
                   if (match) {
@@ -1814,11 +1814,11 @@
                                     <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
                                       {RENDER_TAGS.map(tag => {
                                         const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
-  
+
                                         // 💡 출석, 결석, 취소 버튼 비활성화 및 블러 처리
                                         const isKyungrodangIncluded = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
                                         const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
-  
+
                                         return (
                                           <button
                                             key={tag}
@@ -3623,7 +3623,7 @@
 
       const filteredNames = useMemo(() => {
         if (searchTerm.trim() === "") return allNames;
-        
+
         const lowerSearch = searchTerm.toLowerCase().replace(/\s+/g, '');
         return allNames.filter(name => {
           const normalizedName = name.toLowerCase().replace(/\s+/g, '');
@@ -3809,7 +3809,7 @@
         if (!selectedName || selectedName.trim() === "") return [];
         const raw = allRecords.filter(r => r.name === selectedName);
         if (raw.length === 0) return [];
-        
+
         const dateMap = new Map();
         raw.forEach(r => {
           const key = r.colDate.getTime();
@@ -3883,18 +3883,18 @@
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500 pointer-events-none">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)"
                           value={searchTerm}
                           onChange={(e) => {
                             setSearchTerm(e.target.value);
                           }}
-                          className="w-full pl-10 pr-10 py-2 rounded-xl border-2 border-teal-100 focus:border-teal-500 focus:ring-4 focus:ring-teal-50 outline-none transition-all text-[15px] font-bold shadow-sm placeholder:text-gray-400"
+                          className="w-full pl-10 pr-10 py-2 rounded-xl border-2 border-teal-300 focus:border-teal-500 focus:ring-4 focus:ring-teal-50 outline-none transition-all text-[15px] font-bold shadow-sm placeholder:text-gray-400"
                         />
                         {searchTerm && (
-                          <button 
-                            onClick={() => setSearchTerm("")} 
+                          <button
+                            onClick={() => setSearchTerm("")}
                             className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -3902,12 +3902,20 @@
                         )}
                       </div>
 
+                      {/* 🔍 검색 결과 없음 메시지 */}
+                      {searchTerm && filteredNames.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-6 bg-red-50/50 rounded-xl border border-red-100 mb-3 animate-fadeIn">
+                          <svg className="w-10 h-10 text-red-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          <p className="text-red-500 font-bold text-[15px]">해당 이름의 대상자가 없습니다.</p>
+                        </div>
+                      )}
+
                       {/* 🕒 최근 검색 대상자 */}
                       {recentSearches.length > 0 && !searchTerm && (
                         <div className="mb-3">
                           <div className="flex justify-between items-center mb-1 px-1">
                             <p className="text-[13px] md:text-[15px] text-gray-600 font-bold">최근 찾은 대상자</p>
-                            <button 
+                            <button
                               onClick={() => {
                                 setRecentSearches([]);
                                 localStorage.removeItem('sungdong_recent_searches');
@@ -3919,7 +3927,7 @@
                           </div>
                           <div className="flex flex-wrap gap-1.5 items-center justify-center">
                             {recentSearches.map(name => (
-                              <button 
+                              <button
                                 key={name}
                                 onClick={() => {
                                   setSelectedName(name);
@@ -3960,7 +3968,7 @@
                                 }}
                                 className={`px-0.5 py-0.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-tight min-h-[34px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
                               >
-                                {isSpecial ? <span>금호벽산<br/>경로당</span> : name}
+                                {isSpecial ? <span>금호벽산<br />경로당</span> : name}
                               </button>
                             );
                           })}
@@ -3970,7 +3978,7 @@
                   )}
                 </div>
 
-                {selectedName && stats && (
+                {selectedName && stats && !(searchTerm && filteredNames.length === 0) && (
                   <div className="px-4 md:px-6 pb-3">
                     <div className="grid grid-cols-4 gap-2 md:gap-3">
                       <div className="bg-teal-200 rounded-xl p-2.5 md:p-3 text-center border border-teal-300">
@@ -3993,7 +4001,7 @@
                   </div>
                 )}
 
-                {selectedName && (
+                {selectedName && !(searchTerm && filteredNames.length === 0) && (
                   <div className="px-4 md:px-6 pb-5">
                     {filteredRecords.length === 0 ? (
                       <div className="text-center py-8 text-gray-400 font-bold text-base">학습 참여 기록이 없습니다.</div>
