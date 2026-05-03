@@ -3877,11 +3877,6 @@
                     </div>
                   ) : (
                     <div>
-                      {selectedName && (
-                        <div className="flex items-center justify-end mb-2">
-                          <button onClick={() => setSelectedName("")} className="text-[13px] md:text-[15px] text-teal-600 font-bold bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all touch-manipulation">선택 해제</button>
-                        </div>
-                      )}
 
                       {/* 🔍 실시간 검색창 추가 */}
                       <div className="relative mb-3">
@@ -3922,7 +3917,7 @@
                               지우기
                             </button>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 items-center">
+                          <div className="flex flex-wrap gap-1.5 items-center justify-center">
                             {recentSearches.map(name => (
                               <button 
                                 key={name}
