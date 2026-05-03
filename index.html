@@ -3913,7 +3913,18 @@
                       {/* 🕒 최근 검색 대상자 */}
                       {recentSearches.length > 0 && !searchTerm && (
                         <div className="mb-3">
-                          <p className="text-[11px] text-gray-400 font-bold mb-1 ml-1">최근 찾은 대상자</p>
+                          <div className="flex justify-between items-center mb-1 px-1">
+                            <p className="text-[13px] md:text-[15px] text-gray-400 font-bold">최근 찾은 대상자</p>
+                            <button 
+                              onClick={() => {
+                                setRecentSearches([]);
+                                localStorage.removeItem('sungdong_recent_searches');
+                              }}
+                              className="text-[13px] md:text-[15px] text-gray-400 hover:text-gray-600 font-bold"
+                            >
+                              지우기
+                            </button>
+                          </div>
                           <div className="flex flex-wrap gap-1">
                             {recentSearches.map(name => (
                               <button 
@@ -3927,21 +3938,12 @@
                                 {name}
                               </button>
                             ))}
-                            <button 
-                              onClick={() => {
-                                setRecentSearches([]);
-                                localStorage.removeItem('sungdong_recent_searches');
-                              }}
-                              className="px-2 py-1.5 text-[12px] text-gray-400 hover:text-gray-600 font-medium"
-                            >
-                              지우기
-                            </button>
                           </div>
                         </div>
                       )}
 
                       {/* 자음 필터 버튼 제거됨 */}
-                      <div className="max-h-[300px] md:max-h-[50vh] overflow-y-auto border border-gray-200 rounded-xl p-1 bg-gray-50/50">
+                      <div className="max-h-[232px] md:max-h-[50vh] overflow-y-auto border border-gray-200 rounded-xl p-1 bg-gray-50/50">
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1">
                           {filteredNames.map(name => {
                             const isSpecial = name === "금호벽산경로당";
