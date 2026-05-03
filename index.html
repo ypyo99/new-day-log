@@ -3914,13 +3914,13 @@
                       {recentSearches.length > 0 && !searchTerm && (
                         <div className="mb-3">
                           <div className="flex justify-between items-center mb-1 px-1">
-                            <p className="text-[13px] md:text-[15px] text-gray-400 font-bold">최근 찾은 대상자</p>
+                            <p className="text-[13px] md:text-[15px] text-gray-600 font-bold">최근 찾은 대상자</p>
                             <button 
                               onClick={() => {
                                 setRecentSearches([]);
                                 localStorage.removeItem('sungdong_recent_searches');
                               }}
-                              className="text-[13px] md:text-[15px] text-gray-400 hover:text-gray-600 font-bold"
+                              className="text-[13px] md:text-[15px] text-gray-600 hover:text-gray-800 font-bold"
                             >
                               지우기
                             </button>
