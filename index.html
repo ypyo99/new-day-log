@@ -366,7 +366,7 @@
       });
 
       // 💡 시트 저장/인식에 사용될 데이터 기준 태그 (화면에만 '출석'으로 보이게 렌더링 로직으로 분리)
-      const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
+      const ATTENDANCE_TAGS = ['결석', '취소', '선생님휴가', '1'];
       const RENDER_TAGS = ['1', '결석', '취소', '선생님휴가'];
 
       const getShifts = (team) => {
@@ -723,7 +723,7 @@
             let loadedHeadcount = "";
             let startIndex = 0;
 
-            if (isKyungrodang && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
+            if (isShowHeadcount && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
               loadedHeadcount = rawParts[0];
               startIndex = 1;
             }
@@ -815,18 +815,19 @@
         const isShowHeadcount = (log.student || "").includes("보조강사") || isKyungrodang;
 
         let result = [];
-        if (isKyungrodang) {
-          if (log.headcount) result.push(log.headcount);
-          if (orderedTagsStr) result.push(orderedTagsStr);
-          if (log.memo) result.push(log.memo);
-        } else {
-          if (orderedTagsStr) result.push(orderedTagsStr);
-          if (isShowHeadcount && log.headcount) {
-            if (log.memo) result.push(`${log.headcount}, ${log.memo}`);
-            else result.push(log.headcount);
-          } else if (log.memo) {
-            result.push(log.memo);
-          }
+        // 1. 인원 (항상 먼저)
+        if (isShowHeadcount && log.headcount) {
+          result.push(log.headcount);
+        }
+
+        // 2. 태그들 (결석, 취소, 선생님휴가 등)
+        if (orderedTagsStr) {
+          result.push(orderedTagsStr);
+        }
+
+        // 3. 메모
+        if (log.memo) {
+          result.push(log.memo);
         }
 
         return result.join(', ');
@@ -1755,8 +1756,8 @@
                       // 💡 학생이 두 명 이상일 때 초록색 바탕을 주기 위한 조건 추가
                       const isMultipleStudents = studentNames.length >= 2;
 
-                      // 💡 인원수 입력 칸 표시 여부 판단 로직 (학생이 2명 이상이면 인원 필드 대신 개별 체크 사용)
-                      const isShowHeadcount = ((logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당")) && displayRowsCount < 2;
+                      // 💡 인원수 입력 칸 표시 여부 판단 로직 (학생 이름 자체에 '경로당'이나 '보조강사'가 포함된 경우에만 인원 필드 사용)
+                      const isShowHeadcount = ((logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당")) && displayRowsCount < 2;
 
                       return (
                         <div key={index} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300'}`}>
@@ -2566,8 +2567,8 @@
           const studentNames = studentStr.split(/[/,]/).map(s => s.trim()).filter(Boolean);
           const statusParts = statusStr.includes('/') ? statusStr.split('/') : [statusStr];
 
-          // 💡 학생이 2명 이상이면 인원 필드 대신 개별 체크를 사용하므로 headcount 로직 제외
-          const isShowHeadcount = (studentStr.includes("보조강사") || studentStr.includes("경로당") || (row.location || "").includes("경로당")) && studentNames.length < 2;
+          // 💡 학생 이름 자체에 '경로당'이나 '보조강사'가 포함된 단일 항목인 경우에만 headcount 로직 사용
+          const isShowHeadcount = (studentStr.includes("보조강사") || studentStr.includes("경로당")) && studentNames.length < 2;
 
           studentNames.forEach((name, idx) => {
             const isAssistant = name.includes("보조강사");
