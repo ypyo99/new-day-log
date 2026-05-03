@@ -3602,34 +3602,35 @@
       const [selectedName, setSelectedName] = useState("");
       const [isLoading, setIsLoading] = useState(true);
       const [loadProgress, setLoadProgress] = useState("");
-      const [filterConsonant, setFilterConsonant] = useState("");
+      const [searchTerm, setSearchTerm] = useState("");
+      const [recentSearches, setRecentSearches] = useState(() => {
+        try {
+          const saved = localStorage.getItem('sungdong_recent_searches');
+          return saved ? JSON.parse(saved) : [];
+        } catch (e) { return []; }
+      });
 
-      const getChoSung = (name) => {
+      const getSearchChoSung = (name) => {
         if (!name) return "";
-        const charCode = name.charCodeAt(0);
-        if (charCode < 0xAC00 || charCode > 0xD7A3) return name[0];
-        const choIndex = Math.floor(((charCode - 0xAC00) / 28) / 21);
-        // 쌍자음 위치를 기본 자음으로 대체하여 쌍자음을 로직에서 제거
-        const choList = ["ㄱ", "ㄱ", "ㄴ", "ㄷ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅂ", "ㅅ", "ㅅ", "ㅇ", "ㅈ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
-        return choList[choIndex];
+        return name.split('').map(char => {
+          const charCode = char.charCodeAt(0);
+          if (charCode < 0xAC00 || charCode > 0xD7A3) return char;
+          const choIndex = Math.floor(((charCode - 0xAC00) / 28) / 21);
+          const choList = ["ㄱ", "ㄱ", "ㄴ", "ㄷ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅂ", "ㅅ", "ㅅ", "ㅇ", "ㅈ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+          return choList[choIndex];
+        }).join('');
       };
 
       const filteredNames = useMemo(() => {
-        if (!filterConsonant || filterConsonant.trim() === "") return allNames;
+        if (searchTerm.trim() === "") return allNames;
+        
+        const lowerSearch = searchTerm.toLowerCase().replace(/\s+/g, '');
         return allNames.filter(name => {
-          const cho = getChoSung(name);
-          return cho === filterConsonant;
+          const normalizedName = name.toLowerCase().replace(/\s+/g, '');
+          const choName = getSearchChoSung(name);
+          return normalizedName.includes(lowerSearch) || choName.includes(lowerSearch);
         });
-      }, [allNames, filterConsonant]);
-
-      const availableConsonants = useMemo(() => {
-        const set = new Set();
-        allNames.forEach(name => {
-          const cho = getChoSung(name);
-          if (cho) set.add(cho);
-        });
-        return set;
-      }, [allNames]);
+      }, [allNames, searchTerm]);
 
       const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
 
@@ -3876,43 +3877,72 @@
                     </div>
                   ) : (
                     <div>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-3">
                         <p className="text-[15px] md:text-[17px] text-gray-600 font-bold">대상자를 선택하세요 ({filteredNames.length}명)</p>
-                        {selectedName && (
-                          <button onClick={() => setSelectedName("")} className="text-[13px] md:text-[15px] text-teal-600 font-bold bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all touch-manipulation">선택 해제</button>
+                        <div className="flex gap-2">
+                          {selectedName && (
+                            <button onClick={() => setSelectedName("")} className="text-[13px] md:text-[15px] text-teal-600 font-bold bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg active:scale-95 transition-all touch-manipulation">선택 해제</button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 🔍 실시간 검색창 추가 */}
+                      <div className="relative mb-3">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500 pointer-events-none">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)"
+                          value={searchTerm}
+                          onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                          }}
+                          className="w-full pl-10 pr-10 py-2 rounded-xl border-2 border-teal-100 focus:border-teal-500 focus:ring-4 focus:ring-teal-50 outline-none transition-all text-[15px] font-bold shadow-sm placeholder:text-gray-400"
+                        />
+                        {searchTerm && (
+                          <button 
+                            onClick={() => setSearchTerm("")} 
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                          </button>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-8 gap-1.5 mb-4 bg-teal-50/40 p-2 rounded-xl border border-teal-100 shadow-inner">
-                        {["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"].map(cho => {
-                          const isDisabled = cho !== "전체" && !availableConsonants.has(cho);
-                          const isActive = (cho === "전체" && !filterConsonant) || (filterConsonant === cho);
-                          
-                          return (
-                            <button
-                              key={cho}
-                              disabled={isDisabled}
+                      {/* 🕒 최근 검색 대상자 */}
+                      {recentSearches.length > 0 && !searchTerm && (
+                        <div className="mb-3">
+                          <p className="text-[11px] text-gray-400 font-bold mb-1 ml-1">최근 찾은 대상자</p>
+                          <div className="flex flex-wrap gap-1">
+                            {recentSearches.map(name => (
+                              <button 
+                                key={name}
+                                onClick={() => {
+                                  setSelectedName(name);
+                                  setSearchTerm("");
+                                }}
+                                className={`px-2.5 py-1 rounded-full text-[13px] font-bold border transition-all active:scale-95 ${selectedName === name ? 'bg-teal-600 text-white border-teal-700' : 'bg-white text-teal-700 border-teal-200 shadow-sm hover:border-teal-400'}`}
+                              >
+                                {name}
+                              </button>
+                            ))}
+                            <button 
                               onClick={() => {
-                                setFilterConsonant(cho === "전체" ? "" : cho);
-                                setSelectedName("");
+                                setRecentSearches([]);
+                                localStorage.removeItem('sungdong_recent_searches');
                               }}
-                              className={`rounded-xl font-bold text-[17px] sm:text-[20px] transition-all touch-manipulation border flex items-center justify-center ${
-                                cho === "전체" ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"
-                              } ${
-                                isDisabled 
-                                  ? 'bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed opacity-70'
-                                  : isActive
-                                    ? 'bg-orange-600 text-white border-orange-700 shadow-md ring-2 ring-orange-200 active:scale-95'
-                                    : 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200 shadow-sm active:scale-95'
-                              }`}
+                              className="px-2 py-1.5 text-[12px] text-gray-400 hover:text-gray-600 font-medium"
                             >
-                              {cho}
+                              지우기
                             </button>
-                          );
-                        })}
-                      </div>
-                      <div className="max-h-[240px] md:max-h-[45vh] overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/50">
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 자음 필터 버튼 제거됨 */}
+                      <div className="max-h-[300px] md:max-h-[50vh] overflow-y-auto border border-gray-200 rounded-xl p-1 bg-gray-50/50">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1">
                           {filteredNames.map(name => {
                             const isSpecial = name === "금호벽산경로당";
                             const nameLen = name.length;
@@ -3922,8 +3952,19 @@
                             return (
                               <button
                                 key={name}
-                                onClick={() => setSelectedName(name === selectedName ? "" : name)}
-                                className={`px-0.5 py-1.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-[1.1] min-h-[48px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
+                                onClick={() => {
+                                  const newName = name === selectedName ? "" : name;
+                                  setSelectedName(newName);
+                                  if (newName) {
+                                    setRecentSearches(prev => {
+                                      const filtered = prev.filter(n => n !== newName);
+                                      const updated = [newName, ...filtered].slice(0, 10);
+                                      localStorage.setItem('sungdong_recent_searches', JSON.stringify(updated));
+                                      return updated;
+                                    });
+                                  }
+                                }}
+                                className={`px-0.5 py-0.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-tight min-h-[34px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
                               >
                                 {isSpecial ? <span>금호벽산<br/>경로당</span> : name}
                               </button>
