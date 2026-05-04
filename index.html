@@ -1571,7 +1571,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260503
+                v260505
               </div>
             </div>
           </div>
@@ -2580,7 +2580,7 @@
             if (isAssistant && !statusStr) return;
 
             let studentStatus = (statusParts.length > idx) ? statusParts[idx].trim() : statusParts[0].trim();
-            
+
             // 인원수(headcount) 추출
             let headcount = 1;
             if (isShowHeadcount) {
@@ -2591,7 +2591,7 @@
             }
 
             total += headcount;
-            
+
             if (studentStatus.includes("결석")) {
               absent += headcount;
               if (studentStatus.includes("병원") || studentStatus.includes("진료")) absentReasons.push("병원 진료");
@@ -2665,6 +2665,10 @@
         }
         if (allContent.includes('Gemini') || allContent.includes('제미나이') || allContent.includes('AI')) {
           insights.push(`**생성형 AI(Gemini 등)**를 활용한 최첨단 교육이 시도되어, 어르신들이 최신 디지털 트렌드에 발맞추어 나가는 모습이 인상적입니다.`);
+        }
+
+        if (attendanceStats && attendanceStats.attended === 0) {
+          return ["입력된 학습 관련 데이터가 없습니다."];
         }
 
         return insights.length > 0 ? insights : ["현재 기록된 데이터로 보아 기초 디지털 역량 강화에 집중하고 있는 시기입니다."];
@@ -3989,8 +3993,8 @@
                                 className={`px-0.5 py-0.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-tight min-h-[34px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-200 text-gray-800 border-gray-400 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}
                               >
                                 {name === "금호벽산경로당" ? <span>금호벽산<br />경로당</span> :
-                                 name === "금호벽산제2경로당" ? <span>금호벽산<br />제2경로당</span> : 
-                                 name}
+                                  name === "금호벽산제2경로당" ? <span>금호벽산<br />제2경로당</span> :
+                                    name}
                               </button>
                             );
                           })}
