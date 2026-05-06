@@ -4379,85 +4379,47 @@
                     <thead>
                       <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
                         <th className="w-[8%] py-1.5 border-r-2 border-gray-300 font-black text-gray-800 text-[17px] sm:text-[19px]">시간</th>
-                        {(() => {
-                          const dayWidths = currentDays.map(d => {
-                            const dStr = getLocalDateString(d);
-                            const isSpec = !!specialDays[dStr];
-                            const isEmp = timeSlots.every(time => {
-                              const cellData = scheduleData?.[time]?.[dStr];
-                              return !cellData || (!cellData.student && !cellData.location && !cellData.status);
-                            });
-                            if (isSpec) return 15; // 특별한 날은 15%
-                            if (isEmp) return 10;  // 일정 없는 날은 10%
-                            return 14.72;          // 일반 요일은 14.72% (기존 18.4%에서 20% 축소)
-                          });
-                          
-                          const totalUsed = 8 + dayWidths.reduce((sum, w) => sum + w, 0);
-                          const spacerWidth = 100 - totalUsed;
+                        {currentDays.map((day, i) => {
+                          const dateStr = getLocalDateString(day);
+                          const isToday = dateStr === getLocalDateString(new Date());
 
                           return (
-                            <>
-                              {currentDays.map((day, i) => {
-                                const dateStr = getLocalDateString(day);
-                                const isToday = dateStr === getLocalDateString(new Date());
-                                const widthStr = `${dayWidths[i]}%`;
-
-                                return (
-                                  <th key={i} style={{ width: widthStr }} className={`py-1.5 font-black text-[17px] sm:text-[19px] tracking-tight transition-all ${isToday ? 'border-l-4 border-r-4 border-t-4 border-blue-600 text-blue-700 bg-blue-50' : 'border-r-2 border-gray-300 text-blue-900 last:border-0'}`}>
-                                    {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
-                                  </th>
-                                );
-                              })}
-                              {spacerWidth > 0 && <th style={{ width: `${spacerWidth}%` }} className="last:border-0 bg-gray-50/30"></th>}
-                            </>
+                            <th key={i} style={{ width: "18.4%" }} className={`py-1.5 font-black text-[17px] sm:text-[19px] tracking-tight transition-all ${isToday ? 'border-l-4 border-r-4 border-t-4 border-blue-600 text-blue-700 bg-blue-50' : 'border-r-2 border-gray-300 text-blue-900 last:border-0'}`}>
+                              {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
+                            </th>
                           );
-                        })()}
+                        })}
                       </tr>
                     </thead>
                     <tbody>
-                      {timeSlots.map((time, idx) => {
-                        const dayWidths = currentDays.map(d => {
-                          const dStr = getLocalDateString(d);
-                          const isSpec = !!specialDays[dStr];
-                          const isEmp = timeSlots.every(t => {
-                            const cellData = scheduleData?.[t]?.[dStr];
-                            return !cellData || (!cellData.student && !cellData.location && !cellData.status);
-                          });
-                          if (isSpec) return 15;
-                          if (isEmp) return 10;
-                          return 14.72;
-                        });
-                        const totalUsed = 8 + dayWidths.reduce((sum, w) => sum + w, 0);
-                        const spacerWidth = 100 - totalUsed;
-
-                        return (
-                          <tr key={idx} className="border-b-2 border-gray-300 last:border-0">
-                            <td className="py-3 px-1 border-r-2 border-gray-300 bg-[#f8fafc] font-black text-blue-800 text-[16px] sm:text-[18px] whitespace-pre-line leading-tight">
-                              {time.replace('~', '\n~\n')}
-                            </td>
-                            {currentDays.map((day, i) => {
-                              const dateStr = getLocalDateString(day);
-                              const isToday = dateStr === getLocalDateString(new Date());
-                              const isLastSlot = idx === timeSlots.length - 1;
-                              const todayBorderClass = isToday ? `border-l-4 border-r-4 ${isLastSlot ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
-                              const cellData = scheduleData?.[time]?.[dateStr];
-                              
-                              if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
-                                return (
-                                  <td key={i} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass}`}>
-                                    <div className="flex items-center justify-center h-full min-h-[110px] text-gray-300 font-bold text-[16px]">일정 없음</div>
-                                  </td>
-                                );
-                              }
-
-                              const parsedStatus = parseWeeklyStatus(cellData.status);
-                              const isAssistant = cellData.student && cellData.student.includes("보조강사");
-                              const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
-                              const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-200 border-red-400" : "bg-white border-gray-200";
-
+                      {timeSlots.map((time, idx) => (
+                        <tr key={idx} className="border-b-2 border-gray-300 last:border-0">
+                          <td className="py-3 px-1 border-r-2 border-gray-300 bg-[#f8fafc] font-black text-blue-800 text-[16px] sm:text-[18px] whitespace-pre-line leading-tight">
+                            {time.replace('~', '\n~\n')}
+                          </td>
+                          {currentDays.map((day, i) => {
+                            const dateStr = getLocalDateString(day);
+                            const isToday = dateStr === getLocalDateString(new Date());
+                            const isLastSlot = idx === timeSlots.length - 1;
+                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${isLastSlot ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
+                            const cellData = scheduleData?.[time]?.[dateStr];
+                            
+                            if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
-                                <td key={i} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass}`}>
-                                  <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
+                                <td key={i} style={{ width: "18.4%" }} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass}`}>
+                                  <div className="flex items-center justify-center h-full min-h-[110px] text-gray-300 font-bold text-[16px]">일정 없음</div>
+                                </td>
+                              );
+                            }
+
+                            const parsedStatus = parseWeeklyStatus(cellData.status);
+                            const isAssistant = cellData.student && cellData.student.includes("보조강사");
+                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
+                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-200 border-red-400" : "bg-white border-gray-200";
+
+                            return (
+                              <td key={i} style={{ width: "18.4%" }} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass}`}>
+                                <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
                                     {parsedStatus.tags.length > 0 && (
                                       <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                         {parsedStatus.tags.map((tag, tIdx) => {
