@@ -4368,13 +4368,13 @@
               </div>
 
               <div className="flex-1 overflow-x-auto overflow-y-auto bg-gray-50/50 p-3 sm:p-5">
-                <div className="min-w-[1000px] bg-white rounded-xl shadow-sm border-2 border-gray-300 overflow-hidden">
+                <div className="min-w-[850px] bg-white rounded-xl shadow-sm border-2 border-gray-300 overflow-hidden mx-auto">
                   <table className="w-full table-fixed text-center border-collapse">
                     <thead>
                       <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
-                        <th className="w-[12%] py-4 border-r-2 border-gray-300 font-black text-gray-800 text-[18px] sm:text-[20px]">시간</th>
+                        <th className="w-[8%] py-3 border-r-2 border-gray-300 font-black text-gray-800 text-[17px] sm:text-[19px]">시간</th>
                         {currentDays.map((day, i) => (
-                          <th key={i} className="w-[17.6%] py-4 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[18px] sm:text-[20px] tracking-tight">
+                          <th key={i} className="w-[18.4%] py-3 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[17px] sm:text-[19px] tracking-tight">
                             {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
                           </th>
                         ))}
@@ -4383,7 +4383,7 @@
                     <tbody>
                       {timeSlots.map((time, idx) => (
                         <tr key={idx} className="border-b-2 border-gray-300 last:border-0">
-                          <td className="py-5 px-2 border-r-2 border-gray-300 bg-[#f8fafc] font-black text-blue-800 text-[18px] sm:text-[20px] whitespace-pre-line leading-tight">
+                          <td className="py-3 px-1 border-r-2 border-gray-300 bg-[#f8fafc] font-black text-blue-800 text-[16px] sm:text-[18px] whitespace-pre-line leading-tight">
                             {time.replace('~', '\n~\n')}
                           </td>
                           {currentDays.map((day, i) => {
@@ -4392,8 +4392,8 @@
                             
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
-                                <td key={i} className="p-2 sm:p-3 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden">
-                                  <div className="flex items-center justify-center h-full min-h-[140px] text-gray-300 font-bold text-[18px]">일정 없음</div>
+                                <td key={i} className="p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden">
+                                  <div className="flex items-center justify-center h-full min-h-[110px] text-gray-300 font-bold text-[16px]">일정 없음</div>
                                 </td>
                               );
                             }
@@ -4404,8 +4404,8 @@
                             const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-100 border-red-300" : "bg-white border-gray-200";
 
                             return (
-                              <td key={i} className="p-2 sm:p-3 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full">
-                                <div className={`flex flex-col gap-2 p-2.5 sm:p-3 rounded-xl border shadow-sm min-h-[140px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
+                              <td key={i} className="p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full">
+                                <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
                                   
                                   {/* 💡 [수정] 출석 배지 및 텍스트 넘침 방지 */}
                                   {parsedStatus.tags.length > 0 && (
@@ -4418,7 +4418,7 @@
                                         else if (tag.includes('출석') || /^\d+/.test(tag)) tagStyle = "bg-blue-500 text-white border-blue-600 shadow-inner";
 
                                         return (
-                                          <span key={tIdx} className={`px-2.5 py-1 rounded-lg text-[13px] sm:text-[15px] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${tagStyle}`}>
+                                          <span key={tIdx} className={`px-2.5 py-1 rounded-lg text-[12px] sm:text-[14px] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${tagStyle}`}>
                                             {tag}
                                           </span>
                                         );
@@ -4427,11 +4427,11 @@
                                   )}
 
                                   {/* 💡 [수정] 보조강사 뒤에 텍스트가 있으면 줄바꿈 처리 */}
-                                  {cellData.student && <div className="font-black text-gray-900 text-[17px] sm:text-[20px] leading-tight break-all whitespace-pre-wrap text-center w-full">{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
-                                  {cellData.location && <div className="text-gray-600 text-[14px] sm:text-[16px] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-2.5 py-1 rounded-lg inline-block border border-gray-200 max-w-full leading-tight mt-0.5">{cellData.location}</div>}
+                                  {cellData.student && <div className="font-black text-gray-900 text-[16px] sm:text-[18px] leading-tight break-all whitespace-pre-wrap text-center w-full">{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
+                                  {cellData.location && <div className="text-gray-600 text-[13px] sm:text-[15px] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-2 py-0.5 rounded-lg inline-block border border-gray-200 max-w-full leading-tight mt-0.5">{cellData.location}</div>}
                                   
                                   {/* 분리된 메모만 렌더링 (단어 잘림 허용) */}
-                                  {parsedStatus.memo && <div className={`font-bold text-[15px] sm:text-[18px] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
+                                  {parsedStatus.memo && <div className={`font-bold text-[14px] sm:text-[16px] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
                                 </div>
                               </td>
                             );
