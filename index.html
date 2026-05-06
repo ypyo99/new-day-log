@@ -746,7 +746,7 @@
             let memoParts = [];
 
             const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-            const isKyungrodang = loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
+            const isKyungrodang = loadedStudent.includes("경로당") || loadedLocation.includes("경로당") || loadedLocation.includes("도선복지관") || loadedStudent.includes("도선복지관");
 
             let tagParts = [];
             let isMemoStarted = false;
@@ -841,7 +841,7 @@
           orderedTagsStr = maxRows > 1 ? tagsStrings.join('/') : (tagsStrings[0] || "");
         }
 
-        const isKyungrodang = (log.student || "").includes("경로당") || (log.location || "").includes("경로당");
+        const isKyungrodang = (log.student || "").includes("경로당") || (log.location || "").includes("경로당") || (log.location || "").includes("도선복지관") || (log.student || "").includes("도선복지관");
         const isShowHeadcount = (log.student || "").includes("보조강사") || isKyungrodang;
 
         let result = [];
@@ -1730,7 +1730,8 @@
                       const isMultipleStudents = studentNames.length >= 2;
                       const isShowHeadcount = ((logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당")) && displayRowsCount < 2;
 
-                      const isKyungrodang = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+                      const combinedText = (logs[index].student || "") + " " + (logs[index].location || "");
+                      const isKyungrodang = combinedText.includes("경로당") || combinedText.includes("도선복지관");
                       const isSpecialDay = (index === 0 && specialDayData) || (logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회");
                       const cardColorClass = isSpecialDay ? 'bg-red-100 border-red-300' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
 
@@ -1790,7 +1791,7 @@
                                       {RENDER_TAGS.map(tag => {
                                         const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
 
-                                        const isKyungrodangIncluded = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+                                        const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
                                         const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
 
                                         return (
@@ -3456,10 +3457,10 @@
                                 studentCellBg = "bg-red-100";
                               } else if (combinedText.includes("보조강사")) {
                                 studentCellBg = "bg-[#FFFF00]";
-                              } else if (combinedText.includes("경로당")) {
+                              } else if (combinedText.includes("경로당") || combinedText.includes("도선복지관")) {
                                 studentCellBg = "bg-orange-100";
                               } else {
-                                const pinkLocs = ["도선복지관", "방문", "사근복지관", "삼부", "성원"];
+                                const pinkLocs = ["방문", "사근복지관", "삼부", "성원"];
                                 if (row.location && pinkLocs.some(loc => row.location.includes(loc))) {
                                   studentCellBg = "bg-pink-100";
                                 }
@@ -4205,7 +4206,7 @@
                 currentDays.forEach(day => {
                   const m = day.getMonth() + 1;
                   const d = day.getDate();
-                  const searchPattern = new RegExp(`^0?${m}\\s*[/.]\\s*0?${d}`);
+                  const searchPattern = new RegExp(`^0?${m}\\s*[/.]\s*0?${d}`);
 
                   for (let j = 4; j < headerRow.length; j++) {
                     if ((headerRow[j] || "").match(searchPattern)) {
@@ -4294,7 +4295,6 @@
         return "text-blue-700";
       };
 
-      // 💡 [수정] 상태 문자열에서 숫자 단독일 경우 '출석N'으로 포맷팅하도록 개선
       const parseWeeklyStatus = (statusStr) => {
         if (!statusStr) return { tags: [], memo: "" };
         const parts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -4414,7 +4414,7 @@
 
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
-                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당");
+                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
                             const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-100 border-red-300" : "bg-white border-gray-200";
 
                             return (
@@ -4441,7 +4441,7 @@
                                   )}
 
                                   {/* 💡 [수정] 보조강사 뒤에 텍스트가 있으면 줄바꿈 처리 */}
-                                  {cellData.student && <div className="font-black text-gray-900 text-[16px] sm:text-[18px] leading-tight break-all whitespace-pre-wrap text-center w-full">{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
+                                  {cellData.student && <div className="font-bold text-gray-900 text-[16px] sm:text-[18px] leading-tight break-all whitespace-pre-wrap text-center w-full">{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
                                   {cellData.location && <div className="text-gray-600 text-[13px] sm:text-[15px] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-2 py-0.5 rounded-lg inline-block border border-gray-200 max-w-full leading-tight mt-0.5">{cellData.location}</div>}
                                   
                                   {/* 분리된 메모만 렌더링 (단어 잘림 허용) */}
