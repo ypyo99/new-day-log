@@ -4382,12 +4382,29 @@
                         {currentDays.map((day, i) => {
                           const dateStr = getLocalDateString(day);
                           const isSpecial = !!specialDays[dateStr];
-                          const specialCount = currentDays.filter(d => !!specialDays[getLocalDateString(d)]).length;
+                          
+                          // 일정이 전혀 없는 날인지 확인
+                          const isEmpty = timeSlots.every(time => {
+                            const cellData = scheduleData?.[time]?.[dateStr];
+                            return !cellData || (!cellData.student && !cellData.location && !cellData.status);
+                          });
+
+                          const isNarrowTarget = isSpecial || isEmpty;
+                          const narrowCount = currentDays.filter(d => {
+                            const dStr = getLocalDateString(d);
+                            const isSpec = !!specialDays[dStr];
+                            const isEmp = timeSlots.every(time => {
+                              const cellData = scheduleData?.[time]?.[dStr];
+                              return !cellData || (!cellData.student && !cellData.location && !cellData.status);
+                            });
+                            return isSpec || isEmp;
+                          }).length;
+
                           let widthStr = "18.4%";
-                          if (specialCount > 0 && specialCount < 5) {
-                            const specialWidth = 10;
-                            const normalWidth = (92 - (specialCount * specialWidth)) / (5 - specialCount);
-                            widthStr = isSpecial ? `${specialWidth}%` : `${normalWidth}%`;
+                          if (narrowCount > 0 && narrowCount < 5) {
+                            const narrowWidth = 10;
+                            const normalWidth = (92 - (narrowCount * narrowWidth)) / (5 - narrowCount);
+                            widthStr = isNarrowTarget ? `${narrowWidth}%` : `${normalWidth}%`;
                           }
 
                           return (
