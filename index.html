@@ -4093,22 +4093,30 @@
       const minSwipeDistance = 70;
 
       const handleTouchStart = (e) => {
-        touchEndRef.current = null;
-        touchStartRef.current = e.targetTouches[0].clientX;
+        touchStartRef.current = e.touches[0].clientX;
       };
 
       const handleTouchMove = (e) => {
-        touchEndRef.current = e.targetTouches[0].clientX;
+        touchEndRef.current = e.touches[0].clientX;
       };
 
-      const handleTouchEnd = () => {
-        if (!touchStartRef.current || !touchEndRef.current) return;
+      const handleTouchEnd = (e) => {
+        if (touchStartRef.current === null || touchEndRef.current === null) return;
+        
         const distance = touchStartRef.current - touchEndRef.current;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-
-        if (isLeftSwipe) handleNextWeek();
-        else if (isRightSwipe) handlePrevWeek();
+        
+        if (Math.abs(distance) > minSwipeDistance) {
+          if (distance > 0) {
+            // 왼쪽으로 스와이프 -> 다음 주
+            changeWeek(1);
+          } else {
+            // 오른쪽으로 스와이프 -> 이전 주
+            changeWeek(-1);
+          }
+        }
+        
+        touchStartRef.current = null;
+        touchEndRef.current = null;
       };
 
       const weekDays = ['월', '화', '수', '목', '금'];
