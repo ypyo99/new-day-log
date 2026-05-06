@@ -4350,7 +4350,7 @@
             </button>
           </header>
 
-          <main className="flex-1 flex flex-col w-[85%] mx-auto p-0">
+          <main className="flex-1 flex flex-col w-full mx-auto p-3 sm:p-5 lg:p-8">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col flex-1 overflow-hidden">
               <div className="shrink-0 bg-white px-4 sm:px-6 pt-5 pb-4 shadow-sm relative z-10 flex flex-col items-center border-b border-gray-100">
                 <h2 className="text-[18px] sm:text-2xl font-black text-gray-800 mb-4 flex items-center gap-2">
@@ -4373,7 +4373,7 @@
                 {isLoading && <div className="mt-3 text-sm sm:text-base text-red-600 font-bold flex items-center animate-pulse"><Clock className="w-4 h-4 mr-1 animate-spin" />일정 데이터를 불러오는 중...</div>}
               </div>
 
-              <div className="flex-1 overflow-x-auto overflow-y-auto bg-gray-50/50 p-0">
+              <div className="flex-1 overflow-x-auto overflow-y-auto bg-gray-50/50 p-3 sm:p-5">
                 <div className="min-w-[850px] bg-white rounded-xl shadow-sm border-2 border-gray-300 overflow-hidden mx-auto">
                   <table className="w-full table-fixed text-center border-collapse">
                     <thead>
@@ -4384,11 +4384,12 @@
                           const isToday = dateStr === getLocalDateString(new Date());
 
                           return (
-                            <th key={i} style={{ width: '18.6%' }} className={`py-1.5 font-black text-[17px] sm:text-[19px] tracking-tight transition-all ${isToday ? 'border-l-4 border-r-4 border-t-4 border-blue-600 text-blue-700 bg-blue-50' : 'border-r-2 border-gray-300 text-blue-900 last:border-0'}`}>
+                            <th key={i} style={{ width: '15.6%' }} className={`py-1.5 font-black text-[17px] sm:text-[19px] tracking-tight transition-all ${isToday ? 'border-l-4 border-r-4 border-t-4 border-blue-600 text-blue-700 bg-blue-50' : 'border-r-2 border-gray-300 text-blue-900 last:border-0'}`}>
                               {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
                             </th>
                           );
                         })}
+                        <th style={{ width: '15%' }} className="last:border-0 bg-gray-50/30"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4443,6 +4444,7 @@
                               </td>
                             );
                           })}
+                          <td style={{ width: '15%' }} className="last:border-0 bg-gray-50/10"></td>
                         </tr>
                       ))}
                     </tbody>
