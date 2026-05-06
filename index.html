@@ -4307,15 +4307,24 @@
         
         const tagKeywords = ['출석', '결석', '취소', '선생님휴가', '휴가'];
         
-        parts.forEach(part => {
+        parts.forEach((part, i) => {
           const cleanPart = part.replace(/\s+/g, '');
-          // 키워드가 포함되어 있거나 숫자(출석인원 등)인 경우 태그로 처리
-          const isTag = tagKeywords.some(k => cleanPart.includes(k)) || /^\d+$/.test(cleanPart);
+          const isNumber = /^\d+$/.test(cleanPart);
+          const hasKeyword = tagKeywords.some(k => cleanPart.includes(k));
+          
+          // 첫 번째 데이터가 숫자이면 태그(참석인원), 두 번째 이후 숫자는 메모
+          // 단, 출석/결석 등 키워드가 포함된 경우는 무조건 태그
+          let isTag = false;
+          if (hasKeyword) {
+            isTag = true;
+          } else if (isNumber) {
+            isTag = (i === 0);
+          }
           
           if (isTag) {
             let displayTag = part;
             if (part === '1') displayTag = '출석';
-            else if (/^\d+$/.test(part)) displayTag = `출석${part}`;
+            else if (isNumber) displayTag = `출석${part}`;
             tags.push(displayTag);
           } else {
             memos.push(part);
