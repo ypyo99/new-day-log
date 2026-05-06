@@ -270,7 +270,7 @@
         <button
           onClick={onClick}
           disabled={isFetching}
-          className="w-[80px] sm:w-[88px] h-[53px] sm:h-[62px] shrink-0 bg-white border-2 border-sky-300 hover:bg-sky-50 text-sky-700 font-bold rounded-xl shadow-md flex flex-col items-center justify-center transition-all disabled:opacity-50 active:scale-95 px-1 touch-manipulation"
+          className="w-[80px] sm:w-[88px] h-[48px] sm:h-[56px] shrink-0 bg-white border-2 border-sky-300 hover:bg-sky-50 text-sky-700 font-bold rounded-xl shadow-md flex flex-col items-center justify-center transition-all disabled:opacity-50 active:scale-95 px-1 touch-manipulation"
           title="선생님 목록 다시 읽어오기"
         >
           <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 mb-0.5 ${isFetching ? 'animate-spin' : ''}`} />
@@ -1452,7 +1452,7 @@
               <div className="flex flex-col gap-3 sm:gap-4 shrink-0">
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl">1. 팀 선택</label>
-                  <select className="w-full h-[53px] sm:h-[62px] px-3 sm:px-4 border border-sky-300 rounded-xl text-xl sm:text-2xl bg-sky-100 text-blue-700 outline-none font-bold shadow-md focus:ring-2 focus:ring-blue-400" value={selectedTeam} onChange={(e) => {
+                  <select className="w-full h-[48px] sm:h-[56px] px-3 sm:px-4 border border-sky-300 rounded-xl text-xl sm:text-2xl bg-sky-100 text-blue-700 outline-none font-bold shadow-md focus:ring-2 focus:ring-blue-400" value={selectedTeam} onChange={(e) => {
                     setSelectedTeam(e.target.value);
                     setCurrentUser("");
                   }}>
@@ -1467,7 +1467,7 @@
                       {isFetchingTeachers && <span className="text-base sm:text-lg text-red-600 font-bold flex items-center mb-1 animate-pulse"><Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />로딩 중...</span>}
                     </label>
                     <div className="flex gap-2">
-                      <select className="flex-1 h-[53px] sm:h-[62px] px-3 sm:px-4 border border-sky-300 rounded-xl text-xl sm:text-2xl bg-sky-100 text-blue-700 outline-none font-bold shadow-md focus:ring-2 focus:ring-blue-400" value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
+                      <select className="flex-1 h-[48px] sm:h-[56px] px-3 sm:px-4 border border-sky-300 rounded-xl text-xl sm:text-2xl bg-sky-100 text-blue-700 outline-none font-bold shadow-md focus:ring-2 focus:ring-blue-400" value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
                         <option value="">선생님을 선택하세요</option>
                         {teachers.map(name => <option key={name} value={name}>{name.replace(/\n/g, ' ')}</option>)}
                       </select>
@@ -1482,11 +1482,11 @@
 
                 <div className="pt-1 sm:pt-2 flex">
                   {!isLoginReady ? (
-                    <div className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-gray-400 border-2 border-gray-400 cursor-not-allowed shadow-md opacity-90 select-none min-h-[60px]">
+                    <div className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-gray-400 border-2 border-gray-400 cursor-not-allowed shadow-md opacity-90 select-none min-h-[54px]">
                       {isFetchingSchedule ? <><Clock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2 animate-spin" /> 데이터 확인 중...</> : <><EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성 시작하기</>}
                     </div>
                   ) : (
-                    <button onClick={handleLogin} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md touch-manipulation min-h-[60px]">
+                    <button onClick={handleLogin} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md touch-manipulation min-h-[54px]">
                       <EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성 시작하기
                     </button>
                   )}
@@ -1508,39 +1508,39 @@
                         }
                         onNavigateToMyWeeklySchedule();
                     }}
-                    className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[60px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-[#000080] bg-[#a9d0fd] border-2 border-blue-400 hover:bg-blue-300'}`}
+                    className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-[#000080] bg-[#a9d0fd] border-2 border-blue-400 hover:bg-blue-300'}`}
                 >
                     <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정 보기
                 </button>
 
                 {selectedTeam ? (
                   <>
-                    <button onClick={() => onNavigateToDailySchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[60px]">
+                    <button onClick={() => onNavigateToDailySchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px]">
                       <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 오늘 일정 보기
                     </button>
-                    <a href={getNoCacheUrl(SHEET_URLS[selectedTeam])} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 min-h-[60px]">
+                    <a href={getNoCacheUrl(SHEET_URLS[selectedTeam])} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 min-h-[54px]">
                       <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 전체 일정 보기
                     </a>
                   </>
                 ) : (
                   <>
-                    <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[60px]">
+                    <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[54px]">
                       <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 오늘 일정 보기
                     </button>
-                    <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[60px]">
+                    <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[54px]">
                       <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 전체 일정 보기
                     </button>
                   </>
                 )}
                 {errorMessage && <div className="text-red-600 font-bold text-center text-sm -mt-2 -mb-2">{errorMessage}</div>}
 
-                <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-purple-700 bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[60px]">
+                <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-purple-700 bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
                   <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
                 </button>
-                <a href={getNoCacheUrl(SHEET_URLS["기타참여자"])} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-emerald-700 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 shadow-md transition-all active:scale-95 min-h-[60px]">
+                <a href={getNoCacheUrl(SHEET_URLS["기타참여자"])} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-emerald-700 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 shadow-md transition-all active:scale-95 min-h-[54px]">
                   <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 수업 희망자 및 기타 참여자 관리
                 </a>
-                <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-teal-700 bg-teal-50 border-2 border-teal-200 hover:bg-teal-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[60px]">
+                <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-teal-700 bg-teal-50 border-2 border-teal-200 hover:bg-teal-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
                   <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><path d="M11 8a3 3 0 0 0-3 3" /></svg> 대상자 검색하기
                 </button>
               </div>
