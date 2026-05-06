@@ -1735,9 +1735,13 @@
                       const isSpecialDay = (index === 0 && specialDayData) || (logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회");
                       const cardColorClass = isSpecialDay ? 'bg-red-100 border-red-300' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
 
+                      const isFutureOrToday = date >= getLocalDateString(new Date());
+                      const hasAttendance = logs[index].tags && logs[index].tags.some(tArray => tArray && tArray.length > 0);
+                      const isCompact = isFutureOrToday && !hasAttendance;
+
                       return (
-                        <div key={index} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
-                          <div className={`flex items-center text-blue-700 font-bold mb-2 sm:mb-3 text-lg sm:text-xl transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
+                        <div key={index} className={`${isCompact ? 'p-2.5 sm:p-3 md:p-4' : 'p-4 sm:p-5 md:p-6'} border rounded-xl shadow-md ${cardColorClass}`}>
+                          <div className={`flex items-center text-blue-700 font-bold ${isCompact ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} text-lg sm:text-xl transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
                             <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" /> <span className="shrink-0">{shift}</span>
 
                             {counts && counts.length > 0 ? (
@@ -1761,7 +1765,7 @@
                               </div>
                             ) : null}
                           </div>
-                          <div className="space-y-4">
+                          <div className={isCompact ? "space-y-2" : "space-y-4"}>
                             <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
                               <input
                                 type="text"
@@ -1770,7 +1774,7 @@
                                 onChange={(e) => handleLogChange(index, 'student', e.target.value)}
                                 onBlur={handleInputBlur}
                                 disabled={isDataLoading}
-                                className={`flex-[1.5] min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 placeholder-gray-500 border-gray-400' : 'bg-blue-800 placeholder-blue-200 border-transparent'}`}
+                                className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 placeholder-gray-500 border-gray-400' : 'bg-blue-800 placeholder-blue-200 border-transparent'}`}
                               />
                               <input
                                 type="text"
@@ -1779,7 +1783,7 @@
                                 onChange={(e) => handleLogChange(index, 'location', e.target.value)}
                                 onBlur={handleInputBlur}
                                 disabled={isDataLoading}
-                                className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 placeholder-gray-500 border-gray-400' : 'bg-blue-800 placeholder-blue-200 border-transparent'}`}
+                                className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 placeholder-gray-500 border-gray-400' : 'bg-blue-800 placeholder-blue-200 border-transparent'}`}
                               />
                             </div>
 
@@ -1801,7 +1805,7 @@
                                             onClick={() => toggleTag(index, sIdx, tag)}
                                             disabled={isDataLoading || isInfoMissing || isBlurTarget}
                                             className={
-                                              "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
+                                              "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 " + (isCompact ? "py-0.5" : "py-0.5 sm:py-1 md:py-1.5") + " rounded-xl " +
                                               fontSizeClass +
                                               " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
                                               (isBlurTarget
@@ -1843,7 +1847,7 @@
                                 onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
                                 onBlur={handleInputBlur}
                                 disabled={isDataLoading || isInfoMissing}
-                                className={`flex-1 min-w-0 py-0.5 sm:py-1 md:py-1.5 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-pink-800 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${isOnlyNumber ? 'text-xl md:text-2xl' : 'text-lg md:text-xl'}`}
+                                className={`flex-1 min-w-0 ${isCompact ? 'py-0.5 sm:py-1' : 'py-0.5 sm:py-1 md:py-1.5'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-pink-800 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${isOnlyNumber ? 'text-xl md:text-2xl' : 'text-lg md:text-xl'}`}
                               />
                             </div>
                           </div>
