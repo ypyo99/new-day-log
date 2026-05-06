@@ -182,6 +182,7 @@
     const PresentationIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h20" /><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" /><path d="m7 21 5-5 5 5" /></svg>;
     const Sparkles = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" /></svg>;
     const BookOpen = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>;
+    const CalendarIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>;
 
     const VintageDivider = ({ className }) => (
       <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -281,7 +282,7 @@
     // =====================================================================
     // 🖥️ 1. 메인 업무일지 프로그램
     // =====================================================================
-    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch }) {
+    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule }) {
       const [selectedTeam, setSelectedTeam] = useState(() => getSavedItem('sungdong_team', ""));
       const [currentUser, setCurrentUser] = useState(() => getSavedItem('sungdong_teacher', ""));
       const [date, setDate] = useState(() => getInitialWeekday());
@@ -289,6 +290,7 @@
       const [refreshTrigger, setRefreshTrigger] = useState(0);
       const [teachers, setTeachers] = useState([]);
       const [allScheduleData, setAllScheduleData] = useState({});
+      const [specialDayData, setSpecialDayData] = useState(null);
       const [isFetchingTeachers, setIsFetchingTeachers] = useState(false);
       const [isFetchingSchedule, setIsFetchingSchedule] = useState(false);
       const [isSyncing, setIsSyncing] = useState(false);
@@ -370,7 +372,6 @@
         2: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" }
       });
 
-      // 💡 시트 저장/인식에 사용될 데이터 기준 태그 (화면에만 '출석'으로 보이게 렌더링 로직으로 분리)
       const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
       const RENDER_TAGS = ['1', '결석', '취소', '선생님휴가'];
 
@@ -425,7 +426,6 @@
           .catch(err => console.error("팀 CSV 로드 실패:", err));
       }, [selectedTeam, refreshTrigger]);
 
-      // 상태를 시트 통계를 위해 알맞게 파싱하는 헬퍼 함수
       const parseStudentSpecificStatus = (cellStatus, cellStudent, targetName) => {
         const cellNames = cellStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
         const nameIdx = cellNames.indexOf(targetName);
@@ -475,7 +475,6 @@
         const students = [logs[0]?.student, logs[1]?.student, logs[2]?.student];
         if (students.every(s => !s || !s.trim())) {
           setStudentCounts({ 0: null, 1: null, 2: null });
-          // return을 제거하여 휴무일 파싱 로직이 정상적으로 실행되도록 수정
         }
 
         window.Papa.parse(teamCsvText, {
@@ -493,7 +492,6 @@
             }
             if (headerRowIdx === -1) return;
 
-            // 공휴일 및 간담회 파싱 (4번째 행과 3번째 행)
             let holidays = [];
             const holidayRow = data[headerRowIdx + 2];
             const eventRowForHolidays = data[headerRowIdx + 1];
@@ -518,16 +516,15 @@
             }
             setHolidayDates(prev => JSON.stringify(prev) === JSON.stringify(holidays) ? prev : holidays);
 
-            // [추가]: 해당 일자로부터 7일 내 '공휴일', '소양교육' 등 확인하여 알림 생성
             const targetStartDate = new Date(date);
             targetStartDate.setHours(0, 0, 0, 0);
             const targetEndDate = new Date(targetStartDate);
             targetEndDate.setDate(targetEndDate.getDate() + 7);
 
             let alerts = [];
-            const eventRow = data[headerRowIdx + 1]; // 3rd row
-            const statusRow = data[headerRowIdx + 2]; // 4th row
-            const headerRowForAlerts = data[headerRowIdx]; // 2nd row (Dates)
+            const eventRow = data[headerRowIdx + 1];
+            const statusRow = data[headerRowIdx + 2];
+            const headerRowForAlerts = data[headerRowIdx];
 
             if (eventRow && statusRow && headerRowForAlerts) {
               for (let j = 4; j < headerRowForAlerts.length; j++) {
@@ -559,6 +556,28 @@
 
             const targetD = new Date(date);
             targetD.setHours(0, 0, 0, 0);
+
+            // 특이 사항 (간담회/공휴일) 감지 로직
+            let currentSpecialDay = null;
+            const headerRowForSpecial = data[headerRowIdx];
+            for (let j = 4; j < headerRowForSpecial.length; j++) {
+              const cellStr = headerRowForSpecial[j] || "";
+              const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+              if (match) {
+                const d = new Date(targetD.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+                d.setHours(0, 0, 0, 0);
+                if (d.getTime() === targetD.getTime()) {
+                  const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
+                  const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
+                  const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
+                  if (row3.includes("간담회") || row4.includes("공휴일")) {
+                    currentSpecialDay = { student: row3, location: row4, memo: row5 };
+                  }
+                  break;
+                }
+              }
+            }
+            setSpecialDayData(currentSpecialDay);
 
             const realToday = new Date();
             realToday.setHours(0, 0, 0, 0);
@@ -711,10 +730,16 @@
             const fetchedData = todaysData[shift] || {};
             const statusStr = formatStatusIfDate(fetchedData.status) || "";
 
-            const loadedStudent = (fetchedData.student === undefined || fetchedData.student === null) ? "" : fetchedData.student;
-            const loadedLocation = (fetchedData.location === undefined || fetchedData.location === null) ? "" : fetchedData.location;
+            let loadedStudent = (fetchedData.student === undefined || fetchedData.student === null) ? "" : fetchedData.student;
+            let loadedLocation = (fetchedData.location === undefined || fetchedData.location === null) ? "" : fetchedData.location;
 
-            // 💡 보조강사, 경로당 포함 시 인원수(headcount) 표시 플래그
+            // 특이 사항 자동 반영 (첫 번째 슬롯)
+            const isSpecialDay = index === 0 && specialDayData;
+            if (isSpecialDay && (!loadedStudent && !loadedLocation || ["김종철", "표영", "강계환"].includes(currentUser.trim()))) {
+              loadedStudent = specialDayData.student;
+              loadedLocation = specialDayData.location;
+            }
+
             const isShowHeadcount = loadedStudent.includes("보조강사") || loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
 
             let loadedTags = [[]];
@@ -754,7 +779,10 @@
               }
             }
 
-            // 💡 [수정] 구 포맷 호환: 헤드카운트가 뒤에 붙어있던 경우
+            if (isSpecialDay && specialDayData && specialDayData.memo && !memoParts.includes(specialDayData.memo)) {
+              memoParts.push(specialDayData.memo);
+            }
+
             if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
               const lastTag = tagParts[tagParts.length - 1];
               if (/^\d{1,2}$/.test(lastTag)) {
@@ -775,11 +803,10 @@
 
             loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
 
-            // 💡 인원수 필드가 활성화 되어야 하고, 메모파트의 첫 부분이 숫자인 경우 분리
             if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
               if (/^\d{1,2}$/.test(memoParts[0].trim())) {
                 loadedHeadcount = memoParts[0].trim();
-                memoParts.shift(); // 메모 리스트에서 숫자 부분 제외
+                memoParts.shift();
               }
             }
 
@@ -798,7 +825,6 @@
         });
       }, [date, allScheduleData, selectedTeam]);
 
-      // 상태 스트링 조합을 위한 헬퍼 (hasChanges, performAutoSave 등에서 공통 사용)
       const buildStatusString = (log) => {
         let tagsStrings = [];
         const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
@@ -810,7 +836,6 @@
           tagsStrings.push(sorted.length > 0 ? sorted.join(', ') : '');
         }
 
-        // 💡 아무런 버튼도 눌리지 않았을 경우 (tagsStrings가 모두 빈 문자열인 경우) '/'를 생성하지 않음
         let orderedTagsStr = "";
         if (tagsStrings.some(s => s.length > 0)) {
           orderedTagsStr = maxRows > 1 ? tagsStrings.join('/') : (tagsStrings[0] || "");
@@ -820,17 +845,12 @@
         const isShowHeadcount = (log.student || "").includes("보조강사") || isKyungrodang;
 
         let result = [];
-        // 1. 인원 (항상 먼저)
         if (isShowHeadcount && log.headcount) {
           result.push(log.headcount);
         }
-
-        // 2. 태그들 (결석, 취소, 선생님휴가 등)
         if (orderedTagsStr) {
           result.push(orderedTagsStr);
         }
-
-        // 3. 메모
         if (log.memo) {
           result.push(log.memo);
         }
@@ -845,7 +865,6 @@
           const log = logs[i];
           const original = todaysOriginalData[shift] || {};
           const originalStatus = formatStatusIfDate(original.status);
-
           const currentStatusStr = buildStatusString(log);
 
           return (log.student || "") !== (original.student || "") ||
@@ -870,7 +889,6 @@
           const log = logs[i];
           const original = todaysOriginalData[shiftTime] || {};
           const originalStatus = formatStatusIfDate(original.status);
-
           const currentStatusStr = buildStatusString(log);
 
           const isChanged = (log.student || "") !== (original.student || "") ||
@@ -892,10 +910,8 @@
 
         if (changedIndices.length === 0) return true;
 
-        // 💡 [추가된 유효성 검사]: 학생이 두 명 이상일 때 한 명만 체크되었는지 확인
         for (let i of changedIndices) {
           const log = logs[i];
-
           const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
 
           if (studentNames.length >= 2) {
@@ -905,11 +921,10 @@
               if (tags.length > 0) checkedCount++;
             }
 
-            // 한 명이라도 체크했는데, 모든 학생이 다 체크되지 않은 경우 (일부만 누락됨)
             if (checkedCount > 0 && checkedCount < studentNames.length) {
               setValidationErrorMsg(`[${shifts[i]}] 시간에 출결이 선택되지 않은 학생이 있습니다.\n두 명 모두 출결 상태를 체크해 주세요.`);
               setShowValidationError(true);
-              return false; // 저장 로직을 즉시 중단합니다.
+              return false;
             }
           }
         }
@@ -937,7 +952,6 @@
 
           const shiftTime = shifts[i];
           const log = logs[i];
-
           const currentStatusStr = buildStatusString(log);
 
           const url = `${GOOGLE_SCRIPT_URL}?action=saveLog&team=${selectedTeam}&teacher=${encodeURIComponent(currentUser)}&date=${date}&shift=${encodeURIComponent(shiftTime)}&location=${encodeURIComponent(log.location || "")}&student=${encodeURIComponent(log.student || "")}&status=${encodeURIComponent(currentStatusStr)}&t=${Date.now()}`;
@@ -980,7 +994,6 @@
 
         if (validRecords.length > 0) {
           setRecords(prev => [...validRecords.reverse(), ...prev]);
-
           setAllScheduleData(prev => {
             const newData = { ...prev };
             if (!newData[date]) newData[date] = {};
@@ -1002,10 +1015,7 @@
 
       const handleInputBlur = () => {
         setTimeout(() => {
-          window.scrollTo({
-            top: window.scrollY,
-            behavior: 'instant'
-          });
+          window.scrollTo({ top: window.scrollY, behavior: 'instant' });
         }, 50);
       };
 
@@ -1014,13 +1024,10 @@
 
       const getTagClass = (index, sIdx, tag) => {
         const isActive = logs[index].selectedTags && logs[index].selectedTags[sIdx] && logs[index].selectedTags[sIdx].includes(tag);
-
         if (!isActive) {
           return 'bg-white text-gray-700 font-bold border-[1.5px] border-gray-300 shadow-[0_2px_0_#9ca3af] active:shadow-[0_0px_0_#9ca3af] active:translate-y-[2px]';
         }
-
         const baseActiveStyle = 'text-white font-bold border-[1.5px] translate-y-[2px] shadow-[inset_0_3px_5px_rgba(0,0,0,0.5)]';
-
         if (tag === '결석') return `bg-red-400 border-red-500 ${baseActiveStyle}`;
         if (tag === '취소') return `bg-orange-350 border-orange-500 ${baseActiveStyle}`;
         if (tag === '선생님휴가') return `bg-gray-500 border-gray-600 ${baseActiveStyle}`;
@@ -1029,7 +1036,6 @@
 
       const handleRepeatSchedule = () => {
         if (isDataLoading) return;
-
         const currentDayOfWeek = new Date(date).getDay();
         const targetDates = availableDates.filter(d => d > date && new Date(d).getDay() === currentDayOfWeek);
 
@@ -1043,20 +1049,13 @@
         const validTargetDates = targetDates.filter(targetDate => {
           const todaysOriginalData = allScheduleData[targetDate] || {};
           let hasDifference = false;
-
           shifts.forEach((shiftTime, i) => {
             const log = logs[i];
             const original = todaysOriginalData[shiftTime] || {};
-            const currentStudent = log.student || "";
-            const currentLocation = log.location || "";
-            const targetStudent = original.student || "";
-            const targetLocation = original.location || "";
-
-            if (currentStudent !== targetStudent || currentLocation !== targetLocation) {
+            if ((log.student || "") !== (original.student || "") || (log.location || "") !== (original.location || "")) {
               hasDifference = true;
             }
           });
-
           return hasDifference;
         });
 
@@ -1065,7 +1064,6 @@
           setTimeout(() => setErrorMessage(""), 3000);
           return;
         }
-
         setRepeatTargetDates(validTargetDates);
         setShowRepeatConfirm(true);
       };
@@ -1081,23 +1079,16 @@
 
         repeatTargetDates.forEach((targetDate) => {
           const todaysOriginalData = allScheduleData[targetDate] || {};
-
           shifts.forEach((shiftTime, i) => {
             const log = logs[i];
             const original = todaysOriginalData[shiftTime] || {};
-
-            const currentStudent = log.student || "";
-            const currentLocation = log.location || "";
-            const targetStudent = original.student || "";
-            const targetLocation = original.location || "";
-
-            if (currentStudent !== targetStudent || currentLocation !== targetLocation) {
+            if ((log.student || "") !== (original.student || "") || (log.location || "") !== (original.location || "")) {
               allTasks.push({
                 id: `${targetDate}_${i}`,
                 date: targetDate,
                 shift: shiftTime,
-                student: currentStudent,
-                location: currentLocation,
+                student: log.student || "",
+                location: log.location || "",
                 statusStr: "",
                 index: i
               });
@@ -1145,37 +1136,25 @@
 
         for (let idx = 0; idx < allTasks.length; idx += chunkSize) {
           const chunkTasks = allTasks.slice(idx, idx + chunkSize);
-
           const chunkPromises = chunkTasks.map(async (task, chunkIdx) => {
             if (chunkIdx > 0) await new Promise(res => setTimeout(res, chunkIdx * 150));
-
             const url = `${GOOGLE_SCRIPT_URL}?action=saveLog&team=${selectedTeam}&teacher=${encodeURIComponent(currentUser)}&date=${task.date}&shift=${encodeURIComponent(task.shift)}&location=${encodeURIComponent(task.location)}&student=${encodeURIComponent(task.student)}&status=${encodeURIComponent(task.statusStr)}&t=${Date.now()}`;
-
-            let lastError = null;
             for (let attempt = 1; attempt <= 5; attempt++) {
               try {
                 setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: attempt === 1 ? '저장 중...' : `재시도 중...(${attempt}/5)` } : item));
-
                 const response = await fetchWithTimeout(url, 15000);
                 if (response.ok) {
                   const json = await response.json();
-                  if (json && json.success === false) {
-                    throw new Error(json.message || "시트 내부 에러");
-                  } else {
-                    setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 완료' } : item));
-                    return task;
-                  }
-                } else {
-                  throw new Error("네트워크 오류");
-                }
+                  if (json && json.success === false) throw new Error(json.message || "시트 내부 에러");
+                  setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 완료' } : item));
+                  return task;
+                } else throw new Error("네트워크 오류");
               } catch (e) {
-                lastError = e;
                 if (attempt === 5) {
                   setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 실패' } : item));
                   return null;
                 } else {
-                  const jitter = Math.floor(Math.random() * 500);
-                  await new Promise(res => setTimeout(res, 1000 + jitter));
+                  await new Promise(res => setTimeout(res, 1000 + Math.floor(Math.random() * 500)));
                 }
               }
             }
@@ -1183,13 +1162,8 @@
           });
 
           const resolvedChunk = await Promise.all(chunkPromises);
-          resolvedChunk.forEach(record => {
-            if (record !== null) validRecords.push(record);
-          });
-
-          if (idx + chunkSize < allTasks.length) {
-            await new Promise(res => setTimeout(res, 300));
-          }
+          resolvedChunk.forEach(record => { if (record !== null) validRecords.push(record); });
+          if (idx + chunkSize < allTasks.length) await new Promise(res => setTimeout(res, 300));
         }
 
         if (validRecords.length > 0) {
@@ -1207,7 +1181,6 @@
           });
           setRefreshTrigger(prev => prev + 1);
         }
-
         setIsSubmitting(false);
         setIsSaveComplete(true);
       };
@@ -1223,16 +1196,12 @@
 
       useEffect(() => {
         if (availableDates.length === 0) return;
-
         if (!availableDates.includes(date)) {
           const futureDates = availableDates.filter(d => d > date);
-          if (futureDates.length > 0) {
-            setDate(futureDates[0]);
-          } else {
+          if (futureDates.length > 0) setDate(futureDates[0]);
+          else {
             const pastDates = availableDates.filter(d => d < date);
-            if (pastDates.length > 0) {
-              setDate(pastDates[pastDates.length - 1]);
-            }
+            if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
           }
         }
       }, [availableDates, date]);
@@ -1241,9 +1210,8 @@
         if (isDataLoading) return;
         await performAutoSave();
         const pastDates = availableDates.filter(d => d < date);
-        if (pastDates.length > 0) {
-          setDate(pastDates[pastDates.length - 1]);
-        } else {
+        if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
+        else {
           setErrorMessage("⚠️ 데이터의 시작 날짜입니다. 이전 기록이 없습니다.");
           setTimeout(() => setErrorMessage(""), 3000);
         }
@@ -1253,9 +1221,8 @@
         if (isDataLoading) return;
         await performAutoSave();
         const futureDates = availableDates.filter(d => d > date);
-        if (futureDates.length > 0) {
-          setDate(futureDates[0]);
-        } else {
+        if (futureDates.length > 0) setDate(futureDates[0]);
+        else {
           setErrorMessage("⚠️ 데이터의 마지막 날짜입니다. 이후 기록이 없습니다.");
           setTimeout(() => setErrorMessage(""), 3000);
         }
@@ -1265,29 +1232,23 @@
         if (isDataLoading) return;
         await performAutoSave();
         const todayStr = getInitialWeekday();
-
         let targetStr = todayStr;
         if (availableDates.length > 0 && !availableDates.includes(todayStr)) {
           const futureDates = availableDates.filter(d => d > todayStr);
-          if (futureDates.length > 0) {
-            targetStr = futureDates[0];
-          } else {
+          if (futureDates.length > 0) targetStr = futureDates[0];
+          else {
             const pastDates = availableDates.filter(d => d < todayStr);
-            if (pastDates.length > 0) {
-              targetStr = pastDates[pastDates.length - 1];
-            }
+            if (pastDates.length > 0) targetStr = pastDates[pastDates.length - 1];
           }
         }
 
         if (minDate && targetStr < minDate) {
           setErrorMessage("⚠️ 오늘(또는 대체 근무일) 날짜가 데이터 시작일보다 이전입니다.");
-          setTimeout(() => setErrorMessage(""), 3000);
-          return;
+          setTimeout(() => setErrorMessage(""), 3000); return;
         }
         if (maxDate && targetStr > maxDate) {
           setErrorMessage("⚠️ 오늘(또는 대체 근무일) 날짜가 데이터 종료일보다 이후입니다.");
-          setTimeout(() => setErrorMessage(""), 3000);
-          return;
+          setTimeout(() => setErrorMessage(""), 3000); return;
         }
         setDate(targetStr);
       };
@@ -1296,16 +1257,31 @@
         const s = e.target.value;
         if (!s || isDataLoading) return;
         await performAutoSave();
-        if (minDate && s < minDate) {
-          setErrorMessage(`⚠️ 기록은 ${minDate}부터 가능합니다.`);
-          setTimeout(() => setErrorMessage(""), 3000);
-          return;
+
+        // 구글 시트 데이터 범위 내에 있는지 엄격하게 체크
+        if (availableDates.length > 0) {
+          if (s < minDate || s > maxDate || !availableDates.includes(s)) {
+            let targetDate = s;
+            if (s < minDate) targetDate = minDate;
+            else if (s > maxDate) targetDate = maxDate;
+
+            // 만약 선택한 날짜가 범위 내에 있지만 (예: 공휴일) availableDates에는 없는 경우
+            if (!availableDates.includes(targetDate)) {
+              const futureDates = availableDates.filter(d => d > targetDate);
+              if (futureDates.length > 0) targetDate = futureDates[0];
+              else {
+                const pastDates = availableDates.filter(d => d < targetDate);
+                if (pastDates.length > 0) targetDate = pastDates[pastDates.length - 1];
+              }
+            }
+
+            setErrorMessage(`⚠️ 해당 날짜는 시트에 정의되지 않았습니다. (${targetDate}로 이동합니다)`);
+            setTimeout(() => setErrorMessage(""), 3000);
+            setDate(targetDate);
+            return;
+          }
         }
-        if (maxDate && s > maxDate) {
-          setErrorMessage(`⚠️ 기록은 ${maxDate}까지만 가능합니다.`);
-          setTimeout(() => setErrorMessage(""), 3000);
-          return;
-        }
+
         const d = new Date(s);
         if (d.getDay() === 0 || d.getDay() === 6) { setErrorMessage("⚠️ 주말(토, 일요일)은 선택할 수 없습니다."); setTimeout(() => setErrorMessage(""), 3000); return; }
         setErrorMessage(""); setDate(s);
@@ -1315,7 +1291,6 @@
         setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
       };
 
-      // 개별 학생별 출결 관리 로직 반영
       const toggleTag = (index, sIdx, tag) => {
         const now = Date.now();
         const lastClick = lastTagClickRef.current;
@@ -1326,8 +1301,6 @@
         setLogs(prev => {
           const newLogs = { ...prev };
           const log = newLogs[index];
-
-          // UI에 출력되어야 하는 최대 줄 수 보장
           const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
           const maxRows = Math.max(1, studentNames.length);
           let currentTagsArray = [...(log.selectedTags || [])];
@@ -1336,27 +1309,22 @@
           const exclusiveTags = ['1', '2', '결석'];
 
           if (tag === '선생님휴가') {
-            // 어느 하나라도 선생님휴가가 체크되어 있으면 모두 해제, 아니면 모두에 추가
             const isAnySelected = currentTagsArray.some(tags => tags.includes('선생님휴가'));
             if (isAnySelected) {
               currentTagsArray = currentTagsArray.map(tags => tags.filter(t => t !== '선생님휴가'));
             } else {
               currentTagsArray = currentTagsArray.map(tags => {
-                // 형의 요청: 선생님휴가를 눌러도 기존 다른 버튼 상태(출석, 결석 등)는 건드리지 않고 그대로 유지
                 let newTags = [...tags];
                 if (!newTags.includes('선생님휴가')) newTags.push('선생님휴가');
                 return newTags;
               });
             }
           } else {
-            // 특정 학생의 태그만 수정
             let newTags = [...(currentTagsArray[sIdx] || [])];
             if (newTags.includes(tag)) {
               newTags = newTags.filter(t => t !== tag);
             } else {
-              if (exclusiveTags.includes(tag)) {
-                newTags = newTags.filter(t => !exclusiveTags.includes(t));
-              }
+              if (exclusiveTags.includes(tag)) newTags = newTags.filter(t => !exclusiveTags.includes(t));
               newTags.push(tag);
             }
             currentTagsArray[sIdx] = newTags;
@@ -1404,11 +1372,8 @@
         const deltaX = touchEndX - mainTouchStartX.current;
         const deltaY = touchEndY - mainTouchStartY.current;
 
-        if (deltaY > 0 && deltaY > Math.abs(deltaX) * 2) {
-          setPullDistance(Math.min(deltaY, 400));
-        } else {
-          setPullDistance(0);
-        }
+        if (deltaY > 0 && deltaY > Math.abs(deltaX) * 2) setPullDistance(Math.min(deltaY, 400));
+        else setPullDistance(0);
       };
 
       const handleMainTouchEnd = (e) => {
@@ -1418,11 +1383,8 @@
         const deltaX = touchEndX - mainTouchStartX.current;
         const deltaY = touchEndY - mainTouchStartY.current;
 
-        if (deltaY > 300 && deltaY > Math.abs(deltaX) * 2) {
-          window.location.reload();
-        } else {
-          setPullDistance(0);
-        }
+        if (deltaY > 300 && deltaY > Math.abs(deltaX) * 2) window.location.reload();
+        else setPullDistance(0);
         mainTouchStartX.current = null;
         mainTouchStartY.current = null;
       };
@@ -1439,11 +1401,7 @@
         const deltaX = touchStartX.current - touchEndX;
         const deltaY = touchStartY.current - touchEndY;
 
-        if (isDataLoading) {
-          touchStartX.current = null;
-          touchStartY.current = null;
-          return;
-        }
+        if (isDataLoading) { touchStartX.current = null; touchStartY.current = null; return; }
 
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 150) {
           if (deltaX > 0) handleNextDay();
@@ -1540,6 +1498,21 @@
               </div>
 
               <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-[180px]">
+                {/* 💡 [추가] 나의 주간 일정 보기 버튼 */}
+                <button
+                    onClick={() => {
+                        if(!selectedTeam || !currentUser) {
+                            setErrorMessage("팀과 선생님을 먼저 선택해주세요.");
+                            setTimeout(() => setErrorMessage(""), 3000);
+                            return;
+                        }
+                        onNavigateToMyWeeklySchedule();
+                    }}
+                    className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md transition-all active:scale-95 touch-manipulation min-h-[60px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-blue-800 bg-[#a9d0fd] border-2 border-blue-400 hover:bg-blue-300'}`}
+                >
+                    <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정 보기
+                </button>
+
                 {selectedTeam ? (
                   <>
                     <button onClick={() => onNavigateToDailySchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold shadow-md text-orange-700 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[60px]">
@@ -1559,6 +1532,8 @@
                     </button>
                   </>
                 )}
+                {errorMessage && <div className="text-red-600 font-bold text-center text-sm -mt-2 -mb-2">{errorMessage}</div>}
+
                 <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-purple-700 bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[60px]">
                   <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
                 </button>
@@ -1646,7 +1621,7 @@
                       <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
                     </button>
 
-                    <div className="flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm overflow-hidden transition-all">
+                    <div className={`flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] ${specialDayData ? 'border-red-400 bg-red-50' : 'border-blue-400 bg-[#f0f7ff]'} rounded-xl text-center shadow-sm overflow-hidden transition-all`}>
                       <input
                         type="date"
                         value={date}
@@ -1663,14 +1638,14 @@
                         title="달력 열기"
                       />
                       <div className={`flex items-center justify-center pointer-events-none relative z-0 ${isDataLoading ? 'opacity-50' : ''} -translate-y-[1px] whitespace-nowrap px-1`}>
-                        <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap">{parseInt(date.substring(5, 7), 10)}/{parseInt(date.substring(8, 10), 10)}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                        <span className={`font-extrabold ${specialDayData ? 'text-red-700' : 'text-[#1e3a8a]'} text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap`}>{parseInt(date.substring(5, 7), 10)}/{parseInt(date.substring(8, 10), 10)}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke={specialDayData ? '#b91c1c' : '#1e3a8a'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
                           <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
                           <line x1="16" x2="16" y1="2" y2="6" />
                           <line x1="8" x2="8" y1="2" y2="6" />
                           <line x1="3" x2="21" y1="10" y2="10" />
                         </svg>
-                        <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0">({getDayName(date)})</span>
+                        <span className={`font-extrabold ${specialDayData ? 'text-red-700' : 'text-[#1e3a8a]'} text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0`}>({getDayName(date)})</span>
                       </div>
                     </div>
 
@@ -1681,7 +1656,6 @@
                   </div>
                   {errorMessage && <div className="text-red-600 font-bold text-sm text-center pb-2">{errorMessage}</div>}
 
-                  {/* [추가]: 경로당 등 참석인원 미입력 시 안내 메시지 */}
                   {isMissingHeadcount && !isDataLoading && (
                     <div className="mt-2 animate-fadeIn">
                       <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3 sm:p-4 text-red-800 shadow-sm flex items-center justify-center">
@@ -1695,7 +1669,6 @@
                     </div>
                   )}
 
-                  {/* [추가]: 해당 일자로부터 7일 내 공휴일/소양교육 안내 박스 */}
                   {specialAlerts.length > 0 && (
                     <div className="mt-2 animate-fadeIn">
                       <div className="bg-orange-100 border-2 border-orange-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 text-gray-800 shadow-sm overflow-hidden">
@@ -1722,7 +1695,6 @@
                     </div>
                   )}
 
-                  {/* 💡 [추가]: 해당 일자에 스케줄이 없을 때 표시되는 안내 메시지 */}
                   {isEmptySchedule && !isDataLoading && (
                     <div className="mt-2 animate-fadeIn">
                       <div className="bg-orange-100 border-2 border-orange-300 rounded-xl p-4 text-orange-800 shadow-sm">
@@ -1753,19 +1725,17 @@
                       const locTextSize = locLen >= 9 ? "text-[15px] sm:text-[15px] md:text-[16px] landscape:text-[17px] md:landscape:text-[18px]" : locLen >= 8 ? "text-[16px] sm:text-[16px] md:text-[18px] landscape:text-[18px] md:landscape:text-[20px]" : locLen >= 7 ? "text-[17px] sm:text-[17px] md:text-[20px] landscape:text-[20px] md:landscape:text-[22px]" : locLen >= 6 ? "text-[18px] sm:text-[19px] md:text-[22px] landscape:text-[22px] md:landscape:text-[24px]" : "text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px]";
 
                       const counts = studentCounts[index];
-
-                      // 학생이름을 파싱해서 몇 개의 줄(row)이 필요한지 계산합니다.
                       const studentNames = (logs[index].student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
                       const displayRowsCount = Math.max(1, studentNames.length);
-
-                      // 💡 학생이 두 명 이상일 때 초록색 바탕을 주기 위한 조건 추가
                       const isMultipleStudents = studentNames.length >= 2;
-
-                      // 💡 인원수 입력 칸 표시 여부 판단 로직 (학생 이름 자체에 '경로당'이나 '보조강사'가 포함된 경우에만 인원 필드 사용)
                       const isShowHeadcount = ((logs[index].student || "").includes("보조강사") || (logs[index].student || "").includes("경로당")) && displayRowsCount < 2;
 
+                      const isKyungrodang = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
+                      const isSpecialDay = (index === 0 && specialDayData) || (logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회");
+                      const cardColorClass = isSpecialDay ? 'bg-red-100 border-red-300' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
+
                       return (
-                        <div key={index} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300'}`}>
+                        <div key={index} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
                           <div className={`flex items-center text-blue-700 font-bold mb-2 sm:mb-3 text-lg sm:text-xl transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
                             <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" /> <span className="shrink-0">{shift}</span>
 
@@ -1812,7 +1782,6 @@
                               />
                             </div>
 
-                            {/* 학생 인원수만큼 출결 버튼 줄 생성 */}
                             <div className="space-y-1.5 !mt-3">
                               {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
                                 return (
@@ -1821,7 +1790,6 @@
                                       {RENDER_TAGS.map(tag => {
                                         const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
 
-                                        // 💡 출석, 결석, 취소 버튼 비활성화 및 블러 처리
                                         const isKyungrodangIncluded = (logs[index].student || "").includes("경로당") || (logs[index].location || "").includes("경로당");
                                         const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
 
@@ -1859,7 +1827,6 @@
                                   placeholder="인원"
                                   value={logs[index].headcount || ""}
                                   onChange={(e) => {
-                                    // 숫자만 입력 가능하도록 정규식 처리
                                     const val = e.target.value.replace(/[^0-9]/g, '');
                                     handleLogChange(index, 'headcount', val);
                                   }}
@@ -1891,7 +1858,6 @@
             </section>
           </main>
 
-          {/* 저장 및 유효성 에러 팝업 등 모달 영역 */}
           {showValidationError && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4 animate-fadeIn">
               <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full overflow-hidden">
@@ -2518,8 +2484,6 @@
       );
     }
 
-
-
     // =====================================================================
     // ✨ 교육 요약 & 인사이트 컴포넌트
     // =====================================================================
@@ -2572,7 +2536,6 @@
           const studentNames = studentStr.split(/[/,]/).map(s => s.trim()).filter(Boolean);
           const statusParts = statusStr.includes('/') ? statusStr.split('/') : [statusStr];
 
-          // 💡 학생 이름 자체에 '경로당'이나 '보조강사'가 포함된 단일 항목인 경우에만 headcount 로직 사용
           const isShowHeadcount = (studentStr.includes("보조강사") || studentStr.includes("경로당")) && studentNames.length < 2;
 
           studentNames.forEach((name, idx) => {
@@ -2581,7 +2544,6 @@
 
             let studentStatus = (statusParts.length > idx) ? statusParts[idx].trim() : statusParts[0].trim();
 
-            // 인원수(headcount) 추출
             let headcount = 1;
             if (isShowHeadcount) {
               const hcMatch = studentStatus.match(/^(\d+)/);
@@ -2613,7 +2575,6 @@
       const dynamicInsights = useMemo(() => {
         const insights = [];
 
-        // 1. Attendance Analysis
         if (attendanceStats) {
           if (attendanceStats.rate >= 90) {
             insights.push(`오늘 **${team}**은 **${attendanceStats.rate}%**의 높은 참여율을 기록하며 교육 열기가 매우 높았습니다.`);
@@ -2623,11 +2584,9 @@
           }
         }
 
-        // 2. Theme Based Analysis
         const sorted = [...categorized].sort((a, b) => b.items.length - a.items.length);
         if (sorted.length > 0) {
           const top = sorted[0];
-          // Find specific keywords mentioned
           const foundKeywords = [];
           top.items.forEach(item => {
             top.keywords.forEach(kw => {
@@ -2645,12 +2604,10 @@
           insights.push(themeText);
         }
 
-        // 3. Multi-Theme Connection
         if (sorted.length >= 2) {
           const name1 = sorted[0].name;
           const name2 = sorted[1].name;
           const getParticle = (name) => {
-            // 명시적으로 받침이 있는 테마 이름들
             if (name.includes('설정') || name.includes('이동') || name.includes('커뮤니케이션') || name.includes('배달')) return '과';
             return '와';
           };
@@ -2658,7 +2615,6 @@
           insights.push(`**${name1}**${particle} **${name2}** 등 여러 영역을 넘나드는 복합적인 디지털 교육이 진행되어 어르신들의 종합적인 활용 능력이 강화되었습니다.`);
         }
 
-        // 4. Specific Patterns
         const allContent = contents.map(c => c.content).join(' ');
         if (allContent.includes('키오스크') && (allContent.includes('페이') || allContent.includes('이체'))) {
           insights.push(`실생활 결제와 직결되는 **키오스크 및 금융 앱** 연계 교육이 진행되어 어르신들의 독립적인 일상생활 수행 능력이 크게 향상될 것으로 기대됩니다.`);
@@ -2784,6 +2740,7 @@
         </div>
       );
     }
+
     function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamChange }) {
       const [selectedTeam, setSelectedTeam] = useState(initialTeam || "1팀");
 
@@ -2969,13 +2926,13 @@
             const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
             const day = dayNames[currentDisplayDate.getDay()];
             let targetSearchDateStr = `${currentDisplayDate.getMonth() + 1}/${currentDisplayDate.getDate()}(${day})`;
-            let actualDisplayDate = new Date(currentDisplayDate);
 
             const targetM = currentDisplayDate.getMonth() + 1;
             const targetD = currentDisplayDate.getDate();
 
             let isHolidayToday = false;
 
+            let specialDayInfo = null;
             for (let j = 4; j < data[headerRowIndex].length; j++) {
               const headerCell = data[headerRowIndex][j] || "";
               const match = headerCell.match(/(\d+)\s*[/.]\s*(\d+)/);
@@ -2983,6 +2940,13 @@
                 const cellM = parseInt(match[1], 10);
                 const cellD = parseInt(match[2], 10);
                 if (cellM === targetM && cellD === targetD) {
+                  const r3 = (data[headerRowIndex + 1] && data[headerRowIndex + 1][j]) ? data[headerRowIndex + 1][j].trim() : "";
+                  const r4 = (data[headerRowIndex + 2] && data[headerRowIndex + 2][j]) ? data[headerRowIndex + 2][j].trim() : "";
+                  const r5 = (data[headerRowIndex + 3] && data[headerRowIndex + 3][j]) ? data[headerRowIndex + 3][j].trim() : "";
+                  if (r3.includes("간담회") || r4.includes("공휴일")) {
+                    specialDayInfo = { student: r3, location: r4, memo: r5 };
+                  }
+
                   const holidayRow = data[headerRowIndex + 2];
                   const is0512 = cellM === 5 && cellD === 12;
                   if (holidayRow && holidayRow[j] && holidayRow[j].includes("공휴일") && !is0512) {
@@ -3191,14 +3155,33 @@
 
                 const sessionCounts = getStudentCounts(currentStudent, dateColumnIndex, data, headerRowIndex);
 
+                let finalStu = currentStudent;
+                let finalLoc = currentLocation;
+                let finalStatus = currentStatus;
+                let isSpecialSlot = false;
+
+                // 특이 사항 자동 반영 (선생님별 첫 슬롯)
+                if (specialDayInfo && (!finalStu && !finalLoc || ["김종철", "표영", "강계환"].includes(currentTeacher.trim()))) {
+                  const teacherShifts = getShifts(selectedTeam);
+                  if (currentTime === teacherShifts[0]) {
+                    finalStu = specialDayInfo.student;
+                    finalLoc = specialDayInfo.location;
+                    if (specialDayInfo.memo && !finalStatus.includes(specialDayInfo.memo)) {
+                      finalStatus = (finalStatus ? finalStatus + ", " : "") + specialDayInfo.memo;
+                    }
+                    isSpecialSlot = true;
+                  }
+                }
+
                 parsedData.push({
                   group: currentGroup,
                   teacher: currentTeacher,
                   time: currentTime,
-                  student: currentStudent,
-                  status: currentStatus,
-                  location: currentLocation,
-                  sessionCounts: sessionCounts
+                  student: finalStu,
+                  status: finalStatus,
+                  location: finalLoc,
+                  sessionCounts: sessionCounts,
+                  isSpecial: isSpecialSlot
                 });
 
                 currentStudent = "";
@@ -3257,6 +3240,7 @@
               setNotice("");
             } else {
               setNotice("⚠️ 데이터의 시작 날짜입니다. 이전 기록이 없습니다.");
+              setTimeout(() => setNotice(""), 3000);
             }
           } else {
             const futureDates = availableDates.filter(d => d.getTime() > currentT);
@@ -3266,6 +3250,7 @@
               setNotice("");
             } else {
               setNotice("⚠️ 데이터의 마지막 날짜입니다. 이후 기록이 없습니다.");
+              setTimeout(() => setNotice(""), 3000);
             }
           }
           return;
@@ -3279,10 +3264,12 @@
 
         if (daysToAdd < 0 && minDate && tempDate < minDate) {
           setNotice("⚠️ 시트의 첫 번째 일정입니다. 이전 날짜가 없습니다.");
+          setTimeout(() => setNotice(""), 3000);
           return;
         }
         if (daysToAdd > 0 && maxDate && tempDate > maxDate) {
           setNotice("※ 시트의 마지막 일정입니다. 다음 날짜가 없습니다.");
+          setTimeout(() => setNotice(""), 3000);
           return;
         }
         setCurrentDisplayDate(tempDate);
@@ -3308,10 +3295,12 @@
 
         if (minDate && selectedDate < minDate) {
           setNotice("⚠️ 시트의 첫 번째 일정보다 이전 날짜입니다.");
+          setTimeout(() => setNotice(""), 3000);
           return;
         }
         if (maxDate && selectedDate > maxDate) {
           setNotice("※ 시트의 마지막 일정보다 이후 날짜입니다.");
+          setTimeout(() => setNotice(""), 3000);
           return;
         }
         setCurrentDisplayDate(selectedDate);
@@ -3463,10 +3452,14 @@
 
                               let studentCellBg = "";
                               const combinedText = (row.student || "") + " " + (row.location || "");
-                              if (combinedText.includes("보조강사")) {
+                              if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
+                                studentCellBg = "bg-red-100";
+                              } else if (combinedText.includes("보조강사")) {
                                 studentCellBg = "bg-[#FFFF00]";
+                              } else if (combinedText.includes("경로당")) {
+                                studentCellBg = "bg-orange-100";
                               } else {
-                                const pinkLocs = ["도선복지관", "방문", "사근복지관", "삼부", "경로당", "성원"];
+                                const pinkLocs = ["도선복지관", "방문", "사근복지관", "삼부", "성원"];
                                 if (row.location && pinkLocs.some(loc => row.location.includes(loc))) {
                                   studentCellBg = "bg-pink-100";
                                 }
@@ -3610,8 +3603,6 @@
         </div>
       );
     }
-
-
 
     // =====================================================================
     // 🔍 대상자 검색 컴포넌트
@@ -3824,7 +3815,6 @@
         loadAll();
       }, []);
 
-      // 같은 날짜의 레코드를 병합 (선생님 이름 콤마 구분, 출결/메모는 한 번만)
       const filteredRecords = useMemo(() => {
         if (!selectedName || selectedName.trim() === "") return [];
         const raw = allRecords.filter(r => r.name === selectedName);
@@ -3852,7 +3842,6 @@
         return Array.from(dateMap.values()).sort((a, b) => b.colDate - a.colDate);
       }, [selectedName, allRecords]);
 
-      // 출석 횟수는 하루 1회만 카운트 (이미 날짜별 병합이므로 그대로 카운트)
       const stats = useMemo(() => {
         if (filteredRecords.length === 0) return null;
         const attended = filteredRecords.filter(r => r.attendanceTag.includes("출석")).length;
@@ -3966,13 +3955,12 @@
                         </div>
                       )}
 
-                      {/* 자음 필터 버튼 제거됨 */}
+                      {/* 대상자 리스트 */}
                       <div className="max-h-[194px] md:max-h-[384px] overflow-y-auto border-2 border-teal-300 rounded-xl p-1 bg-gray-50/50">
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1">
                           {filteredNames.map(name => {
                             const isSpecial = name === "금호벽산경로당" || name === "금호벽산제2경로당";
                             const nameLen = name.length;
-                            // 금호벽산경로당, 금호벽산제2경로당은 줄바꿈을 하므로 글자수가 적은 것처럼 취급하여 폰트 크기를 유지
                             const effectiveLen = isSpecial ? 4 : nameLen;
                             const fontSizeClass = effectiveLen >= 8 ? 'text-[12px]' : effectiveLen >= 5 ? 'text-[14px]' : 'text-[16px]';
                             return (
@@ -4074,15 +4062,400 @@
       );
     }
 
+    // =====================================================================
+    // 📅 4. 나의 주간 일정 보기 컴포넌트
+    // =====================================================================
+    function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
+      const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+        const d = new Date();
+        const day = d.getDay();
+        if (day === 0) d.setDate(d.getDate() + 1);
+        else if (day === 6) d.setDate(d.getDate() + 2);
+        const newDay = d.getDay();
+        const diff = d.getDate() - newDay + (newDay === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+      });
 
+      const [scheduleData, setScheduleData] = useState(null);
+      const [isLoading, setIsLoading] = useState(false);
+      const [sheetRange, setSheetRange] = useState({ min: null, max: null });
+      const [notice, setNotice] = useState("");
+
+      const weekDays = ['월', '화', '수', '목', '금'];
+      const timeSlots = team === "3팀" ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"] : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
+
+      const getCurrentWeekDays = useCallback(() => {
+        const days = [];
+        for (let i = 0; i < 5; i++) {
+          const d = new Date(currentWeekStart);
+          d.setDate(currentWeekStart.getDate() + i);
+          days.push(d);
+        }
+        return days;
+      }, [currentWeekStart]);
+
+      const currentDays = getCurrentWeekDays();
+      const startMonth = currentDays[0].getMonth() + 1;
+      const startDay = currentDays[0].getDate();
+      const endMonth = currentDays[4].getMonth() + 1;
+      const endDay = currentDays[4].getDate();
+
+      const changeWeek = (offsetWeeks) => {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() + (offsetWeeks * 7));
+        
+        if (sheetRange.min && sheetRange.max) {
+          const weekEnd = new Date(newDate);
+          weekEnd.setDate(weekEnd.getDate() + 4);
+          if (weekEnd < sheetRange.min || newDate > sheetRange.max) {
+            setNotice("⚠️ 더 이상 이동할 수 없습니다. (시트 데이터 범위 초과)");
+            setTimeout(() => setNotice(""), 3000);
+            return;
+          }
+        }
+        setCurrentWeekStart(newDate);
+      };
+
+      const handleCurrentWeekClick = () => {
+        const d = new Date();
+        const day = d.getDay();
+        if (day === 0) d.setDate(d.getDate() + 1);
+        else if (day === 6) d.setDate(d.getDate() + 2);
+        const newDay = d.getDay();
+        const diff = d.getDate() - newDay + (newDay === 0 ? -6 : 1);
+        let targetWeekStart = new Date(d.setDate(diff));
+
+        if (sheetRange.min && sheetRange.max) {
+          const weekEnd = new Date(targetWeekStart);
+          weekEnd.setDate(weekEnd.getDate() + 4);
+          if (weekEnd < sheetRange.min) targetWeekStart = new Date(sheetRange.min);
+          else if (targetWeekStart > sheetRange.max) {
+             const lastWeekStart = new Date(sheetRange.max);
+             lastWeekStart.setDate(lastWeekStart.getDate() - (lastWeekStart.getDay() - 1));
+             targetWeekStart = lastWeekStart;
+          }
+        }
+        setCurrentWeekStart(targetWeekStart);
+      };
+
+      useEffect(() => {
+        if (!team || !teacher) return;
+        setIsLoading(true);
+
+        const exportUrl = SHEET_URLS[team] ? SHEET_URLS[team].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
+        if (!exportUrl) {
+          setIsLoading(false);
+          return;
+        }
+
+        fetch(`${exportUrl}&t=${Date.now()}`)
+          .then(res => res.text())
+          .then(csvText => {
+            window.Papa.parse(csvText, {
+              header: false,
+              skipEmptyLines: true,
+              complete: (results) => {
+                const data = results.data;
+                let headerRowIdx = -1;
+                for (let i = 0; i < Math.min(10, data.length); i++) {
+                  if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
+                    headerRowIdx = i; break;
+                  }
+                }
+
+                const parsedData = {};
+                timeSlots.forEach(slot => { parsedData[slot] = {}; });
+
+                if (headerRowIdx === -1) {
+                  setScheduleData(parsedData);
+                  setIsLoading(false);
+                  return;
+                }
+
+                const headerRow = data[headerRowIdx];
+                
+                // 시트 전체 날짜 범위 및 특이사항 파악
+                let sheetDates = [];
+                let specialDates = {}; // { "YYYY-MM-DD": { student, location } }
+                for (let j = 4; j < headerRow.length; j++) {
+                  const cellStr = headerRow[j] || "";
+                  const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+                  if (match) {
+                    const d = new Date(currentWeekStart.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+                    const dStr = getLocalDateString(d);
+                    sheetDates.push(d);
+                    
+                    const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
+                    const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
+                    const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
+                    if (row3.includes("간담회") || row4.includes("공휴일")) {
+                      specialDates[dStr] = { student: row3, location: row4, memo: row5 };
+                    }
+                  }
+                }
+                if (sheetDates.length > 0) {
+                  sheetDates.sort((a, b) => a.getTime() - b.getTime());
+                  setSheetRange({ min: sheetDates[0], max: sheetDates[sheetDates.length - 1] });
+                }
+
+                const targetColIndices = {};
+
+                currentDays.forEach(day => {
+                  const m = day.getMonth() + 1;
+                  const d = day.getDate();
+                  const searchPattern = new RegExp(`^0?${m}\\s*[/.]\\s*0?${d}`);
+
+                  for (let j = 4; j < headerRow.length; j++) {
+                    if ((headerRow[j] || "").match(searchPattern)) {
+                      targetColIndices[getLocalDateString(day)] = j;
+                      break;
+                    }
+                  }
+                });
+
+                let currentTeacherTracker = "";
+                let currentTimeTracker = "";
+                let currentStudentRow = null;
+                let currentLocationRow = null;
+
+                for (let i = headerRowIdx + 1; i < data.length; i++) {
+                  const row = data[i];
+                  if (!row || row.length < 4) continue;
+
+                  if (row[1] && row[1].trim()) currentTeacherTracker = row[1].trim();
+                  if (row[2] && row[2].trim()) currentTimeTracker = row[2].trim();
+
+                  if (currentTeacherTracker === teacher) {
+                    const category = row[3] ? row[3].replace(/\s+/g, '') : "";
+                    if (category === "대상") currentStudentRow = row;
+                    else if (category === "장소") currentLocationRow = row;
+                    else if (category.includes("진행")) {
+                      const timeKey = currentTimeTracker;
+                      if (!parsedData[timeKey]) parsedData[timeKey] = {};
+
+                      currentDays.forEach(day => {
+                        const dateStr = getLocalDateString(day);
+                        const colIdx = targetColIndices[dateStr];
+
+                        if (colIdx !== undefined) {
+                          const rawStu = currentStudentRow ? currentStudentRow[colIdx]?.trim() : "";
+                          const rawLoc = currentLocationRow ? currentLocationRow[colIdx]?.trim() : "";
+                          
+                          let finalStu = rawStu;
+                          let finalLoc = rawLoc;
+                          let isSpecial = false;
+                          const dateStrForSpecial = getLocalDateString(day);
+                          if (specialDates[dateStrForSpecial] && (!finalStu && !finalLoc || ["김종철", "표영", "강계환"].includes(teacher.trim())) && timeKey === timeSlots[0]) {
+                            finalStu = specialDates[dateStrForSpecial].student;
+                            finalLoc = specialDates[dateStrForSpecial].location;
+                            isSpecial = true;
+                          }
+
+                          let finalStatus = row[colIdx] ? row[colIdx].trim() : "";
+                          if (specialDates[dateStrForSpecial] && timeKey === timeSlots[0] && specialDates[dateStrForSpecial].memo) {
+                            if (!finalStatus.includes(specialDates[dateStrForSpecial].memo)) {
+                              finalStatus = (finalStatus ? finalStatus + ", " : "") + specialDates[dateStrForSpecial].memo;
+                            }
+                          }
+
+                          parsedData[timeKey][dateStr] = {
+                            student: finalStu,
+                            location: finalLoc,
+                            status: finalStatus,
+                            isSpecial: isSpecial
+                          };
+                        } else {
+                          parsedData[timeKey][dateStr] = { student: "", location: "", status: "" };
+                        }
+                      });
+                      
+                      currentStudentRow = null;
+                      currentLocationRow = null;
+                    }
+                  }
+                }
+                setScheduleData(parsedData);
+                setIsLoading(false);
+              }
+            });
+          })
+          .catch(e => {
+            console.error("데이터 로드 실패", e);
+            setIsLoading(false);
+          });
+      }, [team, teacher, currentWeekStart]);
+
+      const getStatusColorClass = (statusStr) => {
+        if (!statusStr) return "text-gray-800";
+        if (statusStr.includes("결석") || statusStr.includes("취소")) return "text-red-600";
+        if (statusStr.includes("휴가")) return "text-gray-500";
+        return "text-blue-700";
+      };
+
+      // 💡 [수정] 상태 문자열에서 숫자 단독일 경우 '출석N'으로 포맷팅하도록 개선
+      const parseWeeklyStatus = (statusStr) => {
+        if (!statusStr) return { tags: [], memo: "" };
+        const parts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
+        let tags = [];
+        let memos = [];
+        
+        const attendanceKeywords = ['1', '결석', '취소', '선생님휴가'];
+        
+        parts.forEach(part => {
+          const subParts = part.split('/').map(p => p.trim());
+          const isTag = subParts.every(p => {
+             const cleanP = p.replace(/\s+/g, '');
+             return attendanceKeywords.includes(cleanP) || /^\d+$/.test(cleanP);
+          });
+          
+          if (isTag) {
+            const displayTag = subParts.map(p => {
+               const cleanP = p.replace(/\s+/g, '');
+               if (cleanP === '1') return '출석';
+               if (/^\d+$/.test(cleanP)) return `출석${cleanP}`; // 숫자 단일 입력 시 '출석N'으로 변환
+               return p;
+            }).join('/');
+            tags.push(displayTag);
+          } else {
+            memos.push(part);
+          }
+        });
+        
+        return { tags, memo: memos.join(', ') };
+      };
+
+      return (
+        <div className="min-h-[100dvh] flex flex-col bg-gray-50 font-sans">
+          <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative">
+            <div className="flex items-center">
+              <div className="flex flex-col">
+                <div className="flex items-center mb-1">
+                  <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+                  <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
+                </div>
+                <p className="text-base font-bold text-yellow-300">디지털교육 서포터즈</p>
+                <p className="text-base opacity-95 flex items-center mt-1 font-bold">
+                  <User className="w-4 h-4 mr-1" /> [{team}] {teacher.replace(/\n/g, ' ')} 선생님
+                </p>
+              </div>
+            </div>
+            <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
+              <Home className="w-5 h-5 mb-1" /> 처음으로
+            </button>
+          </header>
+
+          <main className="flex-1 flex flex-col w-full mx-auto p-3 sm:p-5 lg:p-8">
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col flex-1 overflow-hidden">
+              <div className="shrink-0 bg-white px-4 sm:px-6 pt-5 pb-4 shadow-sm relative z-10 flex flex-col items-center border-b border-gray-100">
+                <h2 className="text-[18px] sm:text-2xl font-black text-gray-800 mb-4 flex items-center gap-2">
+                  <MainCalendarIcon className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />
+                  나의 주간 일정 보기
+                </h2>
+                <div className="flex items-center gap-2 w-full max-w-sm mx-auto">
+                  <button onClick={() => changeWeek(-1)} className="w-12 h-12 flex items-center justify-center border-2 border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 text-gray-700 shrink-0 transition-all touch-manipulation">
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
+                  </button>
+                  <div className="flex-1 h-12 flex items-center justify-center border-2 border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm">
+                    <h2 className="font-extrabold text-[#1e3a8a] text-[18px] sm:text-[22px] tracking-tight">{startMonth}/{startDay} ~ {endMonth}/{endDay}</h2>
+                  </div>
+                  <button onClick={handleCurrentWeekClick} className="px-4 h-12 border-2 border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 shrink-0 text-[16px] transition-all touch-manipulation">이번 주</button>
+                  <button onClick={() => changeWeek(1)} className="w-12 h-12 flex items-center justify-center border-2 border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 text-gray-700 shrink-0 transition-all touch-manipulation">
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
+                  </button>
+                </div>
+                {notice && <div className="mt-2 text-red-600 font-bold text-center animate-fadeIn">{notice}</div>}
+                {isLoading && <div className="mt-3 text-sm sm:text-base text-red-600 font-bold flex items-center animate-pulse"><Clock className="w-4 h-4 mr-1 animate-spin" />일정 데이터를 불러오는 중...</div>}
+              </div>
+
+              <div className="flex-1 overflow-x-auto overflow-y-auto bg-gray-50/50 p-3 sm:p-5">
+                <div className="min-w-[1000px] bg-white rounded-xl shadow-sm border-2 border-gray-300 overflow-hidden">
+                  <table className="w-full table-fixed text-center border-collapse">
+                    <thead>
+                      <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
+                        <th className="w-[12%] py-4 border-r-2 border-gray-300 font-black text-gray-800 text-[18px] sm:text-[20px]">시간</th>
+                        {currentDays.map((day, i) => (
+                          <th key={i} className="w-[17.6%] py-4 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[18px] sm:text-[20px] tracking-tight">
+                            {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeSlots.map((time, idx) => (
+                        <tr key={idx} className="border-b-2 border-gray-300 last:border-0">
+                          <td className="py-5 px-2 border-r-2 border-gray-300 bg-[#f8fafc] font-black text-blue-800 text-[18px] sm:text-[20px] whitespace-pre-line leading-tight">
+                            {time.replace('~', '\n~\n')}
+                          </td>
+                          {currentDays.map((day, i) => {
+                            const dateStr = getLocalDateString(day);
+                            const cellData = scheduleData?.[time]?.[dateStr];
+                            
+                            if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
+                              return (
+                                <td key={i} className="p-2 sm:p-3 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden">
+                                  <div className="flex items-center justify-center h-full min-h-[140px] text-gray-300 font-bold text-[18px]">일정 없음</div>
+                                </td>
+                              );
+                            }
+
+                            const parsedStatus = parseWeeklyStatus(cellData.status);
+                            const isAssistant = cellData.student && cellData.student.includes("보조강사");
+                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당");
+                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-100 border-red-300" : "bg-white border-gray-200";
+
+                            return (
+                              <td key={i} className="p-2 sm:p-3 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full">
+                                <div className={`flex flex-col gap-2 p-2.5 sm:p-3 rounded-xl border shadow-sm min-h-[140px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
+                                  
+                                  {/* 💡 [수정] 출석 배지 및 텍스트 넘침 방지 */}
+                                  {parsedStatus.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
+                                      {parsedStatus.tags.map((tag, tIdx) => {
+                                        let tagStyle = "bg-blue-100 text-blue-700 border-blue-300";
+                                        if (tag.includes('결석')) tagStyle = "bg-red-100 text-red-700 border-red-300";
+                                        else if (tag.includes('취소')) tagStyle = "bg-orange-100 text-orange-700 border-orange-300";
+                                        else if (tag.includes('휴가')) tagStyle = "bg-gray-200 text-gray-700 border-gray-400";
+                                        else if (tag.includes('출석') || /^\d+/.test(tag)) tagStyle = "bg-blue-500 text-white border-blue-600 shadow-inner";
+
+                                        return (
+                                          <span key={tIdx} className={`px-2.5 py-1 rounded-lg text-[13px] sm:text-[15px] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${tagStyle}`}>
+                                            {tag}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  {/* 💡 [수정] 보조강사 뒤에 텍스트가 있으면 줄바꿈 처리 */}
+                                  {cellData.student && <div className="font-black text-gray-900 text-[17px] sm:text-[20px] leading-tight break-all whitespace-pre-wrap text-center w-full">{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
+                                  {cellData.location && <div className="text-gray-600 text-[14px] sm:text-[16px] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-2.5 py-1 rounded-lg inline-block border border-gray-200 max-w-full leading-tight mt-0.5">{cellData.location}</div>}
+                                  
+                                  {/* 분리된 메모만 렌더링 (단어 잘림 허용) */}
+                                  {parsedStatus.memo && <div className={`font-bold text-[15px] sm:text-[18px] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
 
     // =====================================================================
-    // 🔀 3. 총괄 부모 컴포넌트
+    // 🔀 5. 총괄 부모 컴포넌트
     // =====================================================================
     function RootApp() {
       const [isFirebaseLoaded, setIsFirebaseLoaded] = useState(!!window.FirebaseAPI);
       const [currentView, setCurrentView] = useState(() => getSessionItem('sungdong_current_view', 'main'));
       const [selectedTeamForSchedule, setSelectedTeamForSchedule] = useState(() => getSavedItem('sungdong_schedule_team', ''));
+      const [selectedTeacherForWeekly, setSelectedTeacherForWeekly] = useState(() => getSavedItem('sungdong_weekly_teacher', ''));
 
       useEffect(() => {
         if (!isFirebaseLoaded) {
@@ -4094,6 +4467,7 @@
 
       useEffect(() => { setSessionItem('sungdong_current_view', currentView); }, [currentView]);
       useEffect(() => { setSavedItem('sungdong_schedule_team', selectedTeamForSchedule); }, [selectedTeamForSchedule]);
+      useEffect(() => { setSavedItem('sungdong_weekly_teacher', selectedTeacherForWeekly); }, [selectedTeacherForWeekly]);
 
       useEffect(() => {
         if (!isFirebaseLoaded || !window.FirebaseAPI) return;
@@ -4164,6 +4538,10 @@
         return <DailyScheduleApp initialTeam={selectedTeamForSchedule} onNavigateBack={() => setCurrentView('main')} onTeamChange={(team) => setSelectedTeamForSchedule(team)} />;
       }
 
+      if (currentView === 'myWeeklySchedule') {
+        return <MyWeeklyScheduleApp team={selectedTeamForSchedule} teacher={selectedTeacherForWeekly} onNavigateBack={() => setCurrentView('main')} />;
+      }
+
       if (currentView === 'studentSearch') {
         return <StudentSearchApp onNavigateBack={() => setCurrentView('main')} />;
       }
@@ -4174,6 +4552,13 @@
           setSelectedTeamForSchedule(team);
           try { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); } catch (e) { }
           setCurrentView('dailySchedule');
+        }}
+        onNavigateToMyWeeklySchedule={() => {
+          const t = getSavedItem('sungdong_team', '');
+          const th = getSavedItem('sungdong_teacher', '');
+          setSelectedTeamForSchedule(t);
+          setSelectedTeacherForWeekly(th);
+          setCurrentView('myWeeklySchedule');
         }}
         onNavigateToStudentSearch={() => setCurrentView('studentSearch')}
       />;
