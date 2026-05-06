@@ -4294,8 +4294,9 @@
 
       const getStatusColorClass = (statusStr) => {
         if (!statusStr) return "text-gray-800";
-        if (statusStr.includes("결석") || statusStr.includes("취소")) return "text-red-600";
-        if (statusStr.includes("휴가")) return "text-gray-500";
+        const parts = statusStr.split(',').map(s => s.trim().replace(/\s+/g, ''));
+        if (parts.includes("결석") || parts.includes("취소")) return "text-red-600";
+        if (parts.includes("휴가") || parts.includes("선생님휴가")) return "text-gray-500";
         return "text-blue-700";
       };
 
@@ -4310,7 +4311,7 @@
         parts.forEach((part, i) => {
           const cleanPart = part.replace(/\s+/g, '');
           const isNumber = /^\d+$/.test(cleanPart);
-          const hasKeyword = tagKeywords.some(k => cleanPart.includes(k));
+          const hasKeyword = tagKeywords.some(k => cleanPart === k);
           
           // 첫 번째 데이터가 숫자이면 태그(참석인원), 두 번째 이후 숫자는 메모
           // 단, 출석/결석 등 키워드가 포함된 경우는 무조건 태그
