@@ -4410,7 +4410,7 @@
                           }
 
                           return (
-                            <th key={i} style={{ width: widthStr }} className={`py-1.5 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[17px] sm:text-[19px] tracking-tight ${isToday ? 'relative ring-4 ring-blue-600 ring-inset z-10 bg-blue-50' : ''}`}>
+                            <th key={i} style={{ width: widthStr }} className={`py-1.5 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[17px] sm:text-[19px] tracking-tight ${isToday ? 'relative border-t-4 border-x-4 border-blue-600 z-20 bg-blue-100' : ''}`}>
                               {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
                             </th>
                           );
@@ -4426,12 +4426,12 @@
                           {currentDays.map((day, i) => {
                             const dateStr = getLocalDateString(day);
                             const todayStr = getLocalDateString(new Date());
-                            const isToday = dateStr === todayStr;
-                            const cellData = scheduleData?.[time]?.[dateStr];
+                            const isLastRow = idx === timeSlots.length - 1;
+                            const todayBorderClass = isToday ? `border-x-4 border-blue-600 z-20 ${isLastRow ? 'border-b-4' : ''}` : '';
                             
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
-                                <td key={i} className={`p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${isToday ? 'relative ring-4 ring-blue-600 ring-inset z-10 bg-blue-50/30' : ''}`}>
+                                <td key={i} className={`p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${isToday ? 'bg-blue-50/30' : ''}`}>
                                   <div className="flex items-center justify-center h-full min-h-[110px] text-gray-300 font-bold text-[16px]">일정 없음</div>
                                 </td>
                               );
@@ -4443,7 +4443,7 @@
                             const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-200 border-red-400" : "bg-white border-gray-200";
 
                             return (
-                              <td key={i} className={`p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${isToday ? 'relative ring-4 ring-blue-600 ring-inset z-10 bg-blue-50/30' : ''}`}>
+                              <td key={i} className={`p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass} ${isToday ? 'bg-blue-50/30' : ''}`}>
                                 <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
                                   
                                   {/* 💡 [수정] 출석 배지 및 텍스트 넘침 방지 */}
