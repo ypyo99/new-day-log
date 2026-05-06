@@ -4077,6 +4077,7 @@
       });
 
       const [scheduleData, setScheduleData] = useState(null);
+      const [specialDays, setSpecialDays] = useState({});
       const [isLoading, setIsLoading] = useState(false);
       const [sheetRange, setSheetRange] = useState({ min: null, max: null });
       const [notice, setNotice] = useState("");
@@ -4197,6 +4198,7 @@
                   sheetDates.sort((a, b) => a.getTime() - b.getTime());
                   setSheetRange({ min: sheetDates[0], max: sheetDates[sheetDates.length - 1] });
                 }
+                setSpecialDays(specialDates);
 
                 const targetColIndices = {};
 
@@ -4373,11 +4375,23 @@
                     <thead>
                       <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
                         <th className="w-[8%] py-1.5 border-r-2 border-gray-300 font-black text-gray-800 text-[17px] sm:text-[19px]">시간</th>
-                        {currentDays.map((day, i) => (
-                          <th key={i} className="w-[18.4%] py-1.5 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[17px] sm:text-[19px] tracking-tight">
-                            {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
-                          </th>
-                        ))}
+                        {currentDays.map((day, i) => {
+                          const dateStr = getLocalDateString(day);
+                          const isSpecial = !!specialDays[dateStr];
+                          const specialCount = currentDays.filter(d => !!specialDays[getLocalDateString(d)]).length;
+                          let widthStr = "18.4%";
+                          if (specialCount > 0 && specialCount < 5) {
+                            const specialWidth = 10;
+                            const normalWidth = (92 - (specialCount * specialWidth)) / (5 - specialCount);
+                            widthStr = isSpecial ? `${specialWidth}%` : `${normalWidth}%`;
+                          }
+
+                          return (
+                            <th key={i} style={{ width: widthStr }} className="py-1.5 border-r-2 border-gray-300 last:border-0 font-black text-blue-900 text-[17px] sm:text-[19px] tracking-tight">
+                              {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
