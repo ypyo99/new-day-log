@@ -4087,38 +4087,6 @@
       const [sheetRange, setSheetRange] = useState({ min: null, max: null });
       const [notice, setNotice] = useState("");
 
-      // 💡 [추가] 스와이프 제스처 관련 상태 및 핸들러
-      const touchStartRef = React.useRef(null);
-      const touchEndRef = React.useRef(null);
-      const minSwipeDistance = 70;
-
-      const handleTouchStart = (e) => {
-        touchStartRef.current = e.touches[0].clientX;
-      };
-
-      const handleTouchMove = (e) => {
-        touchEndRef.current = e.touches[0].clientX;
-      };
-
-      const handleTouchEnd = (e) => {
-        if (touchStartRef.current === null || touchEndRef.current === null) return;
-        
-        const distance = touchStartRef.current - touchEndRef.current;
-        
-        if (Math.abs(distance) > minSwipeDistance) {
-          if (distance > 0) {
-            // 왼쪽으로 스와이프 -> 다음 주
-            changeWeek(1);
-          } else {
-            // 오른쪽으로 스와이프 -> 이전 주
-            changeWeek(-1);
-          }
-        }
-        
-        touchStartRef.current = null;
-        touchEndRef.current = null;
-      };
-
       const weekDays = ['월', '화', '수', '목', '금'];
       const timeSlots = team === "3팀" ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"] : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
 
@@ -4363,12 +4331,7 @@
       };
 
       return (
-        <div 
-          className="min-h-[100dvh] flex flex-col bg-gray-50 font-sans"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
+        <div className="min-h-[100dvh] flex flex-col bg-gray-50 font-sans">
           <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative">
             <div className="flex items-center">
               <div className="flex flex-col">
@@ -4426,7 +4389,7 @@
                             });
                             if (isSpec) return 15; // 특별한 날은 15%
                             if (isEmp) return 10;  // 일정 없는 날은 10%
-                            return 18.4;           // 일반 요일은 18.4%
+                            return 14.72;          // 일반 요일은 14.72% (기존 18.4%에서 20% 축소)
                           });
                           
                           const totalUsed = 8 + dayWidths.reduce((sum, w) => sum + w, 0);
@@ -4462,7 +4425,7 @@
                           });
                           if (isSpec) return 15;
                           if (isEmp) return 10;
-                          return 18.4;
+                          return 14.72;
                         });
                         const totalUsed = 8 + dayWidths.reduce((sum, w) => sum + w, 0);
                         const spacerWidth = 100 - totalUsed;
