@@ -1621,7 +1621,7 @@
                       <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
                     </button>
 
-                    <div className={`flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] ${specialDayData ? 'border-red-400 bg-red-50' : 'border-blue-400 bg-[#f0f7ff]'} rounded-xl text-center shadow-sm overflow-hidden transition-all`}>
+                    <div className={`flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] ${specialDayData ? 'border-red-500 bg-red-100' : 'border-blue-400 bg-[#f0f7ff]'} rounded-xl text-center shadow-sm overflow-hidden transition-all`}>
                       <input
                         type="date"
                         value={date}
@@ -1733,7 +1733,7 @@
                       const combinedText = (logs[index].student || "") + " " + (logs[index].location || "");
                       const isKyungrodang = combinedText.includes("경로당") || combinedText.includes("도선복지관");
                       const isSpecialDay = (index === 0 && specialDayData) || (logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회");
-                      const cardColorClass = isSpecialDay ? 'bg-red-100 border-red-300' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
+                      const cardColorClass = isSpecialDay ? 'bg-red-200 border-red-400' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
 
                       const isFutureOrToday = date >= getLocalDateString(new Date());
                       const hasAttendance = logs[index].tags && logs[index].tags.some(tArray => tArray && tArray.length > 0);
@@ -3458,7 +3458,7 @@
                               let studentCellBg = "";
                               const combinedText = (row.student || "") + " " + (row.location || "");
                               if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
-                                studentCellBg = "bg-red-100";
+                                studentCellBg = "bg-red-200";
                               } else if (combinedText.includes("보조강사")) {
                                 studentCellBg = "bg-[#FFFF00]";
                               } else if (combinedText.includes("경로당") || combinedText.includes("도선복지관")) {
@@ -4436,7 +4436,7 @@
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
                             const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
-                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-100 border-red-300" : "bg-white border-gray-200";
+                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-200 border-red-400" : "bg-white border-gray-200";
 
                             return (
                               <td key={i} className="p-1 sm:p-2 border-r-2 border-gray-300 last:border-0 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full">
