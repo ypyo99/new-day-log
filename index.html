@@ -4375,7 +4375,7 @@
 
               <div className="flex-1 overflow-x-auto overflow-y-auto bg-gray-50/50 p-3 sm:p-5">
                 <div className="min-w-[850px] bg-white rounded-xl shadow-sm border-2 border-gray-300 overflow-hidden mx-auto">
-                  <table className="w-full table-fixed text-center border-collapse">
+                  <table id="weekly-schedule-table" className="table-fixed text-center border-collapse">
                     <thead>
                       <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
                         <th className="w-[8%] py-1.5 border-r-2 border-gray-300 font-black text-gray-800 text-[17px] sm:text-[19px]">시간</th>
@@ -4400,11 +4400,15 @@
                             return isSpec || isEmp;
                           }).length;
 
-                          let widthStr = "18.4%";
-                          if (narrowCount > 0 && narrowCount < 5) {
-                            const narrowWidth = 10;
-                            const normalWidth = (92 - (narrowCount * narrowWidth)) / (5 - narrowCount);
-                            widthStr = isNarrowTarget ? `${narrowWidth}%` : `${normalWidth}%`;
+                          const narrowWidth = 10;
+                          const normalWidth = 18.4;
+                          const widthStr = isNarrowTarget ? `${narrowWidth}%` : `${normalWidth}%`;
+                          
+                          // 테이블 전체 너비 계산 (시간 8% + 좁은날 + 일반날)
+                          const totalTableWidth = 8 + (narrowCount * narrowWidth) + ((5 - narrowCount) * normalWidth);
+                          if (i === 0) {
+                            // 첫 루프에서 테이블 너비 설정을 위한 정보 저장 (실제로는 ref나 state가 좋지만 인라인 스타일로 해결)
+                            window._currentTableWidth = `${totalTableWidth}%`;
                           }
 
                           const todayStr = getLocalDateString(new Date());
@@ -4419,6 +4423,10 @@
                       </tr>
                     </thead>
                     <tbody>
+                      {/* table 요소에 너비를 적용하기 위해 위에서 계산된 값을 사용 */}
+                      <style>{`
+                        #weekly-schedule-table { width: ${window._currentTableWidth || '100%'} !important; margin-left: auto; margin-right: auto; }
+                      `}</style>
                       {timeSlots.map((time, idx) => (
                         <tr key={idx} className="border-b-2 border-gray-300 last:border-0">
                           <td className="py-3 px-1 border-r-2 border-gray-300 bg-[#f8fafc] font-black text-blue-800 text-[16px] sm:text-[18px] whitespace-pre-line leading-tight">
