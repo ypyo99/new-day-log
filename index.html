@@ -1196,6 +1196,11 @@
 
       useEffect(() => {
         if (availableDates.length === 0) return;
+        
+        // 오늘 날짜(또는 주말인 경우 다음 월요일)인 경우에는 데이터가 없더라도 자동으로 이동하지 않음
+        const todayStr = getInitialWeekday();
+        if (date === todayStr) return;
+
         if (!availableDates.includes(date)) {
           const futureDates = availableDates.filter(d => d > date);
           if (futureDates.length > 0) setDate(futureDates[0]);
@@ -1232,25 +1237,9 @@
         if (isDataLoading) return;
         await performAutoSave();
         const todayStr = getInitialWeekday();
-        let targetStr = todayStr;
-        if (availableDates.length > 0 && !availableDates.includes(todayStr)) {
-          const futureDates = availableDates.filter(d => d > todayStr);
-          if (futureDates.length > 0) targetStr = futureDates[0];
-          else {
-            const pastDates = availableDates.filter(d => d < todayStr);
-            if (pastDates.length > 0) targetStr = pastDates[pastDates.length - 1];
-          }
-        }
-
-        if (minDate && targetStr < minDate) {
-          setErrorMessage("⚠️ 오늘(또는 대체 근무일) 날짜가 데이터 시작일보다 이전입니다.");
-          setTimeout(() => setErrorMessage(""), 3000); return;
-        }
-        if (maxDate && targetStr > maxDate) {
-          setErrorMessage("⚠️ 오늘(또는 대체 근무일) 날짜가 데이터 종료일보다 이후입니다.");
-          setTimeout(() => setErrorMessage(""), 3000); return;
-        }
-        setDate(targetStr);
+        
+        // 오늘 날짜로 무조건 이동 (데이터 유무 상관없이)
+        setDate(todayStr);
       };
 
       const handleDateChange = async (e) => {
@@ -1339,21 +1328,10 @@
         if (e) e.preventDefault();
         if (!isLoginReady) return;
 
-        if (currentUser && !isFetchingSchedule) {
-          const availDates = Object.keys(allScheduleData).sort();
+        if (currentUser) {
+          // 데이터 유무와 상관없이 항상 오늘(또는 대체 월요일) 날짜를 우선으로 설정
           const todayStr = getInitialWeekday();
-          let targetDate = todayStr;
-
-          if (availDates.length > 0 && !availDates.includes(todayStr)) {
-            const futureDates = availDates.filter(d => d > todayStr);
-            if (futureDates.length > 0) targetDate = futureDates[0];
-            else {
-              const pastDates = availDates.filter(d => d < todayStr);
-              if (pastDates.length > 0) targetDate = pastDates[pastDates.length - 1];
-            }
-          }
-
-          setDate(targetDate);
+          setDate(todayStr);
           setIsLoggedIn(true);
           setRefreshTrigger(prev => prev + 1);
         }
