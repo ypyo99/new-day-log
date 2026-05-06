@@ -4302,17 +4302,27 @@
       const parseWeeklyStatus = (statusStr) => {
         if (!statusStr) return { tags: [], memo: "" };
         const parts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-        if (parts.length === 0) return { tags: [], memo: "" };
+        let tags = [];
+        let memos = [];
         
-        let firstPart = parts[0];
-        let tag = firstPart;
-        if (firstPart === '1') tag = '출석';
-        else if (/^\d+$/.test(firstPart)) tag = `출석${firstPart}`;
+        const tagKeywords = ['출석', '결석', '취소', '선생님휴가', '휴가'];
         
-        return { 
-          tags: [tag], 
-          memo: parts.slice(1).join(', ') 
-        };
+        parts.forEach(part => {
+          const cleanPart = part.replace(/\s+/g, '');
+          // 키워드가 포함되어 있거나 숫자(출석인원 등)인 경우 태그로 처리
+          const isTag = tagKeywords.some(k => cleanPart.includes(k)) || /^\d+$/.test(cleanPart);
+          
+          if (isTag) {
+            let displayTag = part;
+            if (part === '1') displayTag = '출석';
+            else if (/^\d+$/.test(part)) displayTag = `출석${part}`;
+            tags.push(displayTag);
+          } else {
+            memos.push(part);
+          }
+        });
+        
+        return { tags, memo: memos.join(', ') };
       };
 
       return (
