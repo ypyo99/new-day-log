@@ -4302,32 +4302,17 @@
       const parseWeeklyStatus = (statusStr) => {
         if (!statusStr) return { tags: [], memo: "" };
         const parts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-        let tags = [];
-        let memos = [];
+        if (parts.length === 0) return { tags: [], memo: "" };
         
-        const attendanceKeywords = ['1', '결석', '취소', '선생님휴가'];
+        let firstPart = parts[0];
+        let tag = firstPart;
+        if (firstPart === '1') tag = '출석';
+        else if (/^\d+$/.test(firstPart)) tag = `출석${firstPart}`;
         
-        parts.forEach(part => {
-          const subParts = part.split('/').map(p => p.trim());
-          const isTag = subParts.every(p => {
-             const cleanP = p.replace(/\s+/g, '');
-             return attendanceKeywords.includes(cleanP) || /^\d+$/.test(cleanP);
-          });
-          
-          if (isTag) {
-            const displayTag = subParts.map(p => {
-               const cleanP = p.replace(/\s+/g, '');
-               if (cleanP === '1') return '출석';
-               if (/^\d+$/.test(cleanP)) return `출석${cleanP}`; // 숫자 단일 입력 시 '출석N'으로 변환
-               return p;
-            }).join('/');
-            tags.push(displayTag);
-          } else {
-            memos.push(part);
-          }
-        });
-        
-        return { tags, memo: memos.join(', ') };
+        return { 
+          tags: [tag], 
+          memo: parts.slice(1).join(', ') 
+        };
       };
 
       return (
