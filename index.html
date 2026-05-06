@@ -4375,21 +4375,20 @@
 
               <div className="flex-1 overflow-x-auto overflow-y-auto bg-gray-50/50 p-3 sm:p-5">
                 <div className="min-w-[850px] bg-white rounded-xl shadow-sm border-2 border-gray-300 overflow-hidden mx-auto">
-                  <table className="w-full table-fixed text-center border-collapse">
+                  <table className="w-[80%] mx-auto table-fixed text-center border-collapse">
                     <thead>
                       <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
-                        <th className="w-[6.4%] py-1.5 border-r-2 border-gray-300 font-black text-gray-800 text-[17px] sm:text-[19px]">시간</th>
+                        <th className="w-[8%] py-1.5 border-r-2 border-gray-300 font-black text-gray-800 text-[17px] sm:text-[19px]">시간</th>
                         {currentDays.map((day, i) => {
                           const dateStr = getLocalDateString(day);
                           const isToday = dateStr === getLocalDateString(new Date());
 
                           return (
-                            <th key={i} style={{ width: '14.72%' }} className={`py-1.5 font-black text-[17px] sm:text-[19px] tracking-tight transition-all ${isToday ? 'border-l-4 border-r-4 border-t-4 border-blue-600 text-blue-700 bg-blue-50' : 'border-r-2 border-gray-300 text-blue-900 last:border-0'}`}>
+                            <th key={i} style={{ width: '18.4%' }} className={`py-1.5 font-black text-[17px] sm:text-[19px] tracking-tight transition-all ${isToday ? 'border-l-4 border-r-4 border-t-4 border-blue-600 text-blue-700 bg-blue-50' : 'border-r-2 border-gray-300 text-blue-900 last:border-0'}`}>
                               {day.getMonth() + 1}/{day.getDate()} ({weekDays[i]})
                             </th>
                           );
                         })}
-                        <th style={{ width: '20%' }} className="last:border-0 bg-gray-50/30"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4444,7 +4443,6 @@
                               </td>
                             );
                           })}
-                          <td style={{ width: '20%' }} className="last:border-0 bg-gray-50/10"></td>
                         </tr>
                       ))}
                     </tbody>
