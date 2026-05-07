@@ -4432,7 +4432,7 @@
                             
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
-                                <td key={i} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass}`}>
+                                <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass}`}>
                                   <div className="flex items-center justify-center h-full min-h-[110px] text-gray-300 font-bold text-[clamp(1rem,2vw,1.2rem)]">일정 없음</div>
                                 </td>
                               );
@@ -4440,12 +4440,12 @@
 
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
-                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
-                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : "bg-white border-gray-200";
+                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.student || "").includes("복지관") || (cellData.location || "").includes("경로당") || (cellData.location || "").includes("복지관");
+                            const cardBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "bg-white";
 
                             return (
-                              <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`${isSpecialDay ? 'bg-red-100 p-0' : 'p-1 sm:p-2 hover:bg-gray-50'} align-middle transition-colors overflow-hidden h-full ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-2 ${isSpecialDay ? 'p-4 justify-center' : 'p-2 justify-start rounded-xl border shadow-sm ' + cardBgClass} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
+                              <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`${isSpecialDay ? 'bg-red-100 p-0' : 'p-0 hover:bg-gray-50'} align-middle transition-colors overflow-hidden h-full ${todayBorderClass}`}>
+                                <div className={`flex flex-col gap-1 ${isSpecialDay ? 'p-4 justify-center' : 'p-3 justify-center ' + cardBgClass} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
@@ -4463,7 +4463,7 @@
                                     </div>
                                   )}
                                   {cellData.student && <div className={`font-bold text-gray-900 text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
-                                  {cellData.location && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-3 py-1 rounded-xl inline-block border border-gray-200 max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
+                                  {cellData.location && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                   {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                 </div>
                               </td>
