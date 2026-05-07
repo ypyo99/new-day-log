@@ -4443,7 +4443,10 @@
                             const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.student || "").includes("복지관") || (cellData.location || "").includes("경로당") || (cellData.location || "").includes("복지관");
                             const cardBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "bg-white";
 
-                            const cellBgClass = isSpecialDay ? 'bg-red-100' : cardBgClass;
+                            let cellBgClass = cardBgClass;
+                            if (isSpecialDay) {
+                              cellBgClass = (isSpecialDay.location && isSpecialDay.location.includes("공휴일")) ? "bg-red-200" : "bg-red-100";
+                            }
 
                             return (
                               <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
