@@ -4462,9 +4462,9 @@
                                       })}
                                     </div>
                                   )}
-                                  {cellData.student && <div className={`font-bold text-gray-900 ${isSpecialDay ? 'text-[clamp(1.5rem,5vw,2.5rem)]' : 'text-[clamp(1rem,2.2vw,1.4rem)]'} leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
-                                  {cellData.location && <div className={`text-gray-600 ${isSpecialDay ? 'text-[clamp(1.2rem,4vw,2rem)]' : 'text-[clamp(0.8rem,1.8vw,1.1rem)]'} font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-3 py-1 rounded-xl inline-block border border-gray-200 max-w-full leading-tight mt-1`}>{cellData.location}</div>}
-                                  {parsedStatus.memo && <div className={`font-bold ${isSpecialDay ? 'text-[clamp(1.2rem,4vw,2rem)]' : 'text-[clamp(0.85rem,1.9vw,1.2rem)]'} leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
+                                  {cellData.student && <div className={`font-bold text-gray-900 text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
+                                  {cellData.location && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-3 py-1 rounded-xl inline-block border border-gray-200 max-w-full leading-tight mt-1`}>{cellData.location}</div>}
+                                  {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
                                 </div>
                               </td>
                             );
