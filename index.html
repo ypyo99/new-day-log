@@ -4311,11 +4311,12 @@
         parts.forEach((part, i) => {
           const cleanPart = part.replace(/\s+/g, '');
           const isNumber = /^\d+$/.test(cleanPart);
-          const isMultiAttendance = /^\d+(\/\d+)+$/.test(cleanPart);
+          const segments = cleanPart.split('/');
+          const isMulti = segments.length > 1 && segments.every(s => /^\d+$/.test(s) || tagKeywords.includes(s));
           const hasKeyword = tagKeywords.some(k => cleanPart === k);
           
           let isTag = false;
-          if (hasKeyword || isMultiAttendance) {
+          if (hasKeyword || isMulti) {
             isTag = true;
           } else if (isNumber) {
             isTag = (i === 0);
@@ -4326,11 +4327,12 @@
             if (part === '1') displayTag = '출석';
             else if (part === '0') displayTag = '결석';
             else if (isNumber) displayTag = `출석${part}`;
-            else if (isMultiAttendance) {
-              displayTag = cleanPart.split('/').map(s => {
-                if (s === '1') return '출석';
-                if (s === '0') return '결석';
-                return `출석${s}`;
+            else if (isMulti) {
+              displayTag = segments.map(s => {
+                if (s === '1' || s === '출석') return '출석';
+                if (s === '0' || s === '결석') return '결석';
+                if (/^\d+$/.test(s)) return `출석${s}`;
+                return s;
               }).join('/');
             }
             tags.push(displayTag);
