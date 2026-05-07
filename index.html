@@ -199,6 +199,23 @@
     );
 
     const teamList = ["1팀", "2팀", "3팀"];
+
+    // 전역 CSV 캐시 (성능 최적화용)
+    const globalCsvCache = {
+      data: {}, // { teamName: { text, timestamp } }
+      get: function(team) {
+        const cached = this.data[team];
+        if (cached && (Date.now() - cached.timestamp < 300000)) return cached.text; // 5분 캐시
+        return null;
+      },
+      set: function(team, text) {
+        this.data[team] = { text, timestamp: Date.now() };
+      },
+      clear: function(team) {
+        if (team) delete this.data[team];
+        else this.data = {};
+      }
+    };
     
     const getShifts = (team) => {
       if (team === "3팀") return ["13:00~14:00", "14:00~15:00", "15:00~16:00"];
@@ -419,12 +436,22 @@
           setTeamCsvText("");
           return;
         }
+        
+        const cached = globalCsvCache.get(selectedTeam);
+        if (cached) {
+          setTeamCsvText(cached);
+          return;
+        }
+
         const exportUrl = SHEET_URLS[selectedTeam] ? SHEET_URLS[selectedTeam].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
         if (!exportUrl) return;
 
         fetch(`${exportUrl}&t=${Date.now()}`)
           .then(res => res.text())
-          .then(text => setTeamCsvText(text))
+          .then(text => {
+            globalCsvCache.set(selectedTeam, text);
+            setTeamCsvText(text);
+          })
           .catch(err => console.error("팀 CSV 로드 실패:", err));
       }, [selectedTeam, refreshTrigger]);
 
@@ -471,21 +498,15 @@
         return cellStatus;
       };
 
+      // 회차 계산 최적화: 모든 학생의 회차를 한 번에 계산
       useEffect(() => {
         if (!teamCsvText || !window.Papa || !date) return;
-
-        const students = [logs[0]?.student, logs[1]?.student, logs[2]?.student];
-        if (students.every(s => !s || !s.trim())) {
-          setStudentCounts({ 0: null, 1: null, 2: null });
-        }
 
         window.Papa.parse(teamCsvText, {
           header: false,
           skipEmptyLines: true,
           complete: (results) => {
             const data = results.data;
-            let newCounts = { 0: null, 1: null, 2: null };
-
             let headerRowIdx = -1;
             for (let i = 0; i < Math.min(10, data.length); i++) {
               if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
@@ -494,6 +515,7 @@
             }
             if (headerRowIdx === -1) return;
 
+            // 공휴일 정보 등 추출
             let holidays = [];
             const holidayRow = data[headerRowIdx + 2];
             const eventRowForHolidays = data[headerRowIdx + 1];
@@ -507,12 +529,10 @@
                 const isHoliday = (holidayStr.includes("공휴일") || holidayStr.includes("근로자") || holidayStr.includes("휴무") ||
                   eventStr.includes("공휴일") || eventStr.includes("근로자") || eventStr.includes("휴무")) &&
                   !(match && match[1].padStart(2, '0') === '05' && match[2].padStart(2, '0') === '12');
-                if (isHoliday) {
-                  if (match) {
+                if (isHoliday && match) {
                     const mm = String(match[1]).padStart(2, '0');
                     const dd = String(match[2]).padStart(2, '0');
                     holidays.push(`${mm}-${dd}`);
-                  }
                 }
               }
             }
@@ -535,14 +555,11 @@
                 if (match) {
                   const d = new Date(targetStartDate.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
                   d.setHours(0, 0, 0, 0);
-
                   if (d >= targetStartDate && d < targetEndDate) {
                     const eventName = (eventRow[j] || "").trim();
                     const statusName = (statusRow[j] || "").trim();
-
-                    const isAlertEvent = statusName.includes("공휴일") || statusName.includes("소양교육") || statusName.includes("근로자") || statusName.includes("휴무") ||
-                      eventName.includes("공휴일") || eventName.includes("소양교육") || eventName.includes("근로자") || eventName.includes("휴무");
-                    if (isAlertEvent) {
+                    if (statusName.includes("공휴일") || statusName.includes("소양교육") || statusName.includes("근로자") || statusName.includes("휴무") ||
+                        eventName.includes("공휴일") || eventName.includes("소양교육") || eventName.includes("근로자") || eventName.includes("휴무")) {
                       const mm = String(match[1]).padStart(2, '0');
                       const dd = String(match[2]).padStart(2, '0');
                       const dayName = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
@@ -552,23 +569,23 @@
                 }
               }
             }
-            if (JSON.stringify(specialAlerts) !== JSON.stringify(alerts)) {
-              setSpecialAlerts(alerts);
-            }
+            setSpecialAlerts(prev => JSON.stringify(prev) === JSON.stringify(alerts) ? prev : alerts);
 
             const targetD = new Date(date);
             targetD.setHours(0, 0, 0, 0);
+            const targetDStr = getLocalDateString(targetD);
 
-            // 특이 사항 (간담회/공휴일) 감지 로직
             let currentSpecialDay = null;
-            const headerRowForSpecial = data[headerRowIdx];
-            for (let j = 4; j < headerRowForSpecial.length; j++) {
-              const cellStr = headerRowForSpecial[j] || "";
+            let dateColumnIndex = -1;
+            const headerRow = data[headerRowIdx];
+            for (let j = 4; j < headerRow.length; j++) {
+              const cellStr = headerRow[j] || "";
               const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
               if (match) {
                 const d = new Date(targetD.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
                 d.setHours(0, 0, 0, 0);
                 if (d.getTime() === targetD.getTime()) {
+                  dateColumnIndex = j;
                   const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
                   const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
                   const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
@@ -581,105 +598,90 @@
             }
             setSpecialDayData(currentSpecialDay);
 
+            if (dateColumnIndex === -1) {
+              setStudentCounts({ 0: null, 1: null, 2: null });
+              return;
+            }
+
+            // 회차 계산 최적화
             const realToday = new Date();
             realToday.setHours(0, 0, 0, 0);
 
-            const validColIndices = [];
-            const headerRow = data[headerRowIdx];
-            for (let j = 4; j < headerRow.length; j++) {
-              const cellStr = headerRow[j] || "";
-              const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
-              if (match) {
-                const d = new Date(targetD.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
-                d.setHours(0, 0, 0, 0);
-                if (d <= targetD) {
-                  validColIndices.push({ index: j, colDate: d });
+            const students = [logs[0]?.student, logs[1]?.student, logs[2]?.student];
+            const targetNames = [];
+            students.forEach(s => {
+              if (!s) return;
+              const names = s.split(/[/,]/).map(n => n.trim().split('(')[0].trim()).filter(Boolean);
+              names.forEach(name => {
+                if (!targetNames.includes(name) && !name.includes("보조강사") && !name.includes("자체학습") && !name.includes("대상자발굴") && !name.includes("도선복지관")) {
+                  targetNames.push(name);
                 }
+              });
+            });
+
+            if (targetNames.length === 0) {
+              setStudentCounts({ 0: null, 1: null, 2: null });
+              return;
+            }
+
+            const runningCounts = {}; // { name: { count: 0, dates: [] } }
+            targetNames.forEach(name => runningCounts[name] = { count: 0, dates: [] });
+
+            for (let j = 4; j <= dateColumnIndex; j++) {
+              const headerStr = data[headerRowIdx][j] || "";
+              const match = headerStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+              if (!match) continue;
+              const colDate = new Date(targetD.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+              colDate.setHours(0, 0, 0, 0);
+
+              for (let i = headerRowIdx + 1; i < data.length; i++) {
+                const row = data[i];
+                if (!row || row.length < 4 || row[3]?.replace(/\s+/g, '') !== "대상") continue;
+
+                const cellStudent = row[j] ? row[j].trim() : "";
+                if (!cellStudent) continue;
+
+                targetNames.forEach(targetName => {
+                  if (cellStudent.includes(targetName)) {
+                    const statusRow = (i + 2 < data.length) ? data[i + 2] : null;
+                    const cellStatus = statusRow && statusRow[j] ? statusRow[j].trim() : "";
+                    const finalStatus = parseStudentSpecificStatus(cellStatus, cellStudent, targetName);
+                    
+                    let hasSession = false;
+                    const isAbsence = finalStatus.includes("결석");
+                    const isCanceled = finalStatus.includes("취소") || finalStatus.includes("선생님휴가");
+
+                    if (targetName.includes("경로당") && (isAbsence || finalStatus.includes("취소"))) {
+                      hasSession = true;
+                    } else if (isAbsence) {
+                      hasSession = false;
+                    } else {
+                      const hasNumber = /^[1-9]\d*/.test(finalStatus.split(',')[0].trim());
+                      if (hasNumber) hasSession = true;
+                      else if (!isCanceled && colDate >= realToday) hasSession = true;
+                    }
+
+                    if (hasSession) {
+                      runningCounts[targetName].count++;
+                      runningCounts[targetName].dates.push(colDate);
+                    }
+                  }
+                });
               }
             }
 
-            students.forEach((studentStr, idx) => {
-              if (!studentStr || !studentStr.trim()) return;
-
-              const names = studentStr.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(s => s.length > 0);
-              let shiftCounts = [];
-
-              names.forEach(targetName => {
-                if (targetName.includes("보조강사") || targetName.includes("자체학습") || targetName.includes("대상자발굴") || targetName.includes("도선복지관")) return;
-
-                let count = 0;
-                let attendedDatesForStudent = [];
-
-                validColIndices.forEach(colInfo => {
-                  const j = colInfo.index;
-                  const colDate = colInfo.colDate;
-                  let foundStatuses = [];
-
-                  for (let i = headerRowIdx + 1; i < data.length; i++) {
-                    const row = data[i];
-                    if (!row || row.length < 4) continue;
-                    const category = row[3] ? row[3].replace(/\s+/g, '') : "";
-
-                    if (category === "대상") {
-                      const statusRow = (i + 2 < data.length) ? data[i + 2] : null;
-                      const cellStudent = row[j] ? row[j].trim() : "";
-                      const cellStatus = statusRow && statusRow[j] ? statusRow[j].trim() : "";
-
-                      if (cellStudent.includes(targetName)) {
-                        const finalStatus = parseStudentSpecificStatus(cellStatus, cellStudent, targetName);
-                        foundStatuses.push(finalStatus);
-                      }
-                    }
-                  }
-
-                  let hasSessionOnThisDay = false;
-
-                  if (foundStatuses.length > 0) {
-                    const nonEmpty = foundStatuses.filter(s => s !== "");
-                    const statusesToEval = nonEmpty.length > 0 ? nonEmpty : foundStatuses;
-
-                    const hasAbsence = statusesToEval.some(s => s.includes("결석"));
-                    const isCanceled = statusesToEval.some(s => s.includes("취소"));
-                    const isTeacherVacation = statusesToEval.some(s => s.includes("선생님휴가"));
-
-                    if (targetName.includes("경로당") && (hasAbsence || isCanceled)) {
-                      hasSessionOnThisDay = true;
-                    } else if (hasAbsence) {
-                      hasSessionOnThisDay = false;
-                    } else {
-                      const hasNumber = statusesToEval.some(s => {
-                        const parts = s.split(',').map(p => p.trim());
-                        return parts.some(part => /^[1-9]\d*/.test(part));
-                      });
-
-                      if (hasNumber) {
-                        hasSessionOnThisDay = true;
-                      } else {
-                        if (isCanceled || isTeacherVacation) {
-                          hasSessionOnThisDay = false;
-                        } else if (colDate < realToday) {
-                          hasSessionOnThisDay = false;
-                        } else {
-                          hasSessionOnThisDay = true;
-                        }
-                      }
-                    }
-                  }
-
-                  if (hasSessionOnThisDay) {
-                    count++;
-                    attendedDatesForStudent.push(colDate);
-                  }
-                });
-
-                if (count > 0) {
-                  shiftCounts.push({ name: targetName, count: count, dates: attendedDatesForStudent });
+            let newCounts = { 0: null, 1: null, 2: null };
+            students.forEach((s, idx) => {
+              if (!s) return;
+              const names = s.split(/[/,]/).map(n => n.trim().split('(')[0].trim()).filter(Boolean);
+              const shiftCounts = [];
+              names.forEach(name => {
+                if (runningCounts[name] && runningCounts[name].count > 0) {
+                  shiftCounts.push({ name, count: runningCounts[name].count, dates: [...runningCounts[name].dates] });
                 }
               });
-
               newCounts[idx] = shiftCounts.length > 0 ? shiftCounts : null;
             });
-
             setStudentCounts(newCounts);
           }
         });
@@ -2806,6 +2808,12 @@
         setScheduleData([]);
         setNotice("");
 
+        const cached = globalCsvCache.get(teamName);
+        if (cached) {
+          setGlobalCsvText(cached);
+          return;
+        }
+
         const exportUrl = SHEET_URLS[teamName] ? SHEET_URLS[teamName].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
 
         fetch(`${exportUrl}&t=${Date.now()}`)
@@ -2814,6 +2822,7 @@
             return response.text();
           })
           .then(csvText => {
+            globalCsvCache.set(teamName, csvText);
             setGlobalCsvText(csvText);
           })
           .catch(error => {
@@ -2989,128 +2998,77 @@
             realToday.setHours(0, 0, 0, 0);
             const currentYear = realToday.getFullYear();
 
-            const getStudentCounts = (targetStudentName, maxColIndex, fullData, headerIdx) => {
-              if (!targetStudentName) return null;
+            // 전역 회차 계산 최적화
+            const calculateAllRunningCounts = (fullData, headerIdx, maxJ) => {
+              const counts = {}; // { studentName: { count: 0, dates: [] } }
+              const realToday = new Date();
+              realToday.setHours(0, 0, 0, 0);
 
-              const names = targetStudentName.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(s => s.length > 0);
-              let results = [];
+              for (let j = 4; j <= maxJ; j++) {
+                const headerStr = fullData[headerIdx][j] || "";
+                const match = headerStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+                if (!match) continue;
+                const colDate = new Date(realToday.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+                colDate.setHours(0, 0, 0, 0);
 
-              names.forEach(searchName => {
-                if (searchName.includes("보조강사") || searchName.includes("자체학습") || searchName.includes("대상자발굴") || searchName.includes("도선복지관")) return;
+                for (let i = headerIdx + 1; i < fullData.length; i++) {
+                  const row = fullData[i];
+                  if (!row || row.length < 4 || row[3]?.replace(/\s+/g, '') !== "대상") continue;
 
-                let count = 0;
-                let attendedDatesForStudent = [];
+                  const cellStudent = row[j] ? row[j].trim() : "";
+                  if (!cellStudent) continue;
 
-                for (let j = 4; j <= maxColIndex; j++) {
-                  const headerStr = fullData[headerIdx][j] || "";
-                  const match = headerStr.match(/(\d+)\s*[/.]\s*(\d+)/);
-                  let colDate = new Date(0);
-                  if (match) {
-                    colDate = new Date(currentYear, parseInt(match[1]) - 1, parseInt(match[2]));
-                    colDate.setHours(0, 0, 0, 0);
-                  }
+                  const studentNames = cellStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+                  const statusRow = (i + 2 < fullData.length) ? fullData[i + 2] : null;
+                  const cellStatus = statusRow && statusRow[j] ? statusRow[j].trim() : "";
 
-                  let foundStatuses = [];
+                  studentNames.forEach((name, nIdx) => {
+                    if (name.includes("보조강사") || name.includes("자체학습") || name.includes("대상자발굴") || name.includes("도선복지관")) return;
 
-                  for (let i = headerIdx + 1; i < fullData.length; i++) {
-                    const row = fullData[i];
-                    if (!row || row.length < 4) continue;
-                    const category = row[3] ? row[3].replace(/\s+/g, '') : "";
-
-                    if (category === "대상") {
-                      const statusRow = (i + 2 < fullData.length) ? fullData[i + 2] : null;
-                      const cellStudent = row[j] ? row[j].trim() : "";
-                      const cellStatus = statusRow && statusRow[j] ? statusRow[j].trim() : "";
-
-                      let finalStatus = cellStatus;
-                      const cellNames = cellStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-                      const nameIdx = cellNames.indexOf(searchName);
-
-                      if (nameIdx !== -1 && cellStatus.includes('/')) {
-                        const rawParts = cellStatus.split(',').map(s => s.trim()).filter(Boolean);
-                        let tagParts = [];
-                        let memoParts = [];
-                        let isMemoStarted = false;
-
-                        for (let i = 0; i < rawParts.length; i++) {
-                          const part = rawParts[i];
-                          if (!isMemoStarted) {
-                            const subParts = part.split('/').map(p => p.trim());
-                            const isAllTags = subParts.every(p => {
-                              if (p === "") return true;
-                              const cleanP = p.replace(/\s+/g, '');
-                              if (ATTENDANCE_TAGS.includes(cleanP)) return true;
-                              const spaceParts = p.split(/\s+/);
-                              return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
-                            });
-                            if (isAllTags) {
-                              tagParts.push(part);
-                            } else {
-                              isMemoStarted = true;
-                              memoParts.push(part);
-                            }
-                          } else {
-                            memoParts.push(part);
-                          }
-                        }
-
-                        if (tagParts.length > 0) {
-                          const combinedTagStr = tagParts.join(',');
-                          const slashSegments = combinedTagStr.split('/');
-                          if (slashSegments.length > nameIdx) {
-                            finalStatus = slashSegments[nameIdx] + (memoParts.length > 0 ? ', ' + memoParts.join(', ') : '');
-                          }
+                    let finalStatus = cellStatus;
+                    if (cellStatus.includes('/')) {
+                      const segments = cellStatus.split(',').map(s => s.trim()).filter(Boolean);
+                      let tags = [];
+                      let isMemo = false;
+                      for (let seg of segments) {
+                        if (!isMemo) {
+                          const subs = seg.split('/').map(p => p.trim());
+                          const isAllTags = subs.every(p => !p || ATTENDANCE_TAGS.includes(p.replace(/\s+/g, '')) || p.split(/\s+/).every(sp => ATTENDANCE_TAGS.includes(sp)));
+                          if (isAllTags) tags.push(seg);
+                          else isMemo = true;
                         }
                       }
-
-                      if (cellStudent.includes(searchName)) {
-                        foundStatuses.push(finalStatus);
+                      if (tags.length > 0) {
+                        const combined = tags.join('/');
+                        const slashSegs = combined.split('/');
+                        if (slashSegs.length > nIdx) finalStatus = slashSegs[nIdx];
                       }
                     }
-                  }
 
-                  let hasSessionOnThisDay = false;
+                    let hasSession = false;
+                    const isAbsence = finalStatus.includes("결석");
+                    const isCanceled = finalStatus.includes("취소") || finalStatus.includes("선생님휴가");
 
-                  if (foundStatuses.length > 0) {
-                    const nonEmpty = foundStatuses.filter(s => s !== "");
-                    const statusesToEval = nonEmpty.length > 0 ? nonEmpty : foundStatuses;
-
-                    const hasAbsence = statusesToEval.some(s => s.includes("결석"));
-
-                    if (hasAbsence) {
-                      hasSessionOnThisDay = false;
-                    } else {
-                      const hasNumber = statusesToEval.some(s => {
-                        const parts = s.split(',').map(p => p.trim());
-                        return parts.some(part => /^[1-9]\d*/.test(part));
-                      });
-
-                      if (hasNumber) {
-                        hasSessionOnThisDay = true;
-                      } else {
-                        const isCanceled = statusesToEval.some(s => s.includes("취소") || s.includes("선생님휴가"));
-                        if (isCanceled) {
-                          hasSessionOnThisDay = false;
-                        } else if (colDate < realToday) {
-                          hasSessionOnThisDay = false;
-                        } else {
-                          hasSessionOnThisDay = true;
-                        }
-                      }
+                    if (name.includes("경로당") && (isAbsence || finalStatus.includes("취소"))) hasSession = true;
+                    else if (isAbsence) hasSession = false;
+                    else {
+                      const hasNumber = /^[1-9]\d*/.test(finalStatus.split(',')[0].trim());
+                      if (hasNumber) hasSession = true;
+                      else if (!isCanceled && colDate >= realToday) hasSession = true;
                     }
-                  }
 
-                  if (hasSessionOnThisDay) {
-                    count++;
-                    attendedDatesForStudent.push(colDate);
-                  }
+                    if (hasSession) {
+                      if (!counts[name]) counts[name] = { count: 0, dates: [] };
+                      counts[name].count++;
+                      counts[name].dates.push(colDate);
+                    }
+                  });
                 }
-                if (count > 0) {
-                  results.push({ name: searchName, count: count, dates: attendedDatesForStudent });
-                }
-              });
-              return results.length > 0 ? results : null;
+              }
+              return counts;
             };
+
+            const allRunningCounts = calculateAllRunningCounts(data, headerRowIndex, dateColumnIndex);
 
             let currentGroup = "";
             let currentTeacher = "";
@@ -3138,7 +3096,17 @@
               } else if (category.includes("진행")) {
                 currentStatus = targetCellData;
 
-                const sessionCounts = getStudentCounts(currentStudent, dateColumnIndex, data, headerRowIndex);
+                const getTargetSessionCounts = (studentStr) => {
+                  if (!studentStr) return null;
+                  const names = studentStr.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+                  const res = [];
+                  names.forEach(n => {
+                    if (allRunningCounts[n]) res.push({ name: n, ...allRunningCounts[n] });
+                  });
+                  return res.length > 0 ? res : null;
+                };
+
+                const sessionCounts = getTargetSessionCounts(currentStudent);
 
                 let finalStu = currentStudent;
                 let finalLoc = currentLocation;
@@ -3176,8 +3144,8 @@
             }
 
             for (let i = 0; i < parsedData.length; i++) {
-              parsedData[i].rowspan = { group: 1, teacher: 1, time: 1 };
-              parsedData[i].render = { group: true, teacher: true, time: true };
+              parsedData[i].rowspan = { group: 1, teacher: 1, time: 1, schedule: 1 };
+              parsedData[i].render = { group: true, teacher: true, time: true, schedule: true };
             }
 
             const colsToMerge = ['group', 'teacher', 'time'];
@@ -3203,6 +3171,31 @@
                 }
                 parsedData[startRow].rowspan[col] = count;
                 startRow += count;
+              }
+            }
+
+            // 특이 일정(간담회, 공휴일) 추가 병합 (선생님별 3개 타임 통합)
+            for (let i = 0; i < parsedData.length; i++) {
+              if (parsedData[i].isSpecial && parsedData[i].render.teacher) {
+                let count = 1;
+                for (let nextRow = i + 1; nextRow < parsedData.length; nextRow++) {
+                  if (parsedData[nextRow].isSpecial && parsedData[nextRow].teacher === parsedData[i].teacher) {
+                    count++;
+                    parsedData[nextRow].render.time = false;
+                    parsedData[nextRow].render.schedule = false;
+                  } else {
+                    break;
+                  }
+                }
+                if (count > 1) {
+                  parsedData[i].rowspan.time = count;
+                  parsedData[i].rowspan.schedule = count;
+                  const startTime = (parsedData[i].time || "").split(/[~-]/)[0];
+                  const endTime = (parsedData[i + count - 1].time || "").split(/[~-]/).slice(-1)[0];
+                  if (startTime && endTime) {
+                    parsedData[i].time = `${startTime.trim()}~${endTime.trim()}`;
+                  }
+                }
               }
             }
 
@@ -3496,44 +3489,48 @@
                                     </td>
                                   )}
 
-                                  <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
-                                    <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
-                                      <span className="whitespace-nowrap text-center">{(row.student || "").replace(/\n/g, ' ')}</span>
-                                      {showLocationText && (
-                                        <span className="whitespace-nowrap text-center mt-0.5">({locTextForDisplay})</span>
-                                      )}
-                                    </div>
-                                    <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
-                                      {row.status}
-                                    </div>
-                                  </td>
+                                  {row.render.schedule && (
+                                    <>
+                                      <td className={`${row.isSpecial ? 'border border-gray-400 p-0 align-middle break-keep' : tdClass} ${studentCellBg}`} rowSpan={row.rowspan.schedule} style={topBorderStyle}>
+                                        <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center ${row.isSpecial ? 'py-4' : ''}`}>
+                                          <span className="whitespace-nowrap text-center">{(row.student || "").replace(/\n/g, ' ')}</span>
+                                          {showLocationText && (
+                                            <span className="whitespace-nowrap text-center mt-0.5">({locTextForDisplay})</span>
+                                          )}
+                                        </div>
+                                        <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
+                                          {row.status}
+                                        </div>
+                                      </td>
 
-                                  <td className={`${tdClass} font-bold text-center text-[13px] landscape:text-[16px] md:text-[15px] transition-colors`} style={topBorderStyle}>
-                                    {row.sessionCounts && !row.student?.includes("간담회") ? (
-                                      <div className="flex flex-col w-full justify-center items-center gap-1">
-                                        {row.sessionCounts.map((sc, scIdx) => {
-                                          let sessionCellBg = "bg-gray-300";
-                                          let sessionTextCol = "text-black";
+                                      <td className={`${tdClass} font-bold text-center text-[13px] landscape:text-[16px] md:text-[15px] transition-colors`} rowSpan={row.rowspan.schedule} style={topBorderStyle}>
+                                        {row.sessionCounts && !row.student?.includes("간담회") ? (
+                                          <div className="flex flex-col w-full justify-center items-center gap-1">
+                                            {row.sessionCounts.map((sc, scIdx) => {
+                                              let sessionCellBg = "bg-gray-300";
+                                              let sessionTextCol = "text-black";
 
-                                          if (sc.count >= 10) {
-                                            sessionCellBg = "bg-purple-900";
-                                            sessionTextCol = "text-white";
-                                          } else if (sc.count >= 7) {
-                                            sessionCellBg = "bg-purple-400";
-                                            sessionTextCol = "text-white";
-                                          }
+                                              if (sc.count >= 10) {
+                                                sessionCellBg = "bg-purple-900";
+                                                sessionTextCol = "text-white";
+                                              } else if (sc.count >= 7) {
+                                                sessionCellBg = "bg-purple-400";
+                                                sessionTextCol = "text-white";
+                                              }
 
-                                          return (
-                                            <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1.5 py-0.5 rounded w-full whitespace-nowrap ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
-                                              {sc.count}회차
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    ) : (
-                                      <span className="text-purple-700">-</span>
-                                    )}
-                                  </td>
+                                              return (
+                                                <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1.5 py-0.5 rounded w-full whitespace-nowrap ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
+                                                  {sc.count}회차
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : (
+                                          <span className="text-purple-700">-</span>
+                                        )}
+                                      </td>
+                                    </>
+                                  )}
                                 </tr>
                               );
                             })
@@ -4124,24 +4121,42 @@
         setCurrentWeekStart(targetWeekStart);
       };
 
-      useEffect(() => {
-        if (!team || !teacher) return;
-        setIsLoading(true);
+      const [fullCsvData, setFullCsvData] = useState(null);
 
-        const exportUrl = SHEET_URLS[team] ? SHEET_URLS[team].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
-        if (!exportUrl) {
-          setIsLoading(false);
+      useEffect(() => {
+        if (!team) return;
+        
+        const cached = globalCsvCache.get(team);
+        if (cached) {
+          setFullCsvData(cached);
           return;
         }
 
+        const exportUrl = SHEET_URLS[team] ? SHEET_URLS[team].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
+        if (!exportUrl) return;
+
+        setIsLoading(true);
         fetch(`${exportUrl}&t=${Date.now()}`)
           .then(res => res.text())
           .then(csvText => {
-            window.Papa.parse(csvText, {
-              header: false,
-              skipEmptyLines: true,
-              complete: (results) => {
-                const data = results.data;
+            globalCsvCache.set(team, csvText);
+            setFullCsvData(csvText);
+            setIsLoading(false);
+          })
+          .catch(e => {
+            console.error("데이터 로드 실패", e);
+            setIsLoading(false);
+          });
+      }, [team]);
+
+      useEffect(() => {
+        if (!fullCsvData || !teacher || !window.Papa) return;
+
+        window.Papa.parse(fullCsvData, {
+          header: false,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const data = results.data;
                 let headerRowIdx = -1;
                 for (let i = 0; i < Math.min(10, data.length); i++) {
                   if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
@@ -4262,15 +4277,9 @@
                   }
                 }
                 setScheduleData(parsedData);
-                setIsLoading(false);
               }
             });
-          })
-          .catch(e => {
-            console.error("데이터 로드 실패", e);
-            setIsLoading(false);
-          });
-      }, [team, teacher, currentWeekStart]);
+      }, [fullCsvData, teacher, currentWeekStart]);
 
       const getStatusColorClass = (statusStr) => {
         if (!statusStr) return "text-gray-800";
@@ -4385,6 +4394,35 @@
                           {currentDays.map((day, i) => {
                             const dateStr = getLocalDateString(day);
                             const isToday = dateStr === getLocalDateString(new Date());
+
+                            // 특이 일정(간담회, 공휴일) 셀 병합 로직
+                            const specialInfo = specialDays[dateStr];
+                            if (specialInfo) {
+                              if (idx === 0) {
+                                const todayBorderClass = isToday ? 'border-l-4 border-r-4 border-b-4 border-blue-600 z-10' : 'border-r-2 border-gray-300 last:border-0';
+                                const parsedStatus = parseWeeklyStatus(specialInfo.memo);
+                                return (
+                                  <td key={i} rowSpan={3} className={`p-0 align-middle hover:bg-red-100 transition-colors overflow-hidden ${todayBorderClass} bg-red-200`}>
+                                    <div className="flex flex-col gap-1.5 sm:gap-2 p-4 justify-center items-center h-full min-h-[350px] w-full max-w-full">
+                                      {parsedStatus.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1 sm:mb-2">
+                                          {parsedStatus.tags.map((tag, tIdx) => (
+                                            <span key={tIdx} className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[12px] sm:text-[14px] md:text-[16px] font-extrabold border shadow-sm bg-red-600 text-white border-red-700">
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <div className="font-black text-red-900 text-[18px] sm:text-[22px] md:text-[26px] leading-tight text-center w-full break-keep">{specialInfo.student}</div>
+                                      <div className="text-red-700 text-[14px] sm:text-[16px] md:text-[20px] font-bold text-center bg-white/50 px-3 py-0.5 sm:px-4 sm:py-1 rounded-xl border border-red-300 mt-0.5 sm:mt-1">{specialInfo.location}</div>
+                                      {parsedStatus.memo && <div className="font-bold text-[14px] sm:text-[16px] md:text-[19px] leading-snug text-red-800 text-center mt-1 sm:mt-2 break-keep">{parsedStatus.memo}</div>}
+                                    </div>
+                                  </td>
+                                );
+                              }
+                              return null;
+                            }
+
                             const isLastSlot = idx === timeSlots.length - 1;
                             const todayBorderClass = isToday ? `border-l-4 border-r-4 ${isLastSlot ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
                             const cellData = scheduleData?.[time]?.[dateStr];
