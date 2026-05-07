@@ -4440,7 +4440,7 @@
 
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
-                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.student || "").includes("복지관") || (cellData.location || "").includes("경로당") || (cellData.location || "").includes("복지관");
+                            const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.student || "").includes("복지관") || (cellData.location || "").includes("경로당") || ((cellData.location || "").includes("복지관") && (cellData.location || "").trim() !== "복지관");
                             const cardBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "bg-white";
 
                             let cellBgClass = cardBgClass;
