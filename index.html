@@ -4441,11 +4441,11 @@
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
                             const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
-                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-100 border-red-300" : "bg-white border-gray-200";
+                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : "bg-white border-gray-200";
 
                             return (
-                              <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`${isSpecialDay ? 'p-0' : 'p-1 sm:p-2'} align-middle hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-2 ${isSpecialDay ? 'p-4 justify-center rounded-none border-0' : 'p-2 justify-start rounded-xl border shadow-sm'} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full ${cardBgClass}`}>
+                              <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`${isSpecialDay ? 'bg-red-100 p-0' : 'p-1 sm:p-2 hover:bg-gray-50'} align-middle transition-colors overflow-hidden h-full ${todayBorderClass}`}>
+                                <div className={`flex flex-col gap-2 ${isSpecialDay ? 'p-4 justify-center' : 'p-2 justify-start rounded-xl border shadow-sm ' + cardBgClass} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
