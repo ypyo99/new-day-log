@@ -4415,9 +4415,20 @@
                           {currentDays.map((day, i) => {
                             const dateStr = getLocalDateString(day);
                             const isToday = dateStr === getLocalDateString(new Date());
+                            const isSpecialDay = specialDays && specialDays[dateStr];
+                            
+                            // 1. 특별한 날(간담회/공휴일) 병합 처리
+                            if (isSpecialDay && idx > 0) return null;
+
                             const isLastSlot = idx === timeSlots.length - 1;
-                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${isLastSlot ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
-                            const cellData = scheduleData?.[time]?.[dateStr];
+                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${ (isSpecialDay || isLastSlot) ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
+                            
+                            const cellData = isSpecialDay ? {
+                              student: isSpecialDay.student,
+                              location: isSpecialDay.location,
+                              status: isSpecialDay.memo,
+                              isSpecial: true
+                            } : scheduleData?.[time]?.[dateStr];
                             
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
@@ -4430,11 +4441,11 @@
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
                             const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
-                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-200 border-red-400" : "bg-white border-gray-200";
+                            const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-100 border-red-300" : "bg-white border-gray-200";
 
                             return (
-                              <td key={i} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
+                              <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass}`}>
+                                <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] ${isSpecialDay ? 'justify-center' : 'justify-start'} items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
@@ -4451,9 +4462,9 @@
                                       })}
                                     </div>
                                   )}
-                                  {cellData.student && <div className="font-bold text-gray-900 text-[16px] sm:text-[18px] md:text-[22px] leading-tight break-all whitespace-pre-wrap text-center w-full">{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
-                                  {cellData.location && <div className="text-gray-600 text-[13px] sm:text-[15px] md:text-[18px] font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-2 py-0.5 rounded-lg inline-block border border-gray-200 max-w-full leading-tight mt-0.5">{cellData.location}</div>}
-                                  {parsedStatus.memo && <div className={`font-bold text-[14px] sm:text-[16px] md:text-[19px] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
+                                  {cellData.student && <div className={`font-bold text-gray-900 ${isSpecialDay ? 'text-[20px] sm:text-[24px] md:text-[28px]' : 'text-[16px] sm:text-[18px] md:text-[22px]'} leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
+                                  {cellData.location && <div className={`text-gray-600 ${isSpecialDay ? 'text-[16px] sm:text-[20px] md:text-[24px]' : 'text-[13px] sm:text-[15px] md:text-[18px]'} font-bold break-all whitespace-pre-wrap text-center bg-gray-100 px-2 py-0.5 rounded-lg inline-block border border-gray-200 max-w-full leading-tight mt-0.5`}>{cellData.location}</div>}
+                                  {parsedStatus.memo && <div className={`font-bold ${isSpecialDay ? 'text-[16px] sm:text-[20px] md:text-[24px]' : 'text-[14px] sm:text-[16px] md:text-[19px]'} leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo}</div>}
                                 </div>
                               </td>
                             );
