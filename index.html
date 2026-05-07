@@ -3430,6 +3430,8 @@
 
                               let studentCellBg = "";
                               const combinedText = (row.student || "") + " " + (row.location || "");
+                              const isAssistant = combinedText.includes("보조강사");
+                              const isKyungrodang = combinedText.includes("경로당") || combinedText.includes("도선복지관");
                               if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
                                 studentCellBg = "bg-red-200";
                               } else if (combinedText.includes("보조강사")) {
@@ -3491,8 +3493,8 @@
 
                                   {row.render.schedule && (
                                     <>
-                                      <td className={`${row.isSpecial ? 'border border-gray-400 p-0 align-middle break-keep' : tdClass} ${studentCellBg}`} rowSpan={row.rowspan.schedule} style={topBorderStyle}>
-                                        <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center ${row.isSpecial ? 'py-4' : ''}`}>
+                                      <td className={`${(row.isSpecial || isAssistant || isKyungrodang) ? 'border border-gray-400 p-0 align-middle break-keep' : tdClass} ${studentCellBg}`} rowSpan={row.rowspan.schedule} style={topBorderStyle}>
+                                        <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center ${(row.isSpecial || isAssistant || isKyungrodang) ? 'py-4' : ''}`}>
                                           <span className="whitespace-pre-line text-center">{(row.student || "").replace(/대체공휴일/g, '대체\n공휴일')}</span>
                                           {showLocationText && (
                                             <span className="whitespace-nowrap text-center mt-0.5">({locTextForDisplay})</span>
@@ -4440,9 +4442,12 @@
                             const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.location || "").includes("경로당") || (cellData.student || "").includes("도선복지관") || (cellData.location || "").includes("도선복지관");
                             const cardBgClass = isAssistant ? "bg-[#FFFF00] border-yellow-500" : isKyungrodang ? "bg-orange-100 border-orange-300" : cellData.isSpecial ? "bg-red-200 border-red-400" : "bg-white border-gray-200";
 
+                            const isFillCell = isAssistant || isKyungrodang;
+                            const fillBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "";
+
                             return (
-                              <td key={i} className={`p-1 sm:p-2 align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-1.5 p-2 rounded-xl border shadow-sm min-h-[110px] justify-start items-center h-full overflow-hidden w-full max-w-full ${cardBgClass}`}>
+                              <td key={i} className={`${isFillCell ? 'p-0' : 'p-1 sm:p-2'} align-top hover:bg-gray-50 transition-colors overflow-hidden h-full ${todayBorderClass} ${isFillCell ? fillBgClass : ''}`}>
+                                <div className={`flex flex-col gap-1.5 p-2 justify-start items-center h-full overflow-hidden w-full max-w-full ${isFillCell ? '' : 'rounded-xl border shadow-sm min-h-[110px] ' + cardBgClass}`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
