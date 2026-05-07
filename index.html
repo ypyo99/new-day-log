@@ -3501,7 +3501,7 @@
                                           )}
                                         </div>
                                         <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
-                                          {row.status?.replace(/^(\d+)(?:\/(\d+))+(?:,.*)?$/, (match) => {
+                                          {row.status?.replace(/^(\d+)(?:\/(\d+))*(?:,.*)?$/, (match) => {
                                             const parts = match.split(',')[0].split('/');
                                             const formatted = parts.map(s => {
                                               if (s === '1') return '출석';
@@ -4324,6 +4324,7 @@
           if (isTag) {
             let displayTag = part;
             if (part === '1') displayTag = '출석';
+            else if (part === '0') displayTag = '결석';
             else if (isNumber) displayTag = `출석${part}`;
             else if (isMultiAttendance) {
               displayTag = cleanPart.split('/').map(s => {
