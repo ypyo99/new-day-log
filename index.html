@@ -4066,6 +4066,7 @@
       const [isLoading, setIsLoading] = useState(false);
       const [sheetRange, setSheetRange] = useState({ min: null, max: null });
       const [notice, setNotice] = useState("");
+      const [cachedCsv, setCachedCsv] = useState("");
 
       const weekDays = ['월', '화', '수', '목', '금'];
       const timeSlots = team === "3팀" ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"] : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
@@ -4124,8 +4125,9 @@
         setCurrentWeekStart(targetWeekStart);
       };
 
+      // 1. CSV 데이터 페칭 (팀이 바뀔 때만)
       useEffect(() => {
-        if (!team || !teacher) return;
+        if (!team) return;
         setIsLoading(true);
 
         const exportUrl = SHEET_URLS[team] ? SHEET_URLS[team].replace(/\/edit.*gid=(\d+).*/, '/export?format=csv&gid=$1') : "";
@@ -4137,140 +4139,146 @@
         fetch(`${exportUrl}&t=${Date.now()}`)
           .then(res => res.text())
           .then(csvText => {
-            window.Papa.parse(csvText, {
-              header: false,
-              skipEmptyLines: true,
-              complete: (results) => {
-                const data = results.data;
-                let headerRowIdx = -1;
-                for (let i = 0; i < Math.min(10, data.length); i++) {
-                  if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
-                    headerRowIdx = i; break;
-                  }
-                }
-
-                const parsedData = {};
-                timeSlots.forEach(slot => { parsedData[slot] = {}; });
-
-                if (headerRowIdx === -1) {
-                  setScheduleData(parsedData);
-                  setIsLoading(false);
-                  return;
-                }
-
-                const headerRow = data[headerRowIdx];
-                
-                // 시트 전체 날짜 범위 및 특이사항 파악
-                let sheetDates = [];
-                let specialDates = {}; // { "YYYY-MM-DD": { student, location } }
-                for (let j = 4; j < headerRow.length; j++) {
-                  const cellStr = headerRow[j] || "";
-                  const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
-                  if (match) {
-                    const d = new Date(currentWeekStart.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
-                    const dStr = getLocalDateString(d);
-                    sheetDates.push(d);
-                    
-                    const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
-                    const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
-                    const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
-                    if (row3.includes("간담회") || row4.includes("공휴일")) {
-                      specialDates[dStr] = { student: row3, location: row4, memo: row5 };
-                    }
-                  }
-                }
-                if (sheetDates.length > 0) {
-                  sheetDates.sort((a, b) => a.getTime() - b.getTime());
-                  setSheetRange({ min: sheetDates[0], max: sheetDates[sheetDates.length - 1] });
-                }
-                setSpecialDays(specialDates);
-
-                const targetColIndices = {};
-
-                currentDays.forEach(day => {
-                  const m = day.getMonth() + 1;
-                  const d = day.getDate();
-                  const searchPattern = new RegExp(`^0?${m}\\s*[/.]\s*0?${d}`);
-
-                  for (let j = 4; j < headerRow.length; j++) {
-                    if ((headerRow[j] || "").match(searchPattern)) {
-                      targetColIndices[getLocalDateString(day)] = j;
-                      break;
-                    }
-                  }
-                });
-
-                let currentTeacherTracker = "";
-                let currentTimeTracker = "";
-                let currentStudentRow = null;
-                let currentLocationRow = null;
-
-                for (let i = headerRowIdx + 1; i < data.length; i++) {
-                  const row = data[i];
-                  if (!row || row.length < 4) continue;
-
-                  if (row[1] && row[1].trim()) currentTeacherTracker = row[1].trim();
-                  if (row[2] && row[2].trim()) currentTimeTracker = row[2].trim();
-
-                  if (currentTeacherTracker === teacher) {
-                    const category = row[3] ? row[3].replace(/\s+/g, '') : "";
-                    if (category === "대상") currentStudentRow = row;
-                    else if (category === "장소") currentLocationRow = row;
-                    else if (category.includes("진행")) {
-                      const timeKey = currentTimeTracker;
-                      if (!parsedData[timeKey]) parsedData[timeKey] = {};
-
-                      currentDays.forEach(day => {
-                        const dateStr = getLocalDateString(day);
-                        const colIdx = targetColIndices[dateStr];
-
-                        if (colIdx !== undefined) {
-                          const rawStu = currentStudentRow ? currentStudentRow[colIdx]?.trim() : "";
-                          const rawLoc = currentLocationRow ? currentLocationRow[colIdx]?.trim() : "";
-                          
-                          let finalStu = rawStu;
-                          let finalLoc = rawLoc;
-                          let isSpecial = false;
-                          const dateStrForSpecial = getLocalDateString(day);
-                          if (specialDates[dateStrForSpecial] && (!finalStu && !finalLoc || ["김종철", "표영", "강계환"].includes(teacher.trim())) && timeKey === timeSlots[0]) {
-                            finalStu = specialDates[dateStrForSpecial].student;
-                            finalLoc = specialDates[dateStrForSpecial].location;
-                            isSpecial = true;
-                          }
-
-                          let finalStatus = row[colIdx] ? row[colIdx].trim() : "";
-                          if (specialDates[dateStrForSpecial] && timeKey === timeSlots[0] && specialDates[dateStrForSpecial].memo) {
-                            if (!finalStatus.includes(specialDates[dateStrForSpecial].memo)) {
-                              finalStatus = (finalStatus ? finalStatus + ", " : "") + specialDates[dateStrForSpecial].memo;
-                            }
-                          }
-
-                          parsedData[timeKey][dateStr] = {
-                            student: finalStu,
-                            location: finalLoc,
-                            status: finalStatus,
-                            isSpecial: isSpecial
-                          };
-                        } else {
-                          parsedData[timeKey][dateStr] = { student: "", location: "", status: "" };
-                        }
-                      });
-                      
-                      currentStudentRow = null;
-                      currentLocationRow = null;
-                    }
-                  }
-                }
-                setScheduleData(parsedData);
-                setIsLoading(false);
-              }
-            });
+            setCachedCsv(csvText);
+            setIsLoading(false);
           })
           .catch(e => {
             console.error("데이터 로드 실패", e);
             setIsLoading(false);
           });
-      }, [team, teacher, currentWeekStart]);
+      }, [team]);
+
+      // 2. 데이터 파싱 (CSV 데이터, 선생님, 또는 주간 시작일이 바뀔 때)
+      useEffect(() => {
+        if (!cachedCsv || !teacher || !currentWeekStart) return;
+        
+        window.Papa.parse(cachedCsv, {
+          header: false,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const data = results.data;
+            let headerRowIdx = -1;
+            for (let i = 0; i < Math.min(10, data.length); i++) {
+              if (data[i] && data[i].length > 3 && data[i][3].replace(/\s+/g, '') === "구분") {
+                headerRowIdx = i; break;
+              }
+            }
+
+            const parsedData = {};
+            timeSlots.forEach(slot => { parsedData[slot] = {}; });
+
+            if (headerRowIdx === -1) {
+              setScheduleData(parsedData);
+              return;
+            }
+
+            const headerRow = data[headerRowIdx];
+            
+            // 시트 전체 날짜 범위 및 특이사항 파악
+            let sheetDates = [];
+            let specialDates = {}; // { "YYYY-MM-DD": { student, location } }
+            for (let j = 4; j < headerRow.length; j++) {
+              const cellStr = headerRow[j] || "";
+              const match = cellStr.match(/(\d+)\s*[/.]\s*(\d+)/);
+              if (match) {
+                const d = new Date(currentWeekStart.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
+                const dStr = getLocalDateString(d);
+                sheetDates.push(d);
+                
+                const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
+                const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
+                const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
+                if (row3.includes("간담회") || row4.includes("공휴일")) {
+                  specialDates[dStr] = { student: row3, location: row4, memo: row5 };
+                }
+              }
+            }
+            if (sheetDates.length > 0) {
+              sheetDates.sort((a, b) => a.getTime() - b.getTime());
+              setSheetRange({ min: sheetDates[0], max: sheetDates[sheetDates.length - 1] });
+            }
+            setSpecialDays(specialDates);
+
+            const targetColIndices = {};
+
+            currentDays.forEach(day => {
+              const m = day.getMonth() + 1;
+              const d = day.getDate();
+              const searchPattern = new RegExp(`^0?${m}\\s*[/.]\s*0?${d}`);
+
+              for (let j = 4; j < headerRow.length; j++) {
+                if ((headerRow[j] || "").match(searchPattern)) {
+                  targetColIndices[getLocalDateString(day)] = j;
+                  break;
+                }
+              }
+            });
+
+            let currentTeacherTracker = "";
+            let currentTimeTracker = "";
+            let currentStudentRow = null;
+            let currentLocationRow = null;
+
+            for (let i = headerRowIdx + 1; i < data.length; i++) {
+              const row = data[i];
+              if (!row || row.length < 4) continue;
+
+              if (row[1] && row[1].trim()) currentTeacherTracker = row[1].trim();
+              if (row[2] && row[2].trim()) currentTimeTracker = row[2].trim();
+
+              if (currentTeacherTracker === teacher) {
+                const category = row[3] ? row[3].replace(/\s+/g, '') : "";
+                if (category === "대상") currentStudentRow = row;
+                else if (category === "장소") currentLocationRow = row;
+                else if (category.includes("진행")) {
+                  const timeKey = currentTimeTracker;
+                  if (!parsedData[timeKey]) parsedData[timeKey] = {};
+
+                  currentDays.forEach(day => {
+                    const dateStr = getLocalDateString(day);
+                    const colIdx = targetColIndices[dateStr];
+
+                    if (colIdx !== undefined) {
+                      const rawStu = currentStudentRow ? currentStudentRow[colIdx]?.trim() : "";
+                      const rawLoc = currentLocationRow ? currentLocationRow[colIdx]?.trim() : "";
+                      
+                      let finalStu = rawStu;
+                      let finalLoc = rawLoc;
+                      let isSpecial = false;
+                      const dateStrForSpecial = getLocalDateString(day);
+                      if (specialDates[dateStrForSpecial] && (!finalStu && !finalLoc || ["김종철", "표영", "강계환"].includes(teacher.trim())) && timeKey === timeSlots[0]) {
+                        finalStu = specialDates[dateStrForSpecial].student;
+                        finalLoc = specialDates[dateStrForSpecial].location;
+                        isSpecial = true;
+                      }
+
+                      let finalStatus = row[colIdx] ? row[colIdx].trim() : "";
+                      if (specialDates[dateStrForSpecial] && timeKey === timeSlots[0] && specialDates[dateStrForSpecial].memo) {
+                        if (!finalStatus.includes(specialDates[dateStrForSpecial].memo)) {
+                          finalStatus = (finalStatus ? finalStatus + ", " : "") + specialDates[dateStrForSpecial].memo;
+                        }
+                      }
+
+                      parsedData[timeKey][dateStr] = {
+                        student: finalStu,
+                        location: finalLoc,
+                        status: finalStatus,
+                        isSpecial: isSpecial
+                      };
+                    } else {
+                      parsedData[timeKey][dateStr] = { student: "", location: "", status: "" };
+                    }
+                  });
+                  
+                  currentStudentRow = null;
+                  currentLocationRow = null;
+                }
+              }
+            }
+            setScheduleData(parsedData);
+          }
+        });
+      }, [cachedCsv, teacher, currentWeekStart]);
 
       const getStatusColorClass = (statusStr) => {
         if (!statusStr) return "text-gray-800";
