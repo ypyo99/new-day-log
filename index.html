@@ -3501,7 +3501,16 @@
                                           )}
                                         </div>
                                         <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
-                                          {row.status}
+                                          {row.status?.replace(/^(\d+)(?:\/(\d+))+(?:,.*)?$/, (match) => {
+                                            const parts = match.split(',')[0].split('/');
+                                            const formatted = parts.map(s => {
+                                              if (s === '1') return '출석';
+                                              if (s === '0') return '결석';
+                                              return `출석${s}`;
+                                            }).join('/');
+                                            const memo = match.includes(',') ? match.substring(match.indexOf(',')) : '';
+                                            return formatted + memo;
+                                          }) || row.status}
                                         </div>
                                       </td>
 
@@ -4302,12 +4311,11 @@
         parts.forEach((part, i) => {
           const cleanPart = part.replace(/\s+/g, '');
           const isNumber = /^\d+$/.test(cleanPart);
+          const isMultiAttendance = /^\d+(\/\d+)+$/.test(cleanPart);
           const hasKeyword = tagKeywords.some(k => cleanPart === k);
           
-          // 첫 번째 데이터가 숫자이면 태그(참석인원), 두 번째 이후 숫자는 메모
-          // 단, 출석/결석 등 키워드가 포함된 경우는 무조건 태그
           let isTag = false;
-          if (hasKeyword) {
+          if (hasKeyword || isMultiAttendance) {
             isTag = true;
           } else if (isNumber) {
             isTag = (i === 0);
@@ -4317,6 +4325,13 @@
             let displayTag = part;
             if (part === '1') displayTag = '출석';
             else if (isNumber) displayTag = `출석${part}`;
+            else if (isMultiAttendance) {
+              displayTag = cleanPart.split('/').map(s => {
+                if (s === '1') return '출석';
+                if (s === '0') return '결석';
+                return `출석${s}`;
+              }).join('/');
+            }
             tags.push(displayTag);
           } else {
             memos.push(part);
