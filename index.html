@@ -3412,14 +3412,14 @@
 
                               const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
 
-                              let statusColorClass = "text-black font-bold";
+                              let statusColorClass = "text-gray-700 font-bold";
                               if (row.status) {
                                 const hasAbsenceOrCancel = row.status.includes("결석") || row.status.includes("취소");
                                 const hasVacation = row.status.includes("휴가");
                                 if (hasAbsenceOrCancel) {
                                   statusColorClass = "text-red-600 font-bold";
                                 } else if (hasVacation) {
-                                  statusColorClass = "text-gray-800 font-bold";
+                                  statusColorClass = "text-gray-600 font-bold";
                                 }
                               }
 
@@ -3501,16 +3501,7 @@
                                           )}
                                         </div>
                                         <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
-                                          {row.status?.replace(/^(\d+)(?:\/(\d+))*(?:,.*)?$/, (match) => {
-                                            const parts = match.split(',')[0].split('/');
-                                            const formatted = parts.map(s => {
-                                              if (s === '1') return '출석';
-                                              if (s === '0') return '결석';
-                                              return `출석${s}`;
-                                            }).join('/');
-                                            const memo = match.includes(',') ? match.substring(match.indexOf(',')) : '';
-                                            return formatted + memo;
-                                          }) || row.status}
+                                          {row.status}
                                         </div>
                                       </td>
 
