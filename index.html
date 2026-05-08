@@ -199,7 +199,7 @@
     );
 
     const teamList = ["1팀", "2팀", "3팀"];
-    
+
     const getShifts = (team) => {
       if (team === "3팀") return ["13:00~14:00", "14:00~15:00", "15:00~16:00"];
       return ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
@@ -735,12 +735,14 @@
             let loadedStudent = (fetchedData.student === undefined || fetchedData.student === null) ? "" : fetchedData.student;
             let loadedLocation = (fetchedData.location === undefined || fetchedData.location === null) ? "" : fetchedData.location;
 
-            // 특이 사항 자동 반영 (첫 번째 슬롯)
+            // 특이 사항 자동 반영 (첫 번째 슬롯) - 사용자 요청으로 비활성화
+            /*
             const isSpecialDay = index === 0 && specialDayData;
             if (isSpecialDay && (!loadedStudent && !loadedLocation || ["김종철", "표영", "강계환"].includes(currentUser.trim()))) {
               loadedStudent = specialDayData.student;
               loadedLocation = specialDayData.location;
             }
+            */
 
             const isShowHeadcount = loadedStudent.includes("보조강사") || loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
 
@@ -781,9 +783,11 @@
               }
             }
 
+            /*
             if (isSpecialDay && specialDayData && specialDayData.memo && !memoParts.includes(specialDayData.memo)) {
               memoParts.push(specialDayData.memo);
             }
+            */
 
             if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
               const lastTag = tagParts[tagParts.length - 1];
@@ -825,7 +829,7 @@
           });
           return newLogs;
         });
-      }, [date, allScheduleData, selectedTeam, specialDayData, currentUser]);
+      }, [date, allScheduleData, selectedTeam, currentUser]);
 
       const buildStatusString = (log) => {
         let tagsStrings = [];
@@ -1217,7 +1221,7 @@
 
       useEffect(() => {
         if (availableDates.length === 0) return;
-        
+
         // 오늘 날짜(또는 주말인 경우 다음 월요일)인 경우에는 데이터가 없더라도 자동으로 이동하지 않음
         const todayStr = getInitialWeekday();
         if (date === todayStr) return;
@@ -1258,7 +1262,7 @@
         if (isDataLoading) return;
         await performAutoSave();
         const todayStr = getInitialWeekday();
-        
+
         // 오늘 날짜로 무조건 이동 (데이터 유무 상관없이)
         setDate(todayStr);
       };
@@ -1499,17 +1503,17 @@
               <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-[180px]">
                 {/* 💡 [추가] 나의 주간 일정 보기 버튼 */}
                 <button
-                    onClick={() => {
-                        if(!selectedTeam || !currentUser) {
-                            setErrorMessage("팀과 선생님을 먼저 선택해주세요.");
-                            setTimeout(() => setErrorMessage(""), 3000);
-                            return;
-                        }
-                        onNavigateToMyWeeklySchedule();
-                    }}
-                    className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-[#000080] bg-[#a9d0fd] border-2 border-blue-400 hover:bg-blue-300'}`}
+                  onClick={() => {
+                    if (!selectedTeam || !currentUser) {
+                      setErrorMessage("팀과 선생님을 먼저 선택해주세요.");
+                      setTimeout(() => setErrorMessage(""), 3000);
+                      return;
+                    }
+                    onNavigateToMyWeeklySchedule();
+                  }}
+                  className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-[#000080] bg-[#a9d0fd] border-2 border-blue-400 hover:bg-blue-300'}`}
                 >
-                    <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정 보기
+                  <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정 보기
                 </button>
 
                 {selectedTeam ? (
@@ -1545,7 +1549,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260506
+                v260508
               </div>
             </div>
           </div>
@@ -1608,11 +1612,11 @@
                         disabled={hasChanges || isEmptySchedule || !!noNewScheduleToRepeat}
                         className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || isEmptySchedule || !!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
                         title={
-                          hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." : 
-                          isEmptySchedule ? "복제할 일정이 없습니다. 학생이름과 장소를 먼저 입력해 주세요." : 
-                          noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
-                          noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
-                          "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
+                          hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." :
+                            isEmptySchedule ? "복제할 일정이 없습니다. 학생이름과 장소를 먼저 입력해 주세요." :
+                              noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
+                                noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
+                                  "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
                         }
                       >
                         <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
@@ -4115,7 +4119,7 @@
       const changeWeek = (offsetWeeks) => {
         const newDate = new Date(currentWeekStart);
         newDate.setDate(newDate.getDate() + (offsetWeeks * 7));
-        
+
         if (sheetRange.min && sheetRange.max) {
           const weekEnd = new Date(newDate);
           weekEnd.setDate(weekEnd.getDate() + 4);
@@ -4142,9 +4146,9 @@
           weekEnd.setDate(weekEnd.getDate() + 4);
           if (weekEnd < sheetRange.min) targetWeekStart = new Date(sheetRange.min);
           else if (targetWeekStart > sheetRange.max) {
-             const lastWeekStart = new Date(sheetRange.max);
-             lastWeekStart.setDate(lastWeekStart.getDate() - (lastWeekStart.getDay() - 1));
-             targetWeekStart = lastWeekStart;
+            const lastWeekStart = new Date(sheetRange.max);
+            lastWeekStart.setDate(lastWeekStart.getDate() - (lastWeekStart.getDay() - 1));
+            targetWeekStart = lastWeekStart;
           }
         }
         setCurrentWeekStart(targetWeekStart);
@@ -4176,7 +4180,7 @@
       // 2. 데이터 파싱 (CSV 데이터, 선생님, 또는 주간 시작일이 바뀔 때)
       useEffect(() => {
         if (!cachedCsv || !teacher || !currentWeekStart) return;
-        
+
         window.Papa.parse(cachedCsv, {
           header: false,
           skipEmptyLines: true,
@@ -4198,7 +4202,7 @@
             }
 
             const headerRow = data[headerRowIdx];
-            
+
             // 시트 전체 날짜 범위 및 특이사항 파악
             let sheetDates = [];
             let specialDates = {}; // { "YYYY-MM-DD": { student, location } }
@@ -4209,7 +4213,7 @@
                 const d = new Date(currentWeekStart.getFullYear(), parseInt(match[1]) - 1, parseInt(match[2]));
                 const dStr = getLocalDateString(d);
                 sheetDates.push(d);
-                
+
                 const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
                 const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
                 const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
@@ -4266,7 +4270,7 @@
                     if (colIdx !== undefined) {
                       const rawStu = currentStudentRow ? currentStudentRow[colIdx]?.trim() : "";
                       const rawLoc = currentLocationRow ? currentLocationRow[colIdx]?.trim() : "";
-                      
+
                       let finalStu = rawStu;
                       let finalLoc = rawLoc;
                       let isSpecial = false;
@@ -4294,7 +4298,7 @@
                       parsedData[timeKey][dateStr] = { student: "", location: "", status: "" };
                     }
                   });
-                  
+
                   currentStudentRow = null;
                   currentLocationRow = null;
                 }
@@ -4318,12 +4322,12 @@
         const parts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
         let tags = [];
         let memos = [];
-        
+
         const tagKeywords = ['출석', '결석', '취소', '선생님휴가', '휴가'];
-        
+
         parts.forEach((part, i) => {
           const cleanPart = part.replace(/\s+/g, '');
-          
+
           // 다인원 출석 패턴 처리 (/ 포함 시)
           if (cleanPart.includes('/')) {
             const subParts = cleanPart.split('/');
@@ -4331,16 +4335,16 @@
               const [p1, p2] = subParts;
               const isP1Tag = /^\d+$/.test(p1) || tagKeywords.includes(p1);
               const isP2Tag = /^\d+$/.test(p2) || tagKeywords.includes(p2);
-              
+
               if (isP1Tag && isP2Tag) {
-                let t1 = p1 === '1' ? '출석' : ( /^\d+$/.test(p1) ? '출석' + p1 : p1);
-                let t2 = p2 === '1' ? '출석' : ( /^\d+$/.test(p2) ? '출석' + p2 : p2);
-                
+                let t1 = p1 === '1' ? '출석' : (/^\d+$/.test(p1) ? '출석' + p1 : p1);
+                let t2 = p2 === '1' ? '출석' : (/^\d+$/.test(p2) ? '출석' + p2 : p2);
+
                 // 사용자 요청 특수 규칙: '결석/결석' -> '결석/출석'
                 if (p1 === '결석' && p2 === '결석') {
                   t2 = '출석';
                 }
-                
+
                 tags.push(`${t1}/${t2}`);
                 return;
               }
@@ -4349,14 +4353,14 @@
 
           const isNumber = /^\d+$/.test(cleanPart);
           const hasKeyword = tagKeywords.some(k => cleanPart === k);
-          
+
           let isTag = false;
           if (hasKeyword) {
             isTag = true;
           } else if (isNumber) {
             isTag = (i === 0);
           }
-          
+
           if (isTag) {
             let displayTag = part;
             if (part === '1') displayTag = '출석';
@@ -4366,7 +4370,7 @@
             memos.push(part);
           }
         });
-        
+
         return { tags, memo: memos.join(', ') };
       };
 
@@ -4440,21 +4444,26 @@
                           {currentDays.map((day, i) => {
                             const dateStr = getLocalDateString(day);
                             const isToday = dateStr === getLocalDateString(new Date());
-                            const isSpecialDay = specialDays && specialDays[dateStr];
-                            
+                            const specialDayInfo = specialDays && specialDays[dateStr];
+                            const hasRealSchedule = timeSlots.some(t => {
+                              const d = scheduleData?.[t]?.[dateStr];
+                              return d && d.student && d.student.trim() !== "" && d.student.trim() !== "간담회";
+                            });
+                            const isSpecialDayMerged = specialDayInfo && !hasRealSchedule;
+
                             // 1. 특별한 날(간담회/공휴일) 병합 처리
-                            if (isSpecialDay && idx > 0) return null;
+                            if (isSpecialDayMerged && idx > 0) return null;
 
                             const isLastSlot = idx === timeSlots.length - 1;
-                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${ (isSpecialDay || isLastSlot) ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
-                            
-                            const cellData = isSpecialDay ? {
-                              student: isSpecialDay.student,
-                              location: isSpecialDay.location,
-                              status: isSpecialDay.memo,
+                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${(isSpecialDayMerged || isLastSlot) ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
+
+                            const cellData = isSpecialDayMerged ? {
+                              student: specialDayInfo.student,
+                              location: specialDayInfo.location,
+                              status: specialDayInfo.memo,
                               isSpecial: true
                             } : scheduleData?.[time]?.[dateStr];
-                            
+
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
                                 <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass}`}>
@@ -4469,13 +4478,13 @@
                             const cardBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "bg-white";
 
                             let cellBgClass = cardBgClass;
-                            if (isSpecialDay) {
+                            if (specialDayInfo) {
                               cellBgClass = "bg-red-200";
                             }
 
                             return (
-                              <td key={i} rowSpan={isSpecialDay ? 3 : 1} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-1 ${isSpecialDay ? 'p-4 justify-center' : 'p-3 justify-center'} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
+                              <td key={i} rowSpan={isSpecialDayMerged ? 3 : 1} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
+                                <div className={`flex flex-col gap-1 ${isSpecialDayMerged ? 'p-4 justify-center' : 'p-3 justify-center'} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
