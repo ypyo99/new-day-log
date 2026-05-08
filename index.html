@@ -1846,12 +1846,12 @@
                                   }}
                                   onBlur={handleInputBlur}
                                   disabled={isDataLoading || isInfoMissing}
-                                  className="w-16 md:w-20 py-0.5 sm:py-1 md:py-1.5 px-2 text-center border border-sky-300 rounded-xl bg-sky-100 outline-none font-bold text-gray-800 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg md:text-xl shrink-0"
+                                  className="w-16 md:w-20 py-0.5 sm:py-1 md:py-1.5 px-2 text-center border border-sky-400 rounded-xl bg-sky-200 outline-none font-bold text-gray-800 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg md:text-xl shrink-0"
                                 />
                               )}
                               <input
                                 type="text"
-                                placeholder="메모만 입력"
+                                placeholder="메모"
                                 value={logs[index].memo}
                                 onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
                                 onBlur={handleInputBlur}
