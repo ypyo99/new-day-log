@@ -1191,6 +1191,25 @@
         const dates = Object.keys(allScheduleData).sort();
         return dates.filter(d => !holidayDates.includes(d.substring(5)));
       }, [allScheduleData, holidayDates]);
+
+      const noNewScheduleToRepeat = useMemo(() => {
+        if (isFetchingSchedule || isSyncing || isSubmitting) return null;
+        const currentDayOfWeek = new Date(date).getDay();
+        const targetDates = availableDates.filter(d => d > date && new Date(d).getDay() === currentDayOfWeek);
+        if (targetDates.length === 0) return "no_future_dates";
+
+        const shifts = getShifts(selectedTeam);
+        const hasDifference = targetDates.some(targetDate => {
+          const targetOriginalData = allScheduleData[targetDate] || {};
+          return shifts.some((shiftTime, i) => {
+            const log = logs[i];
+            const original = targetOriginalData[shiftTime] || {};
+            return (log.student || "") !== (original.student || "") || (log.location || "") !== (original.location || "");
+          });
+        });
+
+        return !hasDifference ? "already_identical" : null;
+      }, [date, availableDates, allScheduleData, logs, selectedTeam, isFetchingSchedule, isSyncing, isSubmitting]);
       const minDate = availableDates.length > 0 ? availableDates[0] : "";
       const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
@@ -1586,9 +1605,15 @@
                       <button
                         type="button"
                         onClick={handleRepeatSchedule}
-                        disabled={hasChanges || isEmptySchedule}
-                        className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || isEmptySchedule ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
-                        title={hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." : isEmptySchedule ? "복제할 일정이 없습니다. 학생이름과 장소를 먼저 입력해 주세요." : "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."}
+                        disabled={hasChanges || isEmptySchedule || !!noNewScheduleToRepeat}
+                        className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || isEmptySchedule || !!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
+                        title={
+                          hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." : 
+                          isEmptySchedule ? "복제할 일정이 없습니다. 학생이름과 장소를 먼저 입력해 주세요." : 
+                          noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
+                          noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
+                          "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
+                        }
                       >
                         <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
                       </button>
@@ -4188,7 +4213,7 @@
                 const row3 = (data[headerRowIdx + 1] && data[headerRowIdx + 1][j]) ? data[headerRowIdx + 1][j].trim() : "";
                 const row4 = (data[headerRowIdx + 2] && data[headerRowIdx + 2][j]) ? data[headerRowIdx + 2][j].trim() : "";
                 const row5 = (data[headerRowIdx + 3] && data[headerRowIdx + 3][j]) ? data[headerRowIdx + 3][j].trim() : "";
-                if (row3.includes("간담회") || row4.includes("공휴일")) {
+                if (row3.includes("간담회") || row3.includes("소양교육") || row4.includes("공휴일") || row4.includes("소양교육")) {
                   specialDates[dStr] = { student: row3, location: row4, memo: row5 };
                 }
               }
@@ -4445,7 +4470,7 @@
 
                             let cellBgClass = cardBgClass;
                             if (isSpecialDay) {
-                              cellBgClass = (isSpecialDay.location && isSpecialDay.location.includes("공휴일")) ? "bg-red-200" : "bg-red-100";
+                              cellBgClass = "bg-red-200";
                             }
 
                             return (
@@ -4467,7 +4492,7 @@
                                       })}
                                     </div>
                                   )}
-                                  {cellData.student && <div className={`font-bold text-gray-900 text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').trim()}</div>}
+                                  {cellData.student && <div className={`font-bold text-gray-900 text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
                                   {cellData.location && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                   {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                 </div>
