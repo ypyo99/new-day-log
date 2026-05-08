@@ -4493,7 +4493,7 @@
                                     </div>
                                   )}
                                   {cellData.student && <div className={`font-bold text-gray-900 text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
-                                  {cellData.location && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
+                                  {cellData.location && cellData.location !== "복지관" && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                   {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                 </div>
                               </td>
