@@ -1220,8 +1220,11 @@
       }, [logs, allScheduleData, date, selectedTeam, shifts]);
 
       const isEmptySchedule = useMemo(() => {
+        if (selectedTeam === '취업팀') {
+          return Object.values(logs).every(log => !log.student?.trim());
+        }
         return Object.values(logs).every(log => !log.student?.trim() && !log.location?.trim());
-      }, [logs]);
+      }, [logs, selectedTeam]);
 
       const isMissingHeadcount = useMemo(() => {
         return false; // 더 이상 경로당 인원수 빈값 체크를 하지 않음
@@ -1427,7 +1430,9 @@
           shifts.forEach((shiftTime, i) => {
             const log = logs[i];
             const original = todaysOriginalData[shiftTime] || {};
-            if ((log.student || "") !== (original.student || "") || (log.location || "") !== (original.location || "")) {
+            const isStudentDiff = (log.student || "") !== (original.student || "");
+            const isLocationDiff = selectedTeam !== '취업팀' && (log.location || "") !== (original.location || "");
+            if (isStudentDiff || isLocationDiff) {
               hasDifference = true;
             }
           });
@@ -1456,13 +1461,15 @@
           shifts.forEach((shiftTime, i) => {
             const log = logs[i];
             const original = todaysOriginalData[shiftTime] || {};
-            if ((log.student || "") !== (original.student || "") || (log.location || "") !== (original.location || "")) {
+            const isStudentDiff = (log.student || "") !== (original.student || "");
+            const isLocationDiff = selectedTeam !== '취업팀' && (log.location || "") !== (original.location || "");
+            if (isStudentDiff || isLocationDiff) {
               allTasks.push({
                 id: `${targetDate}_${i}`,
                 date: targetDate,
                 shift: shiftTime,
                 student: log.student || "",
-                location: log.location || "",
+                location: selectedTeam === '취업팀' ? (original.location || "") : (log.location || ""),
                 statusStr: "",
                 index: i
               });
@@ -1612,7 +1619,9 @@
           return shifts.some((shiftTime, i) => {
             const log = logs[i];
             const original = targetOriginalData[shiftTime] || {};
-            return (log.student || "") !== (original.student || "") || (log.location || "") !== (original.location || "");
+            const isStudentDiff = (log.student || "") !== (original.student || "");
+            const isLocationDiff = selectedTeam !== '취업팀' && (log.location || "") !== (original.location || "");
+            return isStudentDiff || isLocationDiff;
           });
         });
 
