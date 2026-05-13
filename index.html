@@ -407,7 +407,7 @@
         e.preventDefault();
         const { x, y } = getCoordinates(e);
         const ctx = canvasRef.current.getContext('2d');
-        
+
         // 그리기 시작 전 스타일 확인 및 설정
         ctx.lineWidth = 4;
         ctx.strokeStyle = '#000';
@@ -1445,8 +1445,8 @@
             const original = todaysOriginalData[shiftTime] || {};
             const isStudentDiff = (log.student || "") !== (original.student || "");
             // 취업팀은 대상 날짜에 이미 싸인이 있는 경우 이를 지우기 위해 '차이'가 있는 것으로 간주함
-            const isLocationDiff = selectedTeam === '취업팀' 
-              ? (original.location || "") !== "" 
+            const isLocationDiff = selectedTeam === '취업팀'
+              ? (original.location || "") !== ""
               : (log.location || "") !== (original.location || "");
             if (isStudentDiff || isLocationDiff) {
               hasDifference = true;
@@ -1479,8 +1479,8 @@
             const original = todaysOriginalData[shiftTime] || {};
             const isStudentDiff = (log.student || "") !== (original.student || "");
             // 취업팀은 대상 날짜에 이미 싸인이 있는 경우 이를 지우기 위해 '차이'가 있는 것으로 간주함
-            const isLocationDiff = selectedTeam === '취업팀' 
-              ? (original.location || "") !== "" 
+            const isLocationDiff = selectedTeam === '취업팀'
+              ? (original.location || "") !== ""
               : (log.location || "") !== (original.location || "");
             if (isStudentDiff || isLocationDiff) {
               allTasks.push({
@@ -1641,8 +1641,8 @@
             const original = targetOriginalData[shiftTime] || {};
             const isStudentDiff = (log.student || "") !== (original.student || "");
             // 취업팀은 대상 날짜에 이미 싸인이 있는 경우 이를 지우기 위해 '차이'가 있는 것으로 간주함
-            const isLocationDiff = selectedTeam === '취업팀' 
-              ? (original.location || "") !== "" 
+            const isLocationDiff = selectedTeam === '취업팀'
+              ? (original.location || "") !== ""
               : (log.location || "") !== (original.location || "");
             return isStudentDiff || isLocationDiff;
           });
@@ -1885,7 +1885,10 @@
                 <div className="flex items-center justify-center mb-1 sm:mb-2">
                   <h1 className="text-2xl sm:text-4xl font-black text-blue-600">성동노인종합복지관</h1>
                 </div>
-                <h2 className="text-[clamp(14px,4.5vw,18px)] sm:text-2xl font-bold text-red-600 whitespace-nowrap tracking-tighter">디지털교육서포터즈 업무일지 시스템</h2>
+                <h2 className="text-[clamp(14px,4.5vw,18px)] sm:text-2xl font-bold text-red-600 whitespace-nowrap tracking-tighter flex items-center justify-center gap-1.5">
+                  <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-yellow-500 fill-yellow-200 animate-pulse" />
+                  디지털교육 서포터즈 업무일지 시스템
+                </h2>
               </div>
 
               <div className="flex flex-col gap-3 sm:gap-4 shrink-0">
@@ -1922,11 +1925,11 @@
                 <div className="pt-1 sm:pt-2 flex">
                   {!isLoginReady ? (
                     <div className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-gray-400 border-2 border-gray-400 cursor-not-allowed shadow-md opacity-90 select-none min-h-[54px]">
-                      {isFetchingSchedule ? <><Clock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2 animate-spin" /> 데이터 확인 중...</> : <><EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성 시작하기</>}
+                      {isFetchingSchedule ? <><Clock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2 animate-spin" /> 데이터 확인 중...</> : <><EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성하기</>}
                     </div>
                   ) : (
                     <button onClick={handleLogin} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] lg:text-[20px] tracking-tight font-extrabold text-white bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md touch-manipulation min-h-[54px]">
-                      <EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성 시작하기
+                      <EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성하기
                     </button>
                   )}
                 </div>
