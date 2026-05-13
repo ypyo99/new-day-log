@@ -1431,8 +1431,10 @@
             const log = logs[i];
             const original = todaysOriginalData[shiftTime] || {};
             const isStudentDiff = (log.student || "") !== (original.student || "");
-            // 취업팀은 장소(싸인) 셀의 차이를 복제 여부 판단에서 제외함
-            const isLocationDiff = selectedTeam !== '취업팀' && (log.location || "") !== (original.location || "");
+            // 취업팀은 대상 날짜에 이미 싸인이 있는 경우 이를 지우기 위해 '차이'가 있는 것으로 간주함
+            const isLocationDiff = selectedTeam === '취업팀' 
+              ? (original.location || "") !== "" 
+              : (log.location || "") !== (original.location || "");
             if (isStudentDiff || isLocationDiff) {
               hasDifference = true;
             }
@@ -1463,8 +1465,10 @@
             const log = logs[i];
             const original = todaysOriginalData[shiftTime] || {};
             const isStudentDiff = (log.student || "") !== (original.student || "");
-            // 취업팀은 장소(싸인) 셀의 차이를 복제 여부 판단에서 제외함
-            const isLocationDiff = selectedTeam !== '취업팀' && (log.location || "") !== (original.location || "");
+            // 취업팀은 대상 날짜에 이미 싸인이 있는 경우 이를 지우기 위해 '차이'가 있는 것으로 간주함
+            const isLocationDiff = selectedTeam === '취업팀' 
+              ? (original.location || "") !== "" 
+              : (log.location || "") !== (original.location || "");
             if (isStudentDiff || isLocationDiff) {
               allTasks.push({
                 id: `${targetDate}_${i}`,
@@ -1623,8 +1627,10 @@
             const log = logs[i];
             const original = targetOriginalData[shiftTime] || {};
             const isStudentDiff = (log.student || "") !== (original.student || "");
-            // 취업팀은 장소(싸인) 셀의 차이를 복제 여부 판단에서 제외함
-            const isLocationDiff = selectedTeam !== '취업팀' && (log.location || "") !== (original.location || "");
+            // 취업팀은 대상 날짜에 이미 싸인이 있는 경우 이를 지우기 위해 '차이'가 있는 것으로 간주함
+            const isLocationDiff = selectedTeam === '취업팀' 
+              ? (original.location || "") !== "" 
+              : (log.location || "") !== (original.location || "");
             return isStudentDiff || isLocationDiff;
           });
         });
