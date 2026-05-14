@@ -318,7 +318,7 @@
       );
     };
 
-    const SignaturePad = ({ onSave, disabled, currentUrl, onTriggerSave, onRefresh }) => {
+    const SignaturePad = ({ onSave, disabled, currentUrl, onTriggerSave, onRefresh, isDoubleHeight }) => {
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
       const [showSavedImg, setShowSavedImg] = useState(false);
@@ -355,7 +355,7 @@
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
         }
-      }, []);
+      }, [isDoubleHeight]);
 
       const clearCanvasInternal = () => {
         const canvas = canvasRef.current;
@@ -554,11 +554,11 @@
               )}
             </div>
           </div>
-          <div className="relative w-full max-w-[400px] h-[140px] group">
+          <div className={`relative w-full max-w-[400px] ${isDoubleHeight ? 'h-[280px]' : 'h-[140px]'} group`}>
             <canvas
               ref={canvasRef}
               width={400}
-              height={140}
+              height={isDoubleHeight ? 280 : 140}
               className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50' : 'border-gray-200'} bg-sky-100 touch-none w-full h-full rounded-xl shadow-inner z-0 transition-all ${isSigning ? 'pointer-events-auto' : 'pointer-events-none'}`}
               onMouseDown={startDrawing}
               onMouseMove={draw}
@@ -2341,6 +2341,7 @@
                                   onRefresh={() => setRefreshTrigger(prev => prev + 1)} // 데이터 새로고침 함수 전달
                                   disabled={isDataLoading || !logs[index]?.student?.trim()}
                                   currentUrl={logs[index]?.location}
+                                  isDoubleHeight={studentNames.length >= 2}
                                 />
                               )}
                             </div>
@@ -3983,6 +3984,8 @@
                               const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !(row.student || "").includes("보조강사") && selectedTeam !== '취업팀' && !isLocationUrl;
 
                               const hasKiosk = ((row.student || "") + (locTextForDisplay)).includes("키오스크");
+                              const studentNames = (row.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean);
+                              const isMultipleStudents = studentNames.length >= 2;
                               const stuLen = (row.student || "").length;
 
                               let dynamicStuSizeClass = hasKiosk ? "text-[14px] md:text-[15px] landscape:text-[18px]" : "text-[15px] md:text-[17px] landscape:text-[19px]";
@@ -4057,7 +4060,7 @@
                                           <img
                                             src={getDirectImageUrl(row.location)}
                                             alt="Sign"
-                                            className="h-14 sm:h-16 w-auto object-contain mix-blend-multiply"
+                                            className={`${isMultipleStudents ? 'h-28 sm:h-32' : 'h-14 sm:h-16'} w-auto object-contain mix-blend-multiply`}
                                             onError={(e) => { e.target.closest('div').style.display = 'none'; }}
                                           />
                                         </div>
