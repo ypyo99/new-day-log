@@ -1429,7 +1429,18 @@
       const handleRepeatSchedule = () => {
         if (isDataLoading) return;
         const currentDayOfWeek = new Date(date).getDay();
-        const targetDates = availableDates.filter(d => d > date && new Date(d).getDay() === currentDayOfWeek);
+        const targetDates = availableDates.filter(d => {
+          if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
+          const targetData = allScheduleData[d] || {};
+          // 해당 날짜에 '진짜' 일정이 있는지 확인 (공휴일, 간담회, 소양교육 제외)
+          return Object.values(targetData).some(s => {
+            const student = s?.student || "";
+            const location = s?.location || "";
+            if (!student.trim()) return false;
+            const combinedText = student + location;
+            return !combinedText.includes("공휴일") && !combinedText.includes("간담회") && !combinedText.includes("소양교육");
+          });
+        });
 
         if (targetDates.length === 0) {
           setErrorMessage("⚠️ 이후 동일한 요일의 날짜가 없습니다.");
@@ -1631,7 +1642,18 @@
       const noNewScheduleToRepeat = useMemo(() => {
         if (isFetchingSchedule || isSyncing || isSubmitting) return null;
         const currentDayOfWeek = new Date(date).getDay();
-        const targetDates = availableDates.filter(d => d > date && new Date(d).getDay() === currentDayOfWeek);
+        const targetDates = availableDates.filter(d => {
+          if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
+          const targetData = allScheduleData[d] || {};
+          // 해당 날짜에 '진짜' 일정이 있는지 확인 (공휴일, 간담회, 소양교육 제외)
+          return Object.values(targetData).some(s => {
+            const student = s?.student || "";
+            const location = s?.location || "";
+            if (!student.trim()) return false;
+            const combinedText = student + location;
+            return !combinedText.includes("공휴일") && !combinedText.includes("간담회") && !combinedText.includes("소양교육");
+          });
+        });
         if (targetDates.length === 0) return "no_future_dates";
 
         const hasDifference = targetDates.some(targetDate => {
