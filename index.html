@@ -1274,16 +1274,36 @@
         for (let i of changedIndices) {
           const log = logs[i];
           const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+          const memo = (log.memo || "").trim();
 
-          if (studentNames.length >= 2) {
-            let checkedCount = 0;
-            for (let sIdx = 0; sIdx < studentNames.length; sIdx++) {
-              const tags = log.selectedTags[sIdx] || [];
-              if (tags.length > 0) checkedCount++;
+          // 1. 일반 출결 체크 validation (이름과 메모가 모두 있을 때)
+          if (studentNames.length > 0 && memo !== "") {
+            // 학생 이름 중 하나라도 '보조강사'를 포함하면 출결 체크 검증을 건너뜀
+            const hasAssistant = studentNames.some(name => name.includes("보조강사"));
+
+            if (!hasAssistant) {
+              const hasUnchecked = studentNames.some((_, sIdx) => {
+                const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+                return tags.length === 0;
+              });
+
+              if (hasUnchecked) {
+                const displayNames = studentNames.join('/');
+                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크하세요!`);
+                setShowValidationError(true);
+                return false;
+              }
             }
+          }
 
-            if (checkedCount > 0 && checkedCount < studentNames.length) {
-              setValidationErrorMsg(`[${shifts[i]}] 시간에 출결이 선택되지 않은 학생이 있습니다.\n두 명 모두 출결 상태를 체크해 주세요.`);
+          // 2. 보조강사 참여인원 수 validation
+          const assistantName = studentNames.find(name => name.includes("보조강사"));
+          if (assistantName && memo !== "") {
+            const headcount = (log.headcount || "").trim();
+
+            // 숫자 전용 칸(headcount)이 입력이 안되어 있으면 팝업 출력
+            if (!/^\d+/.test(headcount)) {
+              setValidationErrorMsg(`${assistantName}의 참여인원 수를 입력하세요!`);
               setShowValidationError(true);
               return false;
             }
@@ -1696,7 +1716,7 @@
 
       const handlePrevDay = async () => {
         if (isDataLoading) return;
-        await performAutoSave();
+        if (!(await performAutoSave())) return;
         const pastDates = availableDates.filter(d => d < date);
         if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
         else {
@@ -1707,7 +1727,7 @@
 
       const handleNextDay = async () => {
         if (isDataLoading) return;
-        await performAutoSave();
+        if (!(await performAutoSave())) return;
         const futureDates = availableDates.filter(d => d > date);
         if (futureDates.length > 0) setDate(futureDates[0]);
         else {
@@ -1718,7 +1738,7 @@
 
       const handleTodayClick = async () => {
         if (isDataLoading) return;
-        await performAutoSave();
+        if (!(await performAutoSave())) return;
         const todayStr = getInitialWeekday();
 
         // 오늘 날짜로 무조건 이동 (데이터 유무 상관없이)
@@ -1728,7 +1748,7 @@
       const handleDateChange = async (e) => {
         const s = e.target.value;
         if (!s || isDataLoading) return;
-        await performAutoSave();
+        if (!(await performAutoSave())) return;
 
         // 구글 시트 데이터 범위 내에 있는지 엄격하게 체크
         if (availableDates.length > 0) {
