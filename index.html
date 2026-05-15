@@ -4489,44 +4489,44 @@
           <div className="flex-1 flex flex-col pb-4">
             <div className="max-w-5xl w-full mx-auto flex-1 flex flex-col p-3 md:p-6 mt-2">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-4 md:px-6 py-2">
-                  <div className="flex flex-col gap-1 pt-0.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <h2 className="text-white font-extrabold text-lg md:text-xl flex items-center gap-2 whitespace-nowrap">
+                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-4 md:px-6 py-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col">
+                      <h2 className="text-white font-extrabold text-lg md:text-xl flex items-center gap-2 whitespace-nowrap mb-0.5">
                         <svg className="w-5 h-5 md:w-6 md:h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /></svg>
                         대상자 검색
                       </h2>
-                      <div className="flex flex-col items-end gap-1.5 shrink-0 ml-auto">
-                        <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-                          {['전체', '1팀', '2팀', '3팀', '취업팀'].map(t => (
-                            <button key={t} onClick={() => { setTeamFilter(t); setTeacherFilter("전체"); }} className={`px-1 min-[360px]:px-2 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[11px] min-[360px]:text-[13px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${teamFilter === t ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                              {t}
-                            </button>
-                          ))}
-                        </div>
-                        <select
-                          value={teacherFilter}
-                          onChange={(e) => setTeacherFilter(e.target.value)}
-                          className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-[12px] md:text-[15px] font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-teal-400 max-w-[150px] md:max-w-[200px]"
-                        >
-                          <option value="전체">선생님 전체</option>
-                          {(() => {
-                            let list = [];
-                            if (teamFilter === "전체") {
-                              const uniqueTeachers = new Set();
-                              ["1팀", "2팀", "3팀", "취업팀"].forEach(t => {
-                                if (teacherListByTeam[t]) teacherListByTeam[t].forEach(name => uniqueTeachers.add(name));
-                              });
-                              list = Array.from(uniqueTeachers);
-                            } else {
-                              list = teacherListByTeam[teamFilter] || [];
-                            }
-                            return list.map((name, i) => <option key={i} value={name}>{name}</option>);
-                          })()}
-                        </select>
-                      </div>
+                      <p className="text-teal-100 text-[13px] md:text-base whitespace-nowrap">대상자를 선택하세요 ({filteredNames.length}명)</p>
                     </div>
-                    <p className="text-teal-100 text-[13px] md:text-base whitespace-nowrap">대상자를 선택하세요 ({filteredNames.length}명)</p>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0 ml-auto">
+                      <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                        {['전체', '1팀', '2팀', '3팀', '취업팀'].map(t => (
+                          <button key={t} onClick={() => { setTeamFilter(t); setTeacherFilter("전체"); }} className={`px-1 min-[360px]:px-2 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[11px] min-[360px]:text-[13px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${teamFilter === t ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                      <select
+                        value={teacherFilter}
+                        onChange={(e) => setTeacherFilter(e.target.value)}
+                        className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-[12px] md:text-[15px] font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-teal-400 max-w-[150px] md:max-w-[200px]"
+                      >
+                        <option value="전체">선생님 전체</option>
+                        {(() => {
+                          let list = [];
+                          if (teamFilter === "전체") {
+                            const uniqueTeachers = new Set();
+                            ["1팀", "2팀", "3팀", "취업팀"].forEach(t => {
+                              if (teacherListByTeam[t]) teacherListByTeam[t].forEach(name => uniqueTeachers.add(name));
+                            });
+                            list = Array.from(uniqueTeachers);
+                          } else {
+                            list = teacherListByTeam[teamFilter] || [];
+                          }
+                          return list.map((name, i) => <option key={i} value={name}>{name}</option>);
+                        })()}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
