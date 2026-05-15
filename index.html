@@ -4501,7 +4501,7 @@
                     <div className="flex flex-col items-end gap-1.5 shrink-0 ml-auto">
                       <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
                         {['전체', '1팀', '2팀', '3팀', '취업팀'].map(t => (
-                          <button key={t} onClick={() => { setTeamFilter(t); setTeacherFilter("전체"); }} className={`px-1 min-[360px]:px-1.5 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[11px] min-[360px]:text-[12px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${teamFilter === t ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                          <button key={t} onClick={() => { setTeamFilter(t); setTeacherFilter("전체"); }} className={`px-1 min-[360px]:px-1.5 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[12px] min-[360px]:text-[13px] min-[400px]:text-[14px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${teamFilter === t ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
                             {t}
                           </button>
                         ))}
