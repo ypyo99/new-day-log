@@ -1302,7 +1302,7 @@
           const memo = (log.memo || "").trim();
 
           // 1. 일반 출결 체크 validation (이름과 메모가 모두 있을 때)
-          if (studentNames.length > 0 && memo !== "") {
+          if (studentNames.length > 0 && memo !== "" && memo !== "복지관으로 이동") {
             // 학생 이름 중 하나라도 '보조강사'를 포함하면 출결 체크 검증을 건너뜀
             const hasAssistant = studentNames.some(name => name.includes("보조강사"));
 
@@ -1323,7 +1323,7 @@
 
           // 2. 보조강사/경로당 참여인원 수 validation
           const targetName = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
-          if (targetName && memo !== "") {
+          if (targetName && memo !== "" && memo !== "복지관으로 이동") {
             const headcount = (log.headcount || "").trim();
 
             // 숫자 전용 칸(headcount)이 입력이 안되어 있으면 팝업 출력
