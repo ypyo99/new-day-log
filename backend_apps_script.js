@@ -39,6 +39,12 @@ function doGet(e) {
                 .setMimeType(ContentService.MimeType.JSON);
         }
 
+        if (action === 'saveLogBatch') {
+            var result = saveLogBatch(e.parameter);
+            return ContentService.createTextOutput(JSON.stringify(result))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
+
         // 새로 추가된 부분: 웹앱에서 모든 데이터 저장이 끝난 후 딱 한 번만 테두리/색칠을 실행하는 신호
         if (action === 'runFormat') {
             var sheet = getSheetByTeamName(team);
@@ -299,6 +305,143 @@ function formatDate(date) {
     return "";
 }
 
+/**
+ * 여러 개의 로그를 한 번에 저장하는 배치 함수
+ * p: { team, teacher, date, items: [ { shift, student, location, status, signatureData }, ... ] }
+ */
+function saveLogBatch(p) {
+    try {
+        // 문자열로 넘어온 경우 파싱
+        if (typeof p.items === 'string') {
+            p.items = JSON.parse(p.items);
+        }
+        
+        var sheet = getSheetByTeamName(p.team);
+        if (!sheet) return { success: false, message: "시트를 찾을 수 없습니다." };
+        
+        var data = sheet.getDataRange().getValues();
+        var dates = data[1];
+        var targetCol = -1;
+        for (var col = 4; col < dates.length; col++) {
+            if (formatDate(dates[col]) === p.date) {
+                targetCol = col + 1;
+                break;
+            }
+        }
+        if (targetCol === -1) return { success: false, message: "날짜를 찾지 못했습니다." };
+
+        var items = p.items || [];
+        var itemMap = {};
+        items.forEach(function(item) {
+            itemMap[item.shift.trim()] = item;
+        });
+
+        var results = [];
+        var currentTeacher = "";
+        var foundCount = 0;
+        
+        // 시트 전체를 한 번 순회하며 해당하는 행을 찾아서 업데이트
+        for (var i = 2; i < data.length; i++) {
+            if (data[i][1] && data[i][1].toString().trim() !== "") {
+                currentTeacher = data[i][1].toString().trim();
+            }
+            
+            if (currentTeacher === p.teacher.trim()) {
+                var rowShift = data[i][2] ? data[i][2].toString().trim() : "";
+                if (itemMap[rowShift]) {
+                    var item = itemMap[rowShift];
+                    
+                    var studentCell = sheet.getRange(i + 1, targetCol);
+                    var locationCell = sheet.getRange(i + 2, targetCol);
+                    var statusCell = sheet.getRange(i + 3, targetCol);
+
+                    var finalLocation = item.location || "";
+                    
+                    // 싸인 데이터 처리 (취업팀 등)
+                    if (item.signatureData) {
+                        var uploadRes = uploadSignatureToDrive(p.date, p.teacher, item.shift, item.student, item.signatureData);
+                        if (uploadRes.success) {
+                            finalLocation = uploadRes.url;
+                        } else if (item.signatureData === "__DELETE__") {
+                            finalLocation = "";
+                        }
+                    }
+
+                    // 데이터 저장
+                    studentCell.setValue(item.student || "");
+                    locationCell.setValue(finalLocation);
+
+                    statusCell.setNumberFormat("@");
+                    statusCell.setValue(item.status || "");
+
+                    // 포맷팅
+                    var currentStatus = item.status ? item.status.toString() : "";
+                    if (currentStatus.indexOf("결석") !== -1 || currentStatus.indexOf("취소") !== -1) {
+                        statusCell.setFontColor("red").setFontWeight("bold");
+                    } else {
+                        statusCell.setFontColor("black").setFontWeight("bold");
+                    }
+                    
+                    var byteLength = currentStatus ? Utilities.newBlob(currentStatus).getBytes().length : 0;
+                    statusCell.setFontSize(byteLength > 15 ? 10 : 13);
+
+                    // 배경색
+                    var studentText = (item.student || "").toString();
+                    studentCell.setBackground(studentText.indexOf("보조강사") !== -1 ? "#ffff00" : "#eeeeee");
+                    
+                    var locationText = finalLocation.toString();
+                    locationCell.setBackground(locationText.indexOf("보조강사") !== -1 ? "#ffff00" : "#ffffff");
+
+                    results.push({ shift: item.shift, success: true, url: finalLocation });
+                    foundCount++;
+                    
+                    if (foundCount >= items.length) break;
+                }
+            }
+        }
+
+        SpreadsheetApp.flush();
+        return { success: true, results: results };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+/**
+ * 싸인 이미지를 구글 드라이브에 업로드하는 공용 함수
+ */
+function uploadSignatureToDrive(date, teacher, shift, student, signatureData) {
+    try {
+        var studentSafeName = student ? student.replace(/[^가-힣a-zA-Z0-9]/g, "") : "이름없음";
+        var teacherSafeName = teacher ? teacher.replace(/[^가-힣a-zA-Z0-9]/g, "") : "선생님없음";
+        var shiftSafeName = shift ? shift.replace(/[^0-9]/g, "") : "시간없음";
+        var filePrefix = date + "_" + teacherSafeName + "_" + shiftSafeName + "_" + studentSafeName;
+
+        var folderIter = DriveApp.getFoldersByName("취업팀 수업 싸인");
+        var folder = folderIter.hasNext() ? folderIter.next() : DriveApp.createFolder("취업팀 수업 싸인");
+
+        // 기존 파일 삭제
+        var existingFiles = folder.searchFiles("title contains '" + filePrefix + "' and trashed = false");
+        while (existingFiles.hasNext()) {
+            var f = existingFiles.next();
+            if (f.getName().indexOf(filePrefix) === 0) f.setTrashed(true);
+        }
+
+        if (signatureData && signatureData.indexOf("data:image") === 0) {
+            var base64Data = signatureData.split(",")[1];
+            var fileName = filePrefix + "_" + Date.now() + ".png";
+            var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), "image/png", fileName);
+            var file = folder.createFile(blob);
+            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            return { success: true, url: "https://drive.google.com/uc?export=view&id=" + file.getId() };
+        }
+        
+        return { success: false, mode: "delete" };
+    } catch (e) {
+        return { success: false, error: e.toString() };
+    }
+}
+
 function doPost(e) {
     try {
         // =========================================================================
@@ -307,7 +450,24 @@ function doPost(e) {
         if (e.parameter && e.parameter.action === "saveSignatureLog") {
             return handleSignatureUpload(e.parameter);
         }
-        // =========================================================================
+        if (e.parameter && e.parameter.action === "saveLogBatch") {
+            // x-www-form-urlencoded 로 오는 경우 (POST body에 action이 포함된 경우)
+            return ContentService.createTextOutput(JSON.stringify(saveLogBatch(e.parameter)))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
+
+        var parsedData = {};
+        try {
+            parsedData = JSON.parse(e.postData.contents);
+        } catch(ex) {
+            // JSON 파싱 실패 시 e.parameter 활용
+            parsedData = e.parameter;
+        }
+
+        if (parsedData.action === "saveLogBatch" || parsedData.mode === "batch") {
+             return ContentService.createTextOutput(JSON.stringify(saveLogBatch(parsedData)))
+                .setMimeType(ContentService.MimeType.JSON);
+        }
 
         var parsedData = JSON.parse(e.postData.contents);
         var docId = parsedData.documentId;
