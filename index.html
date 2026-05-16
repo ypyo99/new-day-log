@@ -351,6 +351,7 @@
       const [isSigning, setIsSigning] = useState(false);
       const hasDrawnRef = useRef(false);
       const existingImgRef = useRef(null); // 기존 싸인 이미지 사전 로드용
+      const overlayImgRef = useRef(null); // 오버레이 img 요소 직접 참조
 
       // 💡 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
       useEffect(() => {
@@ -481,11 +482,14 @@
         // 1. 배경색 채우기
         ctx.fillStyle = '#e0f2fe'; // bg-sky-100
         ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        // 2. 기존 싸인 이미지 그리기 (사전 로드된 이미지 사용)
-        if (existingImgRef.current) {
+        // 2. 기존 싸인 이미지 그리기 (오버레이 img 요소 또는 사전 로드 이미지 사용)
+        const imgSource = overlayImgRef.current || existingImgRef.current;
+        if (imgSource && imgSource.complete && imgSource.naturalWidth > 0) {
           try {
-            ctx.drawImage(existingImgRef.current, 0, 0, tempCanvas.width, tempCanvas.height);
-          } catch (e) { /* CORS 오류 시 무시 */ }
+            ctx.drawImage(imgSource, 0, 0, tempCanvas.width, tempCanvas.height);
+          } catch (e) {
+            console.warn('Composite: CORS 오류로 기존 이미지 합성 실패, 새 획만 저장됨');
+          }
         }
         // 3. 새로 그린 획 합성
         ctx.drawImage(canvas, 0, 0);
@@ -645,14 +649,24 @@
                   </div>
                 )}
 
-                {/* 3. 실제 이미지 */}
+                {/* 3. 실제 이미지 - crossOrigin으로 CORS 허용, ref로 합성 시 직접 사용 */}
                 <img
+                  ref={overlayImgRef}
                   key={displayImgUrl}
                   src={displayImgUrl}
                   alt="Signature"
+                  crossOrigin="anonymous"
                   className="max-h-full max-w-full object-contain transition-opacity duration-300 opacity-100"
                   onLoad={handleImgLoad}
-                  onError={() => setIsImgLoading(false)}
+                  onError={(e) => {
+                    // crossOrigin으로 실패하면 crossOrigin 없이 재시도
+                    if (e.target.crossOrigin === 'anonymous') {
+                      e.target.crossOrigin = '';
+                      e.target.src = displayImgUrl;
+                    } else {
+                      setIsImgLoading(false);
+                    }
+                  }}
                 />
               </div>
             )}
