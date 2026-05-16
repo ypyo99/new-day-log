@@ -1447,47 +1447,51 @@
 
           // 1. 출결 누락 체크 (보조강사 및 대상자 발굴 제외, 미래 날짜 제외)
           if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul) {
-            // 💡 [수정] 메모나 싸인이 있는 경우에만 개별 학생 출결 체크 강제
-            if ((memo !== "" && memo !== "복지관으로 이동") || !isSignBlank) {
-              // 1. 전체 출결 여부 확인
-              if (!hasCheckedAttendance) {
-                const displayNames = studentNames.join('/');
-                const isKyungrodangEntry = displayNames.includes("경로당");
-                const msg = isKyungrodangEntry
-                  ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
-                  : `${displayNames} 님의 출결사항을 체크해 주세요!`;
+            // 1. 전체 출결 여부 확인
+            if (!hasCheckedAttendance) {
+              const displayNames = studentNames.join('/');
+              const isKyungrodangEntry = displayNames.includes("경로당");
+              const msg = isKyungrodangEntry
+                ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
+                : `${displayNames} 님의 출결사항을 체크해 주세요!`;
 
-                setValidationErrorMsg(msg);
-                setValidationErrorIndex(i);
-                setValidationErrorType("attendance");
-                setShowValidationError(true);
-                return false;
-              }
+              setValidationErrorMsg(msg);
+              setValidationErrorIndex(i);
+              setValidationErrorType("attendance");
+              setShowValidationError(true);
+              return false;
+            }
 
-              // 2. 개별 학생 중 누락된 경우 확인
-              const anyUnchecked = studentNames.some((_, sIdx) => {
-                const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-                // 인원수 입력이 있으면 개별 태그 체크가 없어도 통과
-                return tags.length === 0 && !(targetNameForHeadcount && hc !== "");
-              });
-              if (anyUnchecked) {
-                const displayNames = studentNames.join('/');
-                const isKyungrodangEntry = displayNames.includes("경로당");
-                const msg = isKyungrodangEntry
-                  ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
-                  : `${displayNames} 님의 출결사항을 체크해 주세요!`;
+            // 2. 개별 학생 중 누락된 경우 확인
+            const anyUnchecked = studentNames.some((_, sIdx) => {
+              const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+              // 인원수 입력이 있으면 개별 태그 체크가 없어도 통과
+              return tags.length === 0 && !(targetNameForHeadcount && hc !== "");
+            });
+            if (anyUnchecked) {
+              const displayNames = studentNames.join('/');
+              const isKyungrodangEntry = displayNames.includes("경로당");
+              const msg = isKyungrodangEntry
+                ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
+                : `${displayNames} 님의 출결사항을 체크해 주세요!`;
 
-                setValidationErrorMsg(msg);
-                setValidationErrorIndex(i);
-                setValidationErrorType("attendance");
-                setShowValidationError(true);
-                return false;
-              }
+              setValidationErrorMsg(msg);
+              setValidationErrorIndex(i);
+              setValidationErrorType("attendance");
+              setShowValidationError(true);
+              return false;
             }
           }
 
           // 2. 싸인 누락 체크 (취업팀만 해당, 대상자 발굴 제외, 미래 날짜 제외)
-          if (!isFutureDate && selectedTeam === '취업팀' && hasCheckedAttendance && studentNames.length > 0 && isSignBlank && !isBalGul) {
+          // 💡 [수정] '출석(1)' 버튼이 체크되어 있거나 인원수가 입력된 경우에만 싸인 필수
+          const isPresentChecked = studentNames.some((_, sIdx) => {
+            const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+            return tags.includes('1');
+          });
+          const needsSignature = isPresentChecked || (targetNameForHeadcount && hc !== "");
+
+          if (!isFutureDate && selectedTeam === '취업팀' && needsSignature && studentNames.length > 0 && isSignBlank && !isBalGul) {
             const displayNames = studentNames.join('/');
             setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
             setValidationErrorIndex(i);
@@ -1497,7 +1501,7 @@
           }
 
           // 3. 인원수 누락 체크 (미래 날짜 제외)
-          if (!isFutureDate && targetNameForHeadcount && memo !== "" && memo !== "복지관으로 이동") {
+          if (!isFutureDate && targetNameForHeadcount) {
             const hc = (log.headcount || "").trim();
             const isKyungrodangEntry = targetNameForHeadcount.includes("경로당");
 
