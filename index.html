@@ -1466,12 +1466,31 @@
           // 3. 인원수 누락 체크
           if (targetNameForHeadcount && memo !== "" && memo !== "복지관으로 이동") {
             const hc = (log.headcount || "").trim();
-            if (!/^\d+/.test(hc)) {
-              setValidationErrorMsg(`${targetNameForHeadcount} 참석인원을 입력해 주세요!`);
-              setValidationErrorIndex(i);
-              setValidationErrorType("headcount");
-              setShowValidationError(true);
-              return false;
+            const isKyungrodangEntry = targetNameForHeadcount.includes("경로당");
+
+            if (isKyungrodangEntry) {
+              // 경로당 전용 로직: '결석', '취소', '선생님휴가' 중 하나라도 체크되어 있는지 확인
+              const isGyeolseok = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("결석") : false);
+              const isVacation = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("선생님휴가") : false);
+              const isCancel = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("취소") : false);
+
+              // 사용자 요청: '결석', '선생님휴가', '취소'가 모두 체크되어 있지 않으면서 인원수 필드가 비어 있으면 팝업
+              if (!isGyeolseok && !isVacation && !isCancel && hc === "") {
+                setValidationErrorMsg(`${targetNameForHeadcount} 참석인원을 입력해 주세요!`);
+                setValidationErrorIndex(i);
+                setValidationErrorType("headcount");
+                setShowValidationError(true);
+                return false;
+              }
+            } else {
+              // 보조강사 등 기타 대상자: 기존 숫자 입력 규칙 유지
+              if (!/^\d+/.test(hc)) {
+                setValidationErrorMsg(`${targetNameForHeadcount} 참석인원을 입력해 주세요!`);
+                setValidationErrorIndex(i);
+                setValidationErrorType("headcount");
+                setShowValidationError(true);
+                return false;
+              }
             }
           }
         }
@@ -2220,7 +2239,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-sign-final-v5
+                v260516-kyungrodang-hc-fix
               </div>
             </div>
           </div>
