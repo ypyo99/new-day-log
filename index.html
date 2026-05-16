@@ -1453,8 +1453,8 @@
             }
           }
 
-          // 2. 싸인 누락 체크
-          if (hasCheckedAttendance && studentNames.length > 0 && isSignBlank) {
+          // 2. 싸인 누락 체크 (취업팀만 해당)
+          if (selectedTeam === '취업팀' && hasCheckedAttendance && studentNames.length > 0 && isSignBlank) {
             const displayNames = studentNames.join('/');
             setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
             setValidationErrorIndex(i);
@@ -2220,7 +2220,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-sign-final-v4
+                v260516-sign-final-v5
               </div>
             </div>
           </div>
