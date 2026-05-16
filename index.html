@@ -166,7 +166,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef, useCallback } = window.React;
+    const { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } = window.React;
 
     const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
 
@@ -840,24 +840,7 @@
         };
       }, [isSubmitting]);
 
-      // 💡 [추가] 데이터 로딩 시 또는 날짜 변경 시 메모창 높이 자동 조절
-      useEffect(() => {
-        const adjustAll = () => {
-          const textareas = document.querySelectorAll('.auto-expand-textarea');
-          textareas.forEach(el => {
-            el.style.height = 'inherit';
-            el.style.height = `${el.scrollHeight}px`;
-          });
-        };
-        // 데이터 로딩 후나 창 크기 변경 시 실행
-        adjustAll();
-        const timer = setTimeout(adjustAll, 100); // 렌더링 후 약간의 지연시간을 두어 정확히 계산
-        window.addEventListener('resize', adjustAll);
-        return () => {
-          window.removeEventListener('resize', adjustAll);
-          clearTimeout(timer);
-        };
-      }, [logs, date, isLoggedIn]);
+      // 💡 [삭제] 메모 자동 높이 조절 로직 제거 (2줄 고정 방식으로 변경)
 
       const [logs, setLogs] = useState({
         0: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" },
@@ -2608,7 +2591,7 @@
                                 })}
                               </div>
 
-                              <div className="flex gap-1.5 w-full !mt-[10px] items-start">
+                              <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
                                 {isShowHeadcount && (() => {
                                   const isHeadcountEmpty = !(logs[index]?.headcount || "").trim();
                                   const hasMemo = (logs[index]?.memo || "").trim() !== "";
@@ -2631,28 +2614,18 @@
                                       }}
                                       onBlur={handleInputBlur}
                                       disabled={isDataLoading || isInfoMissing}
-                                      className={`w-12 md:w-14 h-10 md:h-12 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
+                                      className={`w-12 md:w-14 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
                                     />
                                   );
                                 })()}
                                 <textarea
-                                  rows="1"
+                                  rows="2"
                                   placeholder="메모"
                                   value={logs[index]?.memo || ""}
-                                  onChange={(e) => {
-                                    handleLogChange(index, 'memo', e.target.value);
-                                    // 💡 [추가] 자동 높이 조절
-                                    e.target.style.height = 'inherit';
-                                    e.target.style.height = `${e.target.scrollHeight}px`;
-                                  }}
+                                  onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
                                   onBlur={handleInputBlur}
-                                  onFocus={(e) => {
-                                    // 💡 [추가] 포커스 시에도 높이 재조절
-                                    e.target.style.height = 'inherit';
-                                    e.target.style.height = `${e.target.scrollHeight}px`;
-                                  }}
                                   disabled={isDataLoading || isInfoMissing}
-                                  className={`auto-expand-textarea flex-1 min-w-0 min-h-10 md:min-h-12 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] resize-none overflow-hidden leading-tight`}
+                                  className={`flex-1 min-w-0 ${isCompact ? 'py-1.5 sm:py-2' : 'py-2 sm:py-2.5 md:py-3'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none`}
                                 />
                               </div>
 
