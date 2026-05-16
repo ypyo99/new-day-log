@@ -1380,17 +1380,27 @@
           const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
           const memo = (log.memo || "").trim();
 
-          // 1. 출결 데이터 누락 체크 (메모는 있는데 출결 버튼을 하나도 안 누른 경우)
-          if (studentNames.length > 0 && memo !== "" && memo !== "복지관으로 이동") {
-            const hasAssistant = studentNames.some(name => name.includes("보조강사"));
+          // 1. 출결 데이터 누락 체크
+          const hasAssistant = studentNames.some(name => name.includes("보조강사"));
 
-            if (!hasAssistant) {
-              const checkedCount = studentNames.filter((_, sIdx) => {
-                const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-                return tags.length > 0;
-              }).length;
+          if (studentNames.length > 0 && !hasAssistant) {
+            const checkedCount = studentNames.filter((_, sIdx) => {
+              const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+              return tags.length > 0;
+            }).length;
 
-              // 메모가 데이터가 있음에도 출결 버튼이 하나도 눌리지 않은 경우 (2명일 때 둘 다 안 눌린 경우 포함)
+            const hasCheckedAttendance = checkedCount > 0;
+
+            // 싸인 데이터 존재 여부 체크
+            let loc = (log.location || "").trim();
+            if (i === forceIndex) {
+              if (signatureOverride === "__DELETE__") loc = "";
+              else if (signatureOverride && signatureOverride.startsWith("data:image")) loc = signatureOverride;
+            }
+            const isSignatureBlank = !loc || (!loc.startsWith('data:image') && !loc.startsWith('http') && !loc.includes('drive.google.com') && !loc.startsWith('=IMAGE'));
+
+            // 메모가 있거나 싸인이 있음에도 출결 버튼이 하나도 눌리지 않은 경우
+            if ((memo !== "" && memo !== "복지관으로 이동") || !isSignatureBlank) {
               if (checkedCount === 0) {
                 const displayNames = studentNames.join('/');
                 setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
@@ -1399,14 +1409,15 @@
                 setShowValidationError(true);
                 return false;
               }
+            }
 
-              // [기존 유지] 개별 학생 누락 체크 (데이터 무결성을 위해 유지)
-              const hasUnchecked = studentNames.some((_, sIdx) => {
-                const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-                return tags.length === 0;
-              });
+            // [기존 유지] 개별 학생 누락 체크
+            const hasUnchecked = studentNames.some((_, sIdx) => {
+              const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+              return tags.length === 0;
+            });
 
-              if (hasUnchecked) {
+            if (hasUnchecked) {
                 const displayNames = studentNames.join('/');
                 setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
                 setValidationErrorIndex(i);
@@ -1418,22 +1429,21 @@
           }
 
           // 2. 싸인 데이터 누락 체크 (출결은 체크했는데 싸인이 없는 경우)
-          const hasCheckedAttendance = studentNames.some((_, sIdx) => {
+          const hasCheckedAttendanceAfter = studentNames.some((_, sIdx) => {
             const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
             return tags.length > 0;
           });
 
-          if (hasCheckedAttendance && studentNames.length > 0) {
-            // signatureOverride가 "__DELETE__"이면 실제 저장될 값은 빈 값이므로 이를 반영하여 체크
-            let loc = (log.location || "").trim();
-            if (i === forceIndex && signatureOverride === "__DELETE__") {
-              loc = "";
+          if (hasCheckedAttendanceAfter && studentNames.length > 0) {
+            let locCheck = (log.location || "").trim();
+            if (i === forceIndex) {
+              if (signatureOverride === "__DELETE__") locCheck = "";
+              else if (signatureOverride && signatureOverride.startsWith("data:image")) locCheck = signatureOverride;
             }
 
-            // 싸인 데이터가 블랭크이거나 이미지 형식이 아닌 경우 (취업팀 외에도 싸인이 필요한 경우 대응)
-            const isSignatureBlank = !loc || (!loc.startsWith('data:image') && !loc.startsWith('http') && !loc.includes('drive.google.com') && !loc.startsWith('=IMAGE'));
+            const isSignatureBlankCheck = !locCheck || (!locCheck.startsWith('data:image') && !locCheck.startsWith('http') && !locCheck.includes('drive.google.com') && !locCheck.startsWith('=IMAGE'));
 
-            if (isSignatureBlank) {
+            if (isSignatureBlankCheck) {
               const displayNames = studentNames.join('/');
               setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
               setValidationErrorIndex(i);
