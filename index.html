@@ -840,6 +840,25 @@
         };
       }, [isSubmitting]);
 
+      // 💡 [추가] 데이터 로딩 시 또는 날짜 변경 시 메모창 높이 자동 조절
+      useEffect(() => {
+        const adjustAll = () => {
+          const textareas = document.querySelectorAll('.auto-expand-textarea');
+          textareas.forEach(el => {
+            el.style.height = 'inherit';
+            el.style.height = `${el.scrollHeight}px`;
+          });
+        };
+        // 데이터 로딩 후나 창 크기 변경 시 실행
+        adjustAll();
+        const timer = setTimeout(adjustAll, 100); // 렌더링 후 약간의 지연시간을 두어 정확히 계산
+        window.addEventListener('resize', adjustAll);
+        return () => {
+          window.removeEventListener('resize', adjustAll);
+          clearTimeout(timer);
+        };
+      }, [logs, date, isLoggedIn]);
+
       const [logs, setLogs] = useState({
         0: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" },
         1: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" },
@@ -1289,13 +1308,21 @@
             }
 
             const loadedMemo = memoParts.join(', ');
+            
+            // 💡 [추가] 실시간 백업 데이터가 있는지 확인하여 메모 불러오기
+            let finalMemo = loadedMemo;
+            if (!finalMemo) {
+              const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
+              const backup = window.localStorage.getItem(backupKey);
+              if (backup) finalMemo = backup;
+            }
 
             newLogs[index] = {
               student: loadedStudent,
               status: statusStr,
               location: loadedLocation,
               selectedTags: loadedTags,
-              memo: loadedMemo,
+              memo: finalMemo,
               headcount: loadedHeadcount
             };
           });
@@ -1592,6 +1619,10 @@
 
                 // 개별 로그 상태 업데이트
                 setLogs(prev => ({ ...prev, [item.index]: { ...prev[item.index], location: finalUrl } }));
+
+                // 💡 [추가] 저장 성공 시 해당 메모의 백업 데이터 삭제
+                const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
+                window.localStorage.removeItem(backupKey);
 
                 return {
                   index: item.index,
@@ -2000,6 +2031,16 @@
       const handleLogChange = (index, field, value) => {
         setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
         if (validationErrorIndex === index) setValidationErrorIndex(null);
+
+        // 💡 [추가] 메모 데이터 실시간 로컬 저장 (백업)
+        if (field === 'memo') {
+          const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
+          if (value && value.trim() !== "") {
+            window.localStorage.setItem(backupKey, value);
+          } else {
+            window.localStorage.removeItem(backupKey);
+          }
+        }
       };
 
       const toggleTag = (index, sIdx, tag) => {
@@ -2590,18 +2631,28 @@
                                       }}
                                       onBlur={handleInputBlur}
                                       disabled={isDataLoading || isInfoMissing}
-                                      className={`w-12 md:w-14 py-0.5 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] shrink-0 flex items-center justify-center ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
+                                      className={`w-12 md:w-14 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 flex items-center justify-center ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
                                     />
                                   );
                                 })()}
                                 <textarea
-                                  rows="2"
+                                  rows="1"
                                   placeholder="메모"
                                   value={logs[index]?.memo || ""}
-                                  onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
+                                  onChange={(e) => {
+                                    handleLogChange(index, 'memo', e.target.value);
+                                    // 💡 [추가] 자동 높이 조절
+                                    e.target.style.height = 'inherit';
+                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                  }}
                                   onBlur={handleInputBlur}
+                                  onFocus={(e) => {
+                                    // 💡 [추가] 포커스 시에도 높이 재조절
+                                    e.target.style.height = 'inherit';
+                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                  }}
                                   disabled={isDataLoading || isInfoMissing}
-                                  className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${isOnlyNumber ? 'text-xl md:text-2xl' : 'text-lg md:text-xl'} resize-none leading-tight`}
+                                  className={`auto-expand-textarea flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] resize-none overflow-hidden leading-tight`}
                                 />
                               </div>
 
