@@ -663,12 +663,12 @@
           </div>
           <div
             className={`relative w-full max-w-[400px] group`}
-            style={{ aspectRatio: isDoubleHeight ? '400 / 336' : '400 / 182' }}
+            style={{ aspectRatio: isDoubleHeight ? '400 / 336' : '400 / 218' }}
           >
             <canvas
               ref={canvasRef}
               width={400}
-              height={isDoubleHeight ? 336 : 182}
+              height={isDoubleHeight ? 336 : 218}
               className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50' : 'border-gray-200'} bg-sky-100 touch-none w-full h-full rounded-xl shadow-inner z-0 transition-all ${isSigning ? 'pointer-events-auto' : 'pointer-events-none'}`}
               onMouseDown={startDrawing}
               onMouseMove={draw}
