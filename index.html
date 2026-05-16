@@ -1372,6 +1372,8 @@
       }, [logs]);
 
       const performAutoSave = async (forceIndex = null, signatureOverride = null) => {
+        const todayStr = getLocalDateString(new Date());
+        const isFutureDate = date > todayStr;
         const todaysOriginalData = allScheduleData[date] || {};
 
         const initialProgress = shifts.map((shiftTime, i) => {
@@ -1436,8 +1438,8 @@
           }
           const isSignBlank = !currentLoc || (!currentLoc.startsWith('data:image') && !currentLoc.startsWith('http') && !currentLoc.includes('drive.google.com') && !currentLoc.startsWith('=IMAGE'));
 
-          // 1. 출결 누락 체크 (보조강사 및 대상자 발굴 제외)
-          if (studentNames.length > 0 && !hasAssistant && !isBalGul) {
+          // 1. 출결 누락 체크 (보조강사 및 대상자 발굴 제외, 미래 날짜 제외)
+          if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul) {
             // 💡 [수정] 메모나 싸인이 있는 경우에만 개별 학생 출결 체크 강제
             if ((memo !== "" && memo !== "복지관으로 이동") || !isSignBlank) {
               // 1. 전체 출결 여부 확인
@@ -1477,8 +1479,8 @@
             }
           }
 
-          // 2. 싸인 누락 체크 (취업팀만 해당, 대상자 발굴 제외)
-          if (selectedTeam === '취업팀' && hasCheckedAttendance && studentNames.length > 0 && isSignBlank && !isBalGul) {
+          // 2. 싸인 누락 체크 (취업팀만 해당, 대상자 발굴 제외, 미래 날짜 제외)
+          if (!isFutureDate && selectedTeam === '취업팀' && hasCheckedAttendance && studentNames.length > 0 && isSignBlank && !isBalGul) {
             const displayNames = studentNames.join('/');
             setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
             setValidationErrorIndex(i);
@@ -1487,8 +1489,8 @@
             return false;
           }
 
-          // 3. 인원수 누락 체크
-          if (targetNameForHeadcount && memo !== "" && memo !== "복지관으로 이동") {
+          // 3. 인원수 누락 체크 (미래 날짜 제외)
+          if (!isFutureDate && targetNameForHeadcount && memo !== "" && memo !== "복지관으로 이동") {
             const hc = (log.headcount || "").trim();
             const isKyungrodangEntry = targetNameForHeadcount.includes("경로당");
 
