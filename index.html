@@ -649,24 +649,14 @@
                   </div>
                 )}
 
-                {/* 3. 실제 이미지 - crossOrigin으로 CORS 허용, ref로 합성 시 직접 사용 */}
+                {/* 3. 실제 이미지 (crossOrigin 없이 표시 - CORS 문제 방지) */}
                 <img
-                  ref={overlayImgRef}
                   key={displayImgUrl}
                   src={displayImgUrl}
                   alt="Signature"
-                  crossOrigin="anonymous"
                   className="max-h-full max-w-full object-contain transition-opacity duration-300 opacity-100"
                   onLoad={handleImgLoad}
-                  onError={(e) => {
-                    // crossOrigin으로 실패하면 crossOrigin 없이 재시도
-                    if (e.target.crossOrigin === 'anonymous') {
-                      e.target.crossOrigin = '';
-                      e.target.src = displayImgUrl;
-                    } else {
-                      setIsImgLoading(false);
-                    }
-                  }}
+                  onError={() => setIsImgLoading(false)}
                 />
               </div>
             )}
