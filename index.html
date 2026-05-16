@@ -585,11 +585,11 @@
               )}
             </div>
           </div>
-          <div className={`relative w-full max-w-[400px] ${isDoubleHeight ? 'h-[280px]' : 'h-[140px]'} group`}>
+          <div className={`relative w-full max-w-[400px] ${isDoubleHeight ? 'h-[336px]' : 'h-[140px]'} group`}>
             <canvas
               ref={canvasRef}
               width={400}
-              height={isDoubleHeight ? 280 : 140}
+              height={isDoubleHeight ? 336 : 140}
               className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50' : 'border-gray-200'} bg-sky-100 touch-none w-full h-full rounded-xl shadow-inner z-0 transition-all ${isSigning ? 'pointer-events-auto' : 'pointer-events-none'}`}
               onMouseDown={startDrawing}
               onMouseMove={draw}
@@ -599,6 +599,11 @@
               onTouchMove={draw}
               onTouchEnd={stopDrawing}
             />
+
+            {/* 💡 [추가] 2명일 때 중앙 가이드 점선 (저장 시에는 포함되지 않음) */}
+            {isSigning && isDoubleHeight && (
+              <div className="absolute top-1/2 left-0 w-full border-t-2 border-dashed border-blue-400/40 pointer-events-none z-10"></div>
+            )}
 
             {showSavedImg && displayImgUrl && (
               <div
@@ -704,6 +709,11 @@
       const toggleHideLog = (index) => {
         setHiddenLogs(prev => ({ ...prev, [index]: !prev[index] }));
       };
+
+      // 날짜 변경 시 모든 숨기기 상태 초기화
+      useEffect(() => {
+        setHiddenLogs({});
+      }, [date]);
 
       const lastTagClickRef = useRef({ time: 0, index: -1, sIdx: -1, tag: '' });
 
@@ -1295,11 +1305,14 @@
             else if (signatureOverride && signatureOverride.startsWith("data:image")) effectiveLocation = signatureOverride;
           }
 
+          const sNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+
           return {
             index: i,
             isRepeat: false,
             shift: shiftTime,
             student: log.student || "미입력",
+            isDoubleHeight: sNames.length >= 2, // 학생 2명 여부 저장
             location: effectiveLocation, // 싸인 데이터 추가
             attendance: currentStatusStr || "입력 없음",
             isChanged: isChanged,
@@ -2593,7 +2606,7 @@
                               {prog.attendance}
                             </span>
                             {selectedTeam === '취업팀' && prog.location && (prog.location.startsWith('data:image') || prog.location.startsWith('http') || prog.location.includes('drive.google.com') || prog.location.startsWith('=')) && (
-                              <div className="mt-1.5 border border-blue-100 rounded-lg bg-sky-50 overflow-hidden w-24 h-10 flex items-center justify-center shadow-sm">
+                              <div className={`mt-1.5 border border-blue-200 rounded-lg bg-sky-100 overflow-hidden w-24 flex items-center justify-center shadow-sm ${prog.isDoubleHeight ? 'h-[88px]' : 'h-10'}`}>
                                 <img src={getDirectImageUrl(prog.location)} alt="싸인" className="max-w-full max-h-full object-contain" />
                               </div>
                             )}
