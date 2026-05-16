@@ -539,7 +539,14 @@
               setTimeout(() => onTriggerSave(base64), 100);
             }
           } else {
-            // 아무것도 그리지 않았으면 기존 유지
+            // 아무것도 그리지 않았거나 지우기를 누른 경우 삭제 처리
+            setLastBase64("");
+            setShowSavedImg(false);
+            clearCanvasInternal();
+            onSave("");
+            if (onTriggerSave) {
+              setTimeout(() => onTriggerSave("__DELETE__"), 100);
+            }
           }
         }
       };
