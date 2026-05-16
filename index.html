@@ -470,6 +470,8 @@
         if (canvasRef.current) {
           const base64 = canvasRef.current.toDataURL('image/png');
           setLastBase64(base64);
+          // 💡 [수정] 한 획이 끝날 때마다 부모 상태에 즉시 반영하여 '저장' 버튼이 활성화되도록 함
+          onSave(base64);
         }
       };
 
@@ -571,6 +573,8 @@
         hasDrawnRef.current = false;
         isChangedRef.current = true; // 지우기도 변경으로 간주
         setShowSavedImg(false);
+        // 💡 [추가] 지웠을 때도 부모 상태에 즉시 반영
+        onSave("");
       };
 
       // ★ 원본 복구 전용 함수
