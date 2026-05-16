@@ -342,7 +342,7 @@
       );
     };
 
-    const SignaturePad = ({ onSave, disabled, currentUrl, onTriggerSave, onRefresh, isDoubleHeight }) => {
+    const SignaturePad = ({ onSave, disabled, currentUrl, onTriggerSave, onRefresh, isDoubleHeight, forceSign }) => {
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
       const [showSavedImg, setShowSavedImg] = useState(false);
@@ -350,6 +350,13 @@
       const [lastBase64, setLastBase64] = useState("");
       const [isSigning, setIsSigning] = useState(false);
       const hasDrawnRef = useRef(false);
+
+      // 💡 [추가] 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
+      useEffect(() => {
+        if (forceSign && !isSigning) {
+          setIsSigning(true);
+        }
+      }, [forceSign]);
 
       useEffect(() => {
         // 그리는 중(isSigning)일 때는 저장된 이미지 레이어를 띄우지 않습니다.
@@ -654,6 +661,7 @@
       const [showValidationError, setShowValidationError] = useState(false);
       const [validationErrorMsg, setValidationErrorMsg] = useState("");
       const [validationErrorIndex, setValidationErrorIndex] = useState(null);
+      const [validationErrorType, setValidationErrorType] = useState(""); // 에러 유형 (attendance, signature, headcount 등)
 
       const [saveProgress, setSaveProgress] = useState([]);
       const [isSaveComplete, setIsSaveComplete] = useState(false);
@@ -1281,11 +1289,18 @@
             (log.location || "") !== (original.location || "") ||
             currentStatusStr !== originalStatus;
 
+          let effectiveLocation = log.location || "";
+          if (i === forceIndex) {
+            if (signatureOverride === "__DELETE__") effectiveLocation = "";
+            else if (signatureOverride && signatureOverride.startsWith("data:image")) effectiveLocation = signatureOverride;
+          }
+
           return {
             index: i,
             isRepeat: false,
             shift: shiftTime,
             student: log.student || "미입력",
+            location: effectiveLocation, // 싸인 데이터 추가
             attendance: currentStatusStr || "입력 없음",
             isChanged: isChanged,
             status: isChanged ? '대기 중' : '변경 없음'
@@ -1301,12 +1316,27 @@
           const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
           const memo = (log.memo || "").trim();
 
-          // 1. 일반 출결 체크 validation (이름과 메모가 모두 있을 때)
+          // 1. 출결 데이터 누락 체크 (메모는 있는데 출결 버튼을 하나도 안 누른 경우)
           if (studentNames.length > 0 && memo !== "" && memo !== "복지관으로 이동") {
-            // 학생 이름 중 하나라도 '보조강사'를 포함하면 출결 체크 검증을 건너뜀
             const hasAssistant = studentNames.some(name => name.includes("보조강사"));
 
             if (!hasAssistant) {
+              const checkedCount = studentNames.filter((_, sIdx) => {
+                const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+                return tags.length > 0;
+              }).length;
+
+              // 메모가 데이터가 있음에도 출결 버튼이 하나도 눌리지 않은 경우 (2명일 때 둘 다 안 눌린 경우 포함)
+              if (checkedCount === 0) {
+                const displayNames = studentNames.join('/');
+                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
+                setValidationErrorIndex(i);
+                setValidationErrorType("attendance");
+                setShowValidationError(true);
+                return false;
+              }
+
+              // [기존 유지] 개별 학생 누락 체크 (데이터 무결성을 위해 유지)
               const hasUnchecked = studentNames.some((_, sIdx) => {
                 const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
                 return tags.length === 0;
@@ -1314,22 +1344,51 @@
 
               if (hasUnchecked) {
                 const displayNames = studentNames.join('/');
-                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크하세요!`);
+                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
+                setValidationErrorIndex(i);
+                setValidationErrorType("attendance");
                 setShowValidationError(true);
                 return false;
               }
             }
           }
 
-          // 2. 보조강사/경로당 참여인원 수 validation
+          // 2. 싸인 데이터 누락 체크 (출결은 체크했는데 싸인이 없는 경우)
+          const hasCheckedAttendance = studentNames.some((_, sIdx) => {
+            const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+            return tags.length > 0;
+          });
+
+          if (hasCheckedAttendance && studentNames.length > 0) {
+            // signatureOverride가 "__DELETE__"이면 실제 저장될 값은 빈 값이므로 이를 반영하여 체크
+            let loc = (log.location || "").trim();
+            if (i === forceIndex && signatureOverride === "__DELETE__") {
+              loc = "";
+            }
+
+            // 싸인 데이터가 블랭크이거나 이미지 형식이 아닌 경우 (취업팀 외에도 싸인이 필요한 경우 대응)
+            const isSignatureBlank = !loc || (!loc.startsWith('data:image') && !loc.startsWith('http') && !loc.includes('drive.google.com') && !loc.startsWith('=IMAGE'));
+
+            if (isSignatureBlank) {
+              const displayNames = studentNames.join('/');
+              setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
+              setValidationErrorIndex(i);
+              setValidationErrorType("signature");
+              setShowValidationError(true);
+              return false;
+            }
+          }
+
+          // 3. 보조강사/경로당 참여인원 수 validation
           const targetName = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
           if (targetName && memo !== "" && memo !== "복지관으로 이동") {
             const headcount = (log.headcount || "").trim();
 
             // 숫자 전용 칸(headcount)이 입력이 안되어 있으면 팝업 출력
             if (!/^\d+/.test(headcount)) {
-              setValidationErrorMsg(`${targetName} 참석인원을 입력하세요!`);
+              setValidationErrorMsg(`${targetName} 참석인원을 입력해 주세요!`);
               setValidationErrorIndex(i);
+              setValidationErrorType("headcount");
               setShowValidationError(true);
               return false;
             }
@@ -2280,7 +2339,7 @@
                       const isCompact = isFutureOrToday && !hasAttendance;
 
                       return (
-                        <div key={index} className={`${isCompact ? 'p-2.5 sm:p-3 md:p-4' : 'p-4 sm:p-5 md:p-6'} border rounded-xl shadow-md ${cardColorClass}`}>
+                        <div key={index} id={`log-card-${index}`} className={`${isCompact ? 'p-2.5 sm:p-3 md:p-4' : 'p-4 sm:p-5 md:p-6'} border rounded-xl shadow-md ${cardColorClass}`}>
                           <div className={`flex justify-between items-start ${isCompact ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
                             <div className="flex items-center text-blue-700 font-bold text-lg sm:text-xl flex-wrap gap-y-1">
                               <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" />
@@ -2436,6 +2495,7 @@
                                   disabled={isDataLoading || !logs[index]?.student?.trim()}
                                   currentUrl={logs[index]?.location}
                                   isDoubleHeight={studentNames.length >= 2}
+                                  forceSign={validationErrorIndex === index && validationErrorType === 'signature'}
                                 />
                               )}
                             </div>
@@ -2464,7 +2524,18 @@
                     {validationErrorMsg}
                   </p>
                   <button
-                    onClick={() => setShowValidationError(false)}
+                    onClick={() => {
+                      setShowValidationError(false);
+                      // 에러 확인 후 해당 카드로 스크롤 이동
+                      if (validationErrorIndex !== null) {
+                        setTimeout(() => {
+                          const el = document.getElementById(`log-card-${validationErrorIndex}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        }, 100);
+                      }
+                    }}
                     className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-[18px] shadow-sm active:scale-95 touch-manipulation transition-colors"
                   >
                     확인
@@ -2521,6 +2592,11 @@
                             <span className={`text-lg font-bold break-all leading-relaxed ${attColor}`}>
                               {prog.attendance}
                             </span>
+                            {selectedTeam === '취업팀' && prog.location && (prog.location.startsWith('data:image') || prog.location.startsWith('http') || prog.location.includes('drive.google.com') || prog.location.startsWith('=')) && (
+                              <div className="mt-1.5 border border-blue-100 rounded-lg bg-sky-50 overflow-hidden w-24 h-10 flex items-center justify-center shadow-sm">
+                                <img src={getDirectImageUrl(prog.location)} alt="싸인" className="max-w-full max-h-full object-contain" />
+                              </div>
+                            )}
                           </div>
                           <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
                             {prog.status}
