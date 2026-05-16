@@ -657,7 +657,7 @@
               )}
             </div>
           </div>
-          <div 
+          <div
             className={`relative w-full max-w-[400px] group`}
             style={{ aspectRatio: isDoubleHeight ? '400 / 336' : '400 / 140' }}
           >
@@ -1407,7 +1407,7 @@
           const memo = (log.memo || "").trim();
           const targetNameForHeadcount = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
           const hasAssistant = studentNames.some(name => name.includes("보조강사"));
-          const isBalGul = studentNames.some(name => name.includes("대상자 발굴"));
+          const isBalGul = studentNames.some(name => name.includes("대상자발굴"));
 
           // 출결 체크 여부 확인 (인원수 입력도 출결 체크로 간주할 수 있는 경우 포함)
           const hc = (log.headcount || "").trim();
@@ -1434,10 +1434,10 @@
               if (!hasCheckedAttendance) {
                 const displayNames = studentNames.join('/');
                 const isKyungrodangEntry = displayNames.includes("경로당");
-                const msg = isKyungrodangEntry 
+                const msg = isKyungrodangEntry
                   ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
                   : `${displayNames} 님의 출결사항을 체크해 주세요!`;
-                
+
                 setValidationErrorMsg(msg);
                 setValidationErrorIndex(i);
                 setValidationErrorType("attendance");
@@ -1454,7 +1454,7 @@
               if (anyUnchecked) {
                 const displayNames = studentNames.join('/');
                 const isKyungrodangEntry = displayNames.includes("경로당");
-                const msg = isKyungrodangEntry 
+                const msg = isKyungrodangEntry
                   ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
                   : `${displayNames} 님의 출결사항을 체크해 주세요!`;
 
