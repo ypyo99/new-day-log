@@ -1425,8 +1425,9 @@
 
           // 1. 출결 누락 체크 (보조강사 제외)
           if (studentNames.length > 0 && !hasAssistant) {
-            // 메모나 싸인이 있는데 출결이 없는 경우
+            // 💡 [수정] 메모나 싸인이 있는 경우에만 개별 학생 출결 체크 강제
             if ((memo !== "" && memo !== "복지관으로 이동") || !isSignBlank) {
+              // 1. 전체 출결 여부 확인
               if (!hasCheckedAttendance) {
                 const displayNames = studentNames.join('/');
                 setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
@@ -1435,20 +1436,20 @@
                 setShowValidationError(true);
                 return false;
               }
-            }
 
-            // 개별 학생 중 누락된 경우
-            const anyUnchecked = studentNames.some((_, sIdx) => {
-              const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-              return tags.length === 0;
-            });
-            if (anyUnchecked) {
-              const displayNames = studentNames.join('/');
-              setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
-              setValidationErrorIndex(i);
-              setValidationErrorType("attendance");
-              setShowValidationError(true);
-              return false;
+              // 2. 개별 학생 중 누락된 경우 확인
+              const anyUnchecked = studentNames.some((_, sIdx) => {
+                const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+                return tags.length === 0;
+              });
+              if (anyUnchecked) {
+                const displayNames = studentNames.join('/');
+                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
+                setValidationErrorIndex(i);
+                setValidationErrorType("attendance");
+                setShowValidationError(true);
+                return false;
+              }
             }
           }
 
@@ -2219,7 +2220,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-sign-final-v3
+                v260516-sign-final-v4
               </div>
             </div>
           </div>
