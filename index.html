@@ -1407,6 +1407,7 @@
           const memo = (log.memo || "").trim();
           const targetNameForHeadcount = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
           const hasAssistant = studentNames.some(name => name.includes("보조강사"));
+          const isBalGul = studentNames.some(name => name.includes("대상자 발굴"));
 
           // 출결 체크 여부 확인 (인원수 입력도 출결 체크로 간주할 수 있는 경우 포함)
           const hc = (log.headcount || "").trim();
@@ -1425,8 +1426,8 @@
           }
           const isSignBlank = !currentLoc || (!currentLoc.startsWith('data:image') && !currentLoc.startsWith('http') && !currentLoc.includes('drive.google.com') && !currentLoc.startsWith('=IMAGE'));
 
-          // 1. 출결 누락 체크 (보조강사 제외)
-          if (studentNames.length > 0 && !hasAssistant) {
+          // 1. 출결 누락 체크 (보조강사 및 대상자 발굴 제외)
+          if (studentNames.length > 0 && !hasAssistant && !isBalGul) {
             // 💡 [수정] 메모나 싸인이 있는 경우에만 개별 학생 출결 체크 강제
             if ((memo !== "" && memo !== "복지관으로 이동") || !isSignBlank) {
               // 1. 전체 출결 여부 확인
@@ -1466,8 +1467,8 @@
             }
           }
 
-          // 2. 싸인 누락 체크 (취업팀만 해당)
-          if (selectedTeam === '취업팀' && hasCheckedAttendance && studentNames.length > 0 && isSignBlank) {
+          // 2. 싸인 누락 체크 (취업팀만 해당, 대상자 발굴 제외)
+          if (selectedTeam === '취업팀' && hasCheckedAttendance && studentNames.length > 0 && isSignBlank && !isBalGul) {
             const displayNames = studentNames.join('/');
             setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
             setValidationErrorIndex(i);
@@ -2252,7 +2253,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-hc-msg-final
+                v260516-balgul-fix
               </div>
             </div>
           </div>
