@@ -1354,15 +1354,18 @@
           const originalStatus = formatStatusIfDate(original.status);
           const currentStatusStr = buildStatusString(log);
 
-          return (log.student || "") !== (original.student || "") ||
-            (log.location || "") !== (original.location || "") ||
-            currentStatusStr !== originalStatus;
+          const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
+          const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
+          const statusChanged = currentStatusStr !== originalStatus;
+
+          return studentChanged || locationChanged || statusChanged;
         });
       }, [logs, allScheduleData, date, selectedTeam, shifts]);
 
       const isEmptySchedule = useMemo(() => {
         if (selectedTeam === '취업팀') {
-          return Object.values(logs).every(log => !log.student?.trim());
+          // 취업팀은 학생 이름 또는 싸인 중 하나라도 있으면 비어있지 않은 것으로 간주
+          return Object.values(logs).every(log => !log.student?.trim() && !log.location?.trim());
         }
         return Object.values(logs).every(log => !log.student?.trim() && !log.location?.trim());
       }, [logs, selectedTeam]);
