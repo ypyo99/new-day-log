@@ -1479,7 +1479,7 @@
 
               // 사용자 요청: '결석', '선생님휴가', '취소'가 모두 체크되어 있지 않으면서 인원수 필드가 비어 있으면 팝업
               if (!isGyeolseok && !isVacation && !isCancel && hc === "") {
-                setValidationErrorMsg(`${targetNameForHeadcount} 참석인원을 입력해 주세요!`);
+                setValidationErrorMsg(`${targetNameForHeadcount} 참석인원 또는 출결사항을 확인해 주세요!`);
                 setValidationErrorIndex(i);
                 setValidationErrorType("headcount");
                 setShowValidationError(true);
@@ -2242,7 +2242,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-hc-sparkle-fix
+                v260516-hc-msg-fix
               </div>
             </div>
           </div>
