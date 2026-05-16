@@ -407,19 +407,19 @@
       }, [forceSign]);
 
       useEffect(() => {
-        // 그리는 중(isSigning)일 때는 저장된 이미지 레이어를 띄우지 않습니다.
         const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
-        if (!isSigning && hasUrl) {
+        if (isSigning) {
+          // 💡 [핵심 수정] 싸인 모드일 때는 오버레이를 절대 표시하지 않음
+          setShowSavedImg(false);
+        } else if (hasUrl) {
           setShowSavedImg(true);
-          // ★ 초기 로드 시에만 로딩 표시, 복구 시에는 캐시 활용을 위해 생략
           if (currentUrl.startsWith('http') && !isImgLoading) {
             setIsImgLoading(true);
           } else {
-            // data: URL인 경우 로컬 데이터를 즉시 반영
             setLastBase64(currentUrl);
             setIsImgLoading(false);
           }
-        } else if (!isSigning) {
+        } else {
           setShowSavedImg(false);
           setIsImgLoading(false);
         }
@@ -521,10 +521,10 @@
       const toggleSignMode = () => {
         if (disabled) return;
         if (!isSigning) {
+          // 💡 [핵심 수정] 오버레이를 즉시 숨기고, 캔버스에 기존 싸인을 복사한 뒤 싸인 모드 진입
+          setShowSavedImg(false);
           setIsSigning(true);
-          // setShowSavedImg(false); // loadSignatureToCanvas 내부에서 로드 완료 후 숨김
-          loadSignatureToCanvas(); // 기존 싸인 불러오기
-          setLastBase64("");
+          // hasDrawnRef는 false로 시작하되, loadSignatureToCanvas가 성공하면 true로 변경
           hasDrawnRef.current = false;
         } else {
           setIsSigning(false);
