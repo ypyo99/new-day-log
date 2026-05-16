@@ -1432,7 +1432,12 @@
               // 1. 전체 출결 여부 확인
               if (!hasCheckedAttendance) {
                 const displayNames = studentNames.join('/');
-                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
+                const isKyungrodangEntry = displayNames.includes("경로당");
+                const msg = isKyungrodangEntry 
+                  ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
+                  : `${displayNames} 님의 출결사항을 체크해 주세요!`;
+                
+                setValidationErrorMsg(msg);
                 setValidationErrorIndex(i);
                 setValidationErrorType("attendance");
                 setShowValidationError(true);
@@ -1447,7 +1452,12 @@
               });
               if (anyUnchecked) {
                 const displayNames = studentNames.join('/');
-                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
+                const isKyungrodangEntry = displayNames.includes("경로당");
+                const msg = isKyungrodangEntry 
+                  ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
+                  : `${displayNames} 님의 출결사항을 체크해 주세요!`;
+
+                setValidationErrorMsg(msg);
                 setValidationErrorIndex(i);
                 setValidationErrorType("attendance");
                 setShowValidationError(true);
@@ -2242,7 +2252,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-hc-msg-fix
+                v260516-hc-msg-final
               </div>
             </div>
           </div>
