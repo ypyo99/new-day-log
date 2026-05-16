@@ -575,11 +575,11 @@
       };
 
       // ★ 원본 복구 전용 함수
-      const restoreOriginal = (e) => {
-        if (e) e.stopPropagation();
+      const restoreOriginal = (e, skipRefresh = false) => {
+        if (e && e.stopPropagation) e.stopPropagation();
 
         // 부모로부터 전달받은 데이터 갱신 함수 호출 (시트 데이터 다시 읽기)
-        if (typeof onRefresh === 'function') {
+        if (!skipRefresh && typeof onRefresh === 'function') {
           onRefresh();
         }
 
@@ -605,7 +605,13 @@
       };
 
       const cancelSign = () => {
-        restoreOriginal();
+        if (!isChangedRef.current) {
+          setIsSigningState(false);
+          isSigningRef.current = false;
+          return;
+        }
+        // 변경 사항이 있었으나 나가는 경우, 새로고침 없이 UI만 복구
+        restoreOriginal(null, true);
       };
 
       const handleImgLoad = () => {
@@ -2214,7 +2220,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-sign-final
+                v260516-sign-final-v2
               </div>
             </div>
           </div>
