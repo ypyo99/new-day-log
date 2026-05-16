@@ -351,6 +351,54 @@
       const [isSigning, setIsSigning] = useState(false);
       const hasDrawnRef = useRef(false);
 
+      // 💡 [추가] 기존 싸인을 캔버스에 불러오는 함수
+      const loadSignatureToCanvas = useCallback(() => {
+        const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
+        if (hasUrl) {
+          const img = new Image();
+          if (!currentUrl.startsWith('data:')) {
+            img.crossOrigin = "anonymous";
+          }
+          img.onload = () => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            // 💡 [수정] 기존 영역을 지우지 않고 그 위에 덧그리도록 clearRect 제거
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#000';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.globalAlpha = 1.0;
+
+            // 💡 [수정] 선명도를 극대화하기 위해 대비 필터 적용 및 8번 중첩 드로잉
+            ctx.filter = 'contrast(1.4) brightness(0.9)';
+            for(let i=0; i<8; i++) {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            }
+            ctx.filter = 'none'; // 필터 초기화
+            hasDrawnRef.current = true;
+          };
+          img.onerror = () => {
+            setShowSavedImg(false);
+            clearCanvasInternal();
+          };
+          const targetUrl = getDirectImageUrl(currentUrl);
+          if (targetUrl.startsWith('data:')) {
+            img.src = targetUrl;
+          } else {
+            const connector = targetUrl.includes('?') ? '&' : '?';
+            img.src = `${targetUrl}${connector}t=${Date.now()}`;
+          }
+        }
+      }, [currentUrl]);
+
+      // 💡 [추가] 싸인 모드 진입 시 자동 로드
+      useEffect(() => {
+        if (isSigning && currentUrl) {
+          loadSignatureToCanvas();
+        }
+      }, [isSigning, currentUrl, loadSignatureToCanvas]);
+
       // 💡 [추가] 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
       useEffect(() => {
         if (forceSign && !isSigning) {
@@ -474,8 +522,8 @@
         if (disabled) return;
         if (!isSigning) {
           setIsSigning(true);
-          setShowSavedImg(false);
-          clearCanvasInternal();
+          // setShowSavedImg(false); // loadSignatureToCanvas 내부에서 로드 완료 후 숨김
+          loadSignatureToCanvas(); // 기존 싸인 불러오기
           setLastBase64("");
           hasDrawnRef.current = false;
         } else {
@@ -506,7 +554,7 @@
         setLastBase64("");
         setShowSavedImg(false);
         hasDrawnRef.current = false;
-        // ★ '지우기' 버튼을 눌러도 '저장'을 누르기 전까지는 부모 상태(onSave)를 건드리지 않음
+        // 지우기 버튼은 캔버스만 비우고 Signing 모드는 유지함
       };
 
       // ★ 원본 복구 전용 함수
@@ -607,8 +655,8 @@
 
             {showSavedImg && displayImgUrl && (
               <div
-                key={`restore-${displayImgUrl}-${isSigning}`} // key를 추가하여 강제 리렌더링 유도
-                className="absolute inset-0 z-10 flex items-center justify-center bg-sky-100 border border-blue-300 rounded-xl shadow-inner overflow-hidden"
+                key={`restore-${displayImgUrl}-${isSigning}`}
+                className={`absolute inset-0 z-10 flex items-center justify-center bg-sky-100 border border-blue-300 rounded-xl shadow-inner overflow-hidden transition-opacity duration-300 ${isDrawing ? 'opacity-0' : 'opacity-100'} ${(isSigning) ? 'pointer-events-none' : ''}`}
               >
                 {/* 1. 로딩 중일 때 보여줄 백그라운드 싸인 (끊김 방지) */}
                 {isImgLoading && lastBase64 && (
