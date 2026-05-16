@@ -350,20 +350,56 @@
       const [lastBase64, setLastBase64] = useState("");
       const [isSigning, setIsSigning] = useState(false);
       const hasDrawnRef = useRef(false);
-      const existingImgRef = useRef(null); // 기존 싸인 이미지 사전 로드용
-      const overlayImgRef = useRef(null); // 오버레이 img 요소 직접 참조
 
-      // 💡 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
+      // 💡 기존 싸인을 캔버스에 로드하는 함수
+      const loadSignatureToCanvas = useCallback(() => {
+        const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
+        if (!hasUrl) return;
+        const img = new Image();
+        if (!currentUrl.startsWith('data:')) img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#000';
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.globalAlpha = 1.0;
+          ctx.filter = 'contrast(1.4) brightness(0.9)';
+          for (let i = 0; i < 8; i++) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
+          ctx.filter = 'none';
+          hasDrawnRef.current = true;
+          // 캔버스에 그리기 완료 후 오버레이 숨김
+          setShowSavedImg(false);
+        };
+        img.onerror = () => {
+          // CORS 실패 시에도 오버레이는 유지하되 pointer-events-none으로 그리기는 가능
+          console.warn('Signature image CORS load failed, overlay kept visible');
+        };
+        const targetUrl = getDirectImageUrl(currentUrl);
+        img.src = targetUrl.startsWith('data:') ? targetUrl : targetUrl;
+      }, [currentUrl]);
+
+      // 싸인 모드 진입 시 자동 로드
+      useEffect(() => {
+        if (isSigning && currentUrl) {
+          loadSignatureToCanvas();
+        }
+      }, [isSigning, currentUrl, loadSignatureToCanvas]);
+
       useEffect(() => {
         if (forceSign && !isSigning) {
-          clearCanvasInternal();
           setIsSigning(true);
           hasDrawnRef.current = false;
         }
       }, [forceSign]);
 
       useEffect(() => {
-        if (isSigning) return; // 싸인 모드일 때는 오버레이 건드리지 않음
+        if (isSigning) return;
         const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
         if (hasUrl) {
           setShowSavedImg(true);
@@ -373,17 +409,9 @@
             setLastBase64(currentUrl);
             setIsImgLoading(false);
           }
-          // 기존 이미지 사전 로드 (저장 시 합성용)
-          const img = new Image();
-          if (!currentUrl.startsWith('data:')) img.crossOrigin = "anonymous";
-          img.onload = () => { existingImgRef.current = img; };
-          img.onerror = () => { existingImgRef.current = null; };
-          const targetUrl = getDirectImageUrl(currentUrl);
-          img.src = targetUrl.startsWith('data:') ? targetUrl : targetUrl;
         } else {
           setShowSavedImg(false);
           setIsImgLoading(false);
-          existingImgRef.current = null;
         }
       }, [currentUrl, isSigning]);
 
@@ -469,46 +497,24 @@
         if (!isDrawing || disabled || !isSigning) return;
         setIsDrawing(false);
         hasDrawnRef.current = true;
-      };
-
-      // 💡 [핵심] 기존 이미지 + 새 획을 합성하여 base64 반환
-      const createComposite = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return "";
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const ctx = tempCanvas.getContext('2d');
-        // 1. 배경색 채우기
-        ctx.fillStyle = '#e0f2fe'; // bg-sky-100
-        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        // 2. 기존 싸인 이미지 그리기 (오버레이 img 요소 또는 사전 로드 이미지 사용)
-        const imgSource = overlayImgRef.current || existingImgRef.current;
-        if (imgSource && imgSource.complete && imgSource.naturalWidth > 0) {
-          try {
-            ctx.drawImage(imgSource, 0, 0, tempCanvas.width, tempCanvas.height);
-          } catch (e) {
-            console.warn('Composite: CORS 오류로 기존 이미지 합성 실패, 새 획만 저장됨');
-          }
+        // 💡 중간 저장 복원 - 캔버스 내용 즉시 저장 (속도 확보)
+        if (canvasRef.current) {
+          const base64 = canvasRef.current.toDataURL('image/png');
+          setLastBase64(base64);
+          onSave(base64);
         }
-        // 3. 새로 그린 획 합성
-        ctx.drawImage(canvas, 0, 0);
-        return tempCanvas.toDataURL('image/png');
       };
 
       const toggleSignMode = () => {
         if (disabled) return;
         if (!isSigning) {
-          // 💡 [핵심 전략] 캔버스를 비우고 투명하게 만들어 오버레이 위에 배치
-          // 기존 싸인은 오버레이 <img>로 계속 보임 → 절대 사라지지 않음!
-          clearCanvasInternal();
+          // 싸인 모드 진입 - 오버레이 유지, 캔버스에 이미지 로드 시도
           setIsSigning(true);
           hasDrawnRef.current = false;
         } else {
           setIsSigning(false);
           if (hasDrawnRef.current && canvasRef.current) {
-            // 기존 이미지 + 새 획을 합성
-            const base64 = createComposite();
+            const base64 = canvasRef.current.toDataURL('image/png');
             setLastBase64(base64);
             setShowSavedImg(true);
             onSave(base64);
@@ -613,7 +619,7 @@
               ref={canvasRef}
               width={400}
               height={isDoubleHeight ? 336 : 140}
-              className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50 z-20' : 'border-gray-200 z-0'} touch-none w-full h-full rounded-xl shadow-inner transition-all ${isSigning ? 'pointer-events-auto bg-transparent' : 'pointer-events-none bg-sky-100'}`}
+              className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50' : 'border-gray-200'} bg-sky-100 touch-none w-full h-full rounded-xl shadow-inner z-0 transition-all ${isSigning ? 'pointer-events-auto' : 'pointer-events-none'}`}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
