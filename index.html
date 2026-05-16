@@ -342,16 +342,22 @@
           <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 mb-0.5 ${isFetching ? 'animate-spin' : ''}`} />
           <span className="text-[16px] sm:text-[18px] tracking-tight whitespace-nowrap">{toggle ? '선생님목록' : '다시읽기'}</span>
         </button>
-      );
-      const isSigning = useRef(false); // 로컬 상태 추적용 (선택 사항)
-      const [isSigningState, setIsSigning] = useState(false);
+    };
+
+    const SignaturePad = ({ onSave, disabled, currentUrl, onTriggerSave, onRefresh, isDoubleHeight, forceSign }) => {
+      const canvasRef = useRef(null);
+      const [isDrawing, setIsDrawing] = useState(false);
+      const [showSavedImg, setShowSavedImg] = useState(false);
+      const [isImgLoading, setIsImgLoading] = useState(false);
+      const [lastBase64, setLastBase64] = useState("");
+      const [isSigning, setIsSigningState] = useState(false);
       const isSigningRef = useRef(false);
       const isChangedRef = useRef(false);
       const hasDrawnRef = useRef(false);
 
       const setIsSigningWithRef = (val) => {
         isSigningRef.current = val;
-        setIsSigning(val);
+        setIsSigningState(val);
       };
 
       useEffect(() => {
@@ -375,7 +381,7 @@
           setShowSavedImg(false);
           setIsImgLoading(false);
         }
-      }, [currentUrl, isSigningState]);
+      }, [currentUrl, isSigning]);
 
       useEffect(() => {
         const canvas = canvasRef.current;
@@ -576,7 +582,8 @@
           onRefresh();
         }
 
-        setIsSigning(false);
+        setIsSigningState(false);
+        isSigningRef.current = false;
         clearCanvasInternal();
         hasDrawnRef.current = false;
 
@@ -2206,7 +2213,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-sign-optimize
+                v260516-sign-stable
               </div>
             </div>
           </div>
