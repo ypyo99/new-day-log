@@ -1408,12 +1408,14 @@
           const targetNameForHeadcount = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
           const hasAssistant = studentNames.some(name => name.includes("보조강사"));
 
-          // 출결 체크 여부 확인
+          // 출결 체크 여부 확인 (인원수 입력도 출결 체크로 간주할 수 있는 경우 포함)
+          const hc = (log.headcount || "").trim();
           const checkedCount = studentNames.filter((_, sIdx) => {
             const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
             return tags.length > 0;
           }).length;
-          const hasCheckedAttendance = checkedCount > 0;
+          // 경로당/보조강사인 경우 인원수 입력이 있으면 출결 체크된 것으로 간주
+          const hasCheckedAttendance = (checkedCount > 0) || (targetNameForHeadcount && hc !== "");
 
           // 싸인 존재 여부 확인
           let currentLoc = (log.location || "").trim();
@@ -1440,7 +1442,8 @@
               // 2. 개별 학생 중 누락된 경우 확인
               const anyUnchecked = studentNames.some((_, sIdx) => {
                 const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-                return tags.length === 0;
+                // 인원수 입력이 있으면 개별 태그 체크가 없어도 통과
+                return tags.length === 0 && !(targetNameForHeadcount && hc !== "");
               });
               if (anyUnchecked) {
                 const displayNames = studentNames.join('/');
@@ -2239,7 +2242,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-kyungrodang-hc-fix
+                v260516-hc-sparkle-fix
               </div>
             </div>
           </div>
@@ -2557,7 +2560,11 @@
                                 {isShowHeadcount && (() => {
                                   const isHeadcountEmpty = !(logs[index]?.headcount || "").trim();
                                   const hasMemo = (logs[index]?.memo || "").trim() !== "";
-                                  const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty);
+                                  const hasExcusedAttendance = studentNames.some((_, sIdx) => {
+                                    const tags = (logs[index]?.selectedTags && logs[index].selectedTags[sIdx]) ? logs[index].selectedTags[sIdx] : [];
+                                    return tags.includes("결석") || tags.includes("선생님휴가") || tags.includes("취소");
+                                  });
+                                  const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty && !hasExcusedAttendance);
 
                                   return (
                                     <input
