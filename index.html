@@ -402,14 +402,7 @@
         }
       }, [currentUrl]);
 
-      // 💡 [추가] 싸인 모드 진입 시 자동 로드
-      useEffect(() => {
-        if (isSigning && currentUrl) {
-          loadSignatureToCanvas();
-        }
-      }, [isSigning, currentUrl, loadSignatureToCanvas]);
-
-      // 💡 [추가] 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
+      // 💡 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
       useEffect(() => {
         if (forceSign && !isSigning) {
           setIsSigning(true);
@@ -532,10 +525,10 @@
       const toggleSignMode = () => {
         if (disabled) return;
         if (!isSigning) {
-          // 💡 [핵심] 오버레이를 숨기지 않음! (pointer-events-none이라 터치는 캔버스로 통과)
-          // → loadSignatureToCanvas가 캔버스에 이미지를 완전히 그린 후에 오버레이를 숨김
-          setIsSigning(true);
+          // 💡 [핵심] 오버레이 이미지를 캔버스에 동기적으로 복사한 후 싸인 모드 진입
           hasDrawnRef.current = false;
+          loadSignatureToCanvas();
+          setIsSigning(true);
         } else {
           setIsSigning(false);
           if (hasDrawnRef.current && canvasRef.current) {
@@ -602,7 +595,10 @@
 
       const handleImgLoad = () => {
         setIsImgLoading(false);
-        clearCanvasInternal();
+        // 💡 [핵심 수정] 싸인 모드일 때는 캔버스를 지우지 않음 (loadSignatureToCanvas가 그린 내용 보존)
+        if (!isSigning) {
+          clearCanvasInternal();
+        }
       };
 
       const displayImgUrl = (currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com')))
@@ -665,8 +661,8 @@
 
             {showSavedImg && displayImgUrl && (
               <div
-                key={`restore-${displayImgUrl}-${isSigning}`}
-                className={`absolute inset-0 z-10 flex items-center justify-center bg-sky-100 border border-blue-300 rounded-xl shadow-inner overflow-hidden transition-opacity duration-300 ${isDrawing ? 'opacity-0' : 'opacity-100'} ${(isSigning) ? 'pointer-events-none' : ''}`}
+                key={`restore-${displayImgUrl}`}
+                className={`absolute inset-0 z-10 flex items-center justify-center bg-sky-100 border border-blue-300 rounded-xl shadow-inner overflow-hidden ${isSigning ? 'pointer-events-none' : ''}`}
               >
                 {/* 1. 로딩 중일 때 보여줄 백그라운드 싸인 (끊김 방지) */}
                 {isImgLoading && lastBase64 && (
