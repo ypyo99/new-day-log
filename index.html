@@ -1296,7 +1296,7 @@
             }
 
             const loadedMemo = memoParts.join(', ');
-            
+
             // 💡 [추가] 실시간 백업 데이터가 있는지 확인하여 메모 불러오기
             let finalMemo = loadedMemo;
             if (!finalMemo) {
@@ -1522,12 +1522,20 @@
               }
             } else {
               // 보조강사 등 기타 대상자: 기존 숫자 입력 규칙 유지
-              if (!/^\d+/.test(hc)) {
-                setValidationErrorMsg(`${targetNameForHeadcount} 참석인원을 입력해 주세요!`);
-                setValidationErrorIndex(i);
-                setValidationErrorType("headcount");
-                setShowValidationError(true);
-                return false;
+              // 💡 [수정] 학생이름에 '보조강사'가 들어가 있으면서 메모필드에 아무 내용도 없으면 인원체크는 하지 않음
+              const isAssistant = targetNameForHeadcount.includes("보조강사");
+              const isMemoEmpty = memo === "";
+
+              if (isAssistant && isMemoEmpty) {
+                // 인원체크 건너뜀
+              } else {
+                if (!/^\d+/.test(hc)) {
+                  setValidationErrorMsg(`${targetNameForHeadcount} 수업 내용이 있으면 참석인원을 입력해야 합니다.`);
+                  setValidationErrorIndex(i);
+                  setValidationErrorType("headcount");
+                  setShowValidationError(true);
+                  return false;
+                }
               }
             }
           }
