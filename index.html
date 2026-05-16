@@ -1377,31 +1377,33 @@
 
         for (let i of changedIndices) {
           const log = logs[i];
+          if (!log) continue;
+
           const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
           const memo = (log.memo || "").trim();
-
-          // 1. 출결 데이터 누락 체크
+          const targetNameForHeadcount = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
           const hasAssistant = studentNames.some(name => name.includes("보조강사"));
 
+          // 출결 체크 여부 확인
+          const checkedCount = studentNames.filter((_, sIdx) => {
+            const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+            return tags.length > 0;
+          }).length;
+          const hasCheckedAttendance = checkedCount > 0;
+
+          // 싸인 존재 여부 확인
+          let currentLoc = (log.location || "").trim();
+          if (i === forceIndex && signatureOverride) {
+            if (signatureOverride === "__DELETE__") currentLoc = "";
+            else if (signatureOverride.startsWith("data:image")) currentLoc = signatureOverride;
+          }
+          const isSignBlank = !currentLoc || (!currentLoc.startsWith('data:image') && !currentLoc.startsWith('http') && !currentLoc.includes('drive.google.com') && !currentLoc.startsWith('=IMAGE'));
+
+          // 1. 출결 누락 체크 (보조강사 제외)
           if (studentNames.length > 0 && !hasAssistant) {
-            const checkedCount = studentNames.filter((_, sIdx) => {
-              const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-              return tags.length > 0;
-            }).length;
-
-            const hasCheckedAttendance = checkedCount > 0;
-
-            // 싸인 데이터 존재 여부 체크
-            let loc = (log.location || "").trim();
-            if (i === forceIndex) {
-              if (signatureOverride === "__DELETE__") loc = "";
-              else if (signatureOverride && signatureOverride.startsWith("data:image")) loc = signatureOverride;
-            }
-            const isSignatureBlank = !loc || (!loc.startsWith('data:image') && !loc.startsWith('http') && !loc.includes('drive.google.com') && !loc.startsWith('=IMAGE'));
-
-            // 메모가 있거나 싸인이 있음에도 출결 버튼이 하나도 눌리지 않은 경우
-            if ((memo !== "" && memo !== "복지관으로 이동") || !isSignatureBlank) {
-              if (checkedCount === 0) {
+            // 메모나 싸인이 있는데 출결이 없는 경우
+            if ((memo !== "" && memo !== "복지관으로 이동") || !isSignBlank) {
+              if (!hasCheckedAttendance) {
                 const displayNames = studentNames.join('/');
                 setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
                 setValidationErrorIndex(i);
@@ -1411,56 +1413,36 @@
               }
             }
 
-            // [기존 유지] 개별 학생 누락 체크
-            const hasUnchecked = studentNames.some((_, sIdx) => {
+            // 개별 학생 중 누락된 경우
+            const anyUnchecked = studentNames.some((_, sIdx) => {
               const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
               return tags.length === 0;
             });
-
-            if (hasUnchecked) {
-                const displayNames = studentNames.join('/');
-                setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
-                setValidationErrorIndex(i);
-                setValidationErrorType("attendance");
-                setShowValidationError(true);
-                return false;
-              }
-            }
-          }
-
-          // 2. 싸인 데이터 누락 체크 (출결은 체크했는데 싸인이 없는 경우)
-          const hasCheckedAttendanceAfter = studentNames.some((_, sIdx) => {
-            const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-            return tags.length > 0;
-          });
-
-          if (hasCheckedAttendanceAfter && studentNames.length > 0) {
-            let locCheck = (log.location || "").trim();
-            if (i === forceIndex) {
-              if (signatureOverride === "__DELETE__") locCheck = "";
-              else if (signatureOverride && signatureOverride.startsWith("data:image")) locCheck = signatureOverride;
-            }
-
-            const isSignatureBlankCheck = !locCheck || (!locCheck.startsWith('data:image') && !locCheck.startsWith('http') && !locCheck.includes('drive.google.com') && !locCheck.startsWith('=IMAGE'));
-
-            if (isSignatureBlankCheck) {
+            if (anyUnchecked) {
               const displayNames = studentNames.join('/');
-              setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
+              setValidationErrorMsg(`${displayNames} 님의 출결사항을 체크해 주세요!`);
               setValidationErrorIndex(i);
-              setValidationErrorType("signature");
+              setValidationErrorType("attendance");
               setShowValidationError(true);
               return false;
             }
           }
 
-          // 3. 보조강사/경로당 참여인원 수 validation
-          const targetName = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
-          if (targetName && memo !== "" && memo !== "복지관으로 이동") {
-            const headcount = (log.headcount || "").trim();
+          // 2. 싸인 누락 체크
+          if (hasCheckedAttendance && studentNames.length > 0 && isSignBlank) {
+            const displayNames = studentNames.join('/');
+            setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
+            setValidationErrorIndex(i);
+            setValidationErrorType("signature");
+            setShowValidationError(true);
+            return false;
+          }
 
-            // 숫자 전용 칸(headcount)이 입력이 안되어 있으면 팝업 출력
-            if (!/^\d+/.test(headcount)) {
-              setValidationErrorMsg(`${targetName} 참석인원을 입력해 주세요!`);
+          // 3. 인원수 누락 체크
+          if (targetNameForHeadcount && memo !== "" && memo !== "복지관으로 이동") {
+            const hc = (log.headcount || "").trim();
+            if (!/^\d+/.test(hc)) {
+              setValidationErrorMsg(`${targetNameForHeadcount} 참석인원을 입력해 주세요!`);
               setValidationErrorIndex(i);
               setValidationErrorType("headcount");
               setShowValidationError(true);
