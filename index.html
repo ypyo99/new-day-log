@@ -636,7 +636,10 @@
               )}
             </div>
           </div>
-          <div className={`relative w-full max-w-[400px] ${isDoubleHeight ? 'h-[336px]' : 'h-[140px]'} group`}>
+          <div 
+            className={`relative w-full max-w-[400px] group`}
+            style={{ aspectRatio: isDoubleHeight ? '400 / 336' : '400 / 140' }}
+          >
             <canvas
               ref={canvasRef}
               width={400}
@@ -2195,7 +2198,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260516-sign-fix
+                v260516-sign-ratio-fix
               </div>
             </div>
           </div>
