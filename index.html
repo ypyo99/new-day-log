@@ -350,70 +350,19 @@
       const [lastBase64, setLastBase64] = useState("");
       const [isSigning, setIsSigning] = useState(false);
       const hasDrawnRef = useRef(false);
-
-      // 💡 기존 싸인을 캔버스에 불러오는 함수
-      const loadSignatureToCanvas = useCallback(() => {
-        const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
-        if (!hasUrl) {
-          // URL이 없으면 오버레이 숨기고 빈 캔버스로
-          setShowSavedImg(false);
-          return;
-        }
-
-        const img = new Image();
-        if (!currentUrl.startsWith('data:')) {
-          img.crossOrigin = "anonymous";
-        }
-
-        img.onload = () => {
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          const ctx = canvas.getContext('2d');
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = '#000';
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.globalAlpha = 1.0;
-
-          // 진하게 표시하기 위해 대비 필터 + 8번 중첩 드로잉
-          ctx.filter = 'contrast(1.4) brightness(0.9)';
-          for (let i = 0; i < 8; i++) {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          }
-          ctx.filter = 'none';
-          hasDrawnRef.current = true;
-
-          // 💡 [핵심] 캔버스에 그리기가 완료된 후에 오버레이를 숨김
-          // → 이렇게 해야 "사라지는 순간"이 없음
-          setShowSavedImg(false);
-        };
-
-        img.onerror = () => {
-          setShowSavedImg(false);
-          clearCanvasInternal();
-        };
-
-        const targetUrl = getDirectImageUrl(currentUrl);
-        if (targetUrl.startsWith('data:')) {
-          img.src = targetUrl;
-        } else {
-          const connector = targetUrl.includes('?') ? '&' : '?';
-          img.src = `${targetUrl}${connector}t=${Date.now()}`;
-        }
-      }, [currentUrl]);
+      const existingImgRef = useRef(null); // 기존 싸인 이미지 사전 로드용
 
       // 💡 밸리데이션 에러 등에 의해 강제로 싸인 모드로 진입해야 할 때
       useEffect(() => {
         if (forceSign && !isSigning) {
+          clearCanvasInternal();
           setIsSigning(true);
+          hasDrawnRef.current = false;
         }
       }, [forceSign]);
 
       useEffect(() => {
-        // 💡 [핵심] 싸인 모드일 때는 오버레이 상태를 건드리지 않음
-        // → loadSignatureToCanvas가 캔버스에 그리기 완료한 후에 직접 숨김 처리함
-        if (isSigning) return;
-
+        if (isSigning) return; // 싸인 모드일 때는 오버레이 건드리지 않음
         const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
         if (hasUrl) {
           setShowSavedImg(true);
@@ -423,9 +372,17 @@
             setLastBase64(currentUrl);
             setIsImgLoading(false);
           }
+          // 기존 이미지 사전 로드 (저장 시 합성용)
+          const img = new Image();
+          if (!currentUrl.startsWith('data:')) img.crossOrigin = "anonymous";
+          img.onload = () => { existingImgRef.current = img; };
+          img.onerror = () => { existingImgRef.current = null; };
+          const targetUrl = getDirectImageUrl(currentUrl);
+          img.src = targetUrl.startsWith('data:') ? targetUrl : targetUrl;
         } else {
           setShowSavedImg(false);
           setIsImgLoading(false);
+          existingImgRef.current = null;
         }
       }, [currentUrl, isSigning]);
 
@@ -445,12 +402,9 @@
         if (canvas) {
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // ★ 캔버스 잔상 제거를 위한 강제 초기화 트릭
           const tempWidth = canvas.width;
           canvas.width = 0;
           canvas.width = tempWidth;
-
-          // 캔버스 초기화 후 스타일 재설정 (width 변경 시 초기화됨)
           ctx.lineWidth = 4;
           ctx.strokeStyle = '#000';
           ctx.lineCap = 'round';
@@ -490,13 +444,12 @@
         e.preventDefault();
         const { x, y } = getCoordinates(e);
         const ctx = canvasRef.current.getContext('2d');
-
-        // 그리기 시작 전 스타일 확인 및 설정
         ctx.lineWidth = 4;
         ctx.strokeStyle = '#000';
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-
+        ctx.globalAlpha = 1.0;
+        ctx.filter = 'none';
         ctx.beginPath();
         ctx.moveTo(x, y);
         setIsDrawing(true);
@@ -515,24 +468,43 @@
         if (!isDrawing || disabled || !isSigning) return;
         setIsDrawing(false);
         hasDrawnRef.current = true;
-        if (canvasRef.current) {
-          const base64 = canvasRef.current.toDataURL('image/png');
-          setLastBase64(base64);
-          onSave(base64);
+      };
+
+      // 💡 [핵심] 기존 이미지 + 새 획을 합성하여 base64 반환
+      const createComposite = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return "";
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const ctx = tempCanvas.getContext('2d');
+        // 1. 배경색 채우기
+        ctx.fillStyle = '#e0f2fe'; // bg-sky-100
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        // 2. 기존 싸인 이미지 그리기 (사전 로드된 이미지 사용)
+        if (existingImgRef.current) {
+          try {
+            ctx.drawImage(existingImgRef.current, 0, 0, tempCanvas.width, tempCanvas.height);
+          } catch (e) { /* CORS 오류 시 무시 */ }
         }
+        // 3. 새로 그린 획 합성
+        ctx.drawImage(canvas, 0, 0);
+        return tempCanvas.toDataURL('image/png');
       };
 
       const toggleSignMode = () => {
         if (disabled) return;
         if (!isSigning) {
-          // 💡 [핵심] 오버레이 이미지를 캔버스에 동기적으로 복사한 후 싸인 모드 진입
-          hasDrawnRef.current = false;
-          loadSignatureToCanvas();
+          // 💡 [핵심 전략] 캔버스를 비우고 투명하게 만들어 오버레이 위에 배치
+          // 기존 싸인은 오버레이 <img>로 계속 보임 → 절대 사라지지 않음!
+          clearCanvasInternal();
           setIsSigning(true);
+          hasDrawnRef.current = false;
         } else {
           setIsSigning(false);
           if (hasDrawnRef.current && canvasRef.current) {
-            const base64 = canvasRef.current.toDataURL('image/png');
+            // 기존 이미지 + 새 획을 합성
+            const base64 = createComposite();
             setLastBase64(base64);
             setShowSavedImg(true);
             onSave(base64);
@@ -540,13 +512,7 @@
               setTimeout(() => onTriggerSave(base64), 100);
             }
           } else {
-            setLastBase64("");
-            setShowSavedImg(false);
-            clearCanvasInternal();
-            onSave("");
-            if (onTriggerSave) {
-              setTimeout(() => onTriggerSave("__DELETE__"), 100);
-            }
+            // 아무것도 그리지 않았으면 기존 유지
           }
         }
       };
@@ -554,10 +520,10 @@
       const restartSign = () => {
         if (disabled) return;
         clearCanvasInternal();
-        setLastBase64("");
-        setShowSavedImg(false);
         hasDrawnRef.current = false;
-        // 지우기 버튼은 캔버스만 비우고 Signing 모드는 유지함
+        // 지우기: 오버레이도 숨겨서 완전히 새로 시작
+        setShowSavedImg(false);
+        existingImgRef.current = null;
       };
 
       // ★ 원본 복구 전용 함수
@@ -595,7 +561,6 @@
 
       const handleImgLoad = () => {
         setIsImgLoading(false);
-        // 💡 [핵심 수정] 싸인 모드일 때는 캔버스를 지우지 않음 (loadSignatureToCanvas가 그린 내용 보존)
         if (!isSigning) {
           clearCanvasInternal();
         }
@@ -644,7 +609,7 @@
               ref={canvasRef}
               width={400}
               height={isDoubleHeight ? 336 : 140}
-              className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50' : 'border-gray-200'} bg-sky-100 touch-none w-full h-full rounded-xl shadow-inner z-0 transition-all ${isSigning ? 'pointer-events-auto' : 'pointer-events-none'}`}
+              className={`absolute inset-0 border ${isSigning ? 'border-blue-300 ring-4 ring-blue-50 z-20' : 'border-gray-200 z-0'} touch-none w-full h-full rounded-xl shadow-inner transition-all ${isSigning ? 'pointer-events-auto bg-transparent' : 'pointer-events-none bg-sky-100'}`}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
