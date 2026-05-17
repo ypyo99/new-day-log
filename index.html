@@ -355,6 +355,7 @@
       const isSigningRef = useRef(false);
       const isChangedRef = useRef(false);
       const hasDrawnRef = useRef(false);
+      const originalUrlRef = useRef("");
 
       const setIsSigningWithRef = (val) => {
         isSigningRef.current = val;
@@ -533,6 +534,7 @@
         if (disabled) return;
         if (!isSigningRef.current) {
           // 💡 싸인 모드 진입
+          originalUrlRef.current = currentUrl; // 원래 싸인 복원용 백업
           isChangedRef.current = false;
           hasDrawnRef.current = false;
           loadSignatureToCanvas();
@@ -578,7 +580,7 @@
       };
 
       // ★ 원본 복구 전용 함수
-      const restoreOriginal = (e, skipRefresh = false) => {
+      const restoreOriginal = (e, skipRefresh = false, overrideUrl = null) => {
         if (e && e.stopPropagation) e.stopPropagation();
 
         // 부모로부터 전달받은 데이터 갱신 함수 호출 (시트 데이터 다시 읽기)
@@ -591,13 +593,15 @@
         clearCanvasInternal();
         hasDrawnRef.current = false;
 
+        const targetUrl = overrideUrl !== null ? overrideUrl : currentUrl;
+
         // 원본 URL 판별
-        const hasUrl = currentUrl && (currentUrl.startsWith('http') || currentUrl.startsWith('data:') || currentUrl.startsWith('=') || currentUrl.includes('drive.google.com'));
+        const hasUrl = targetUrl && (targetUrl.startsWith('http') || targetUrl.startsWith('data:') || targetUrl.startsWith('=') || targetUrl.includes('drive.google.com'));
         if (hasUrl) {
           setShowSavedImg(true);
           setIsImgLoading(false);
-          if (currentUrl.startsWith('data:')) {
-            setLastBase64(currentUrl);
+          if (targetUrl.startsWith('data:')) {
+            setLastBase64(targetUrl);
           } else {
             setLastBase64("");
           }
@@ -613,8 +617,11 @@
           isSigningRef.current = false;
           return;
         }
-        // 변경 사항이 있었으나 나가는 경우, 새로고침 없이 UI만 복구
-        restoreOriginal(null, true);
+        // 변경 사항이 있었으나 나가는 경우, 부모 상태를 원래 싸인으로 원복
+        const originalUrl = originalUrlRef.current;
+        onSave(originalUrl);
+        // 새로고침 없이 UI만 복구하며, 백업해둔 원래 싸인 URL로 복원 처리
+        restoreOriginal(null, true, originalUrl);
       };
 
       const handleImgLoad = () => {
