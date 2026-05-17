@@ -1025,6 +1025,7 @@ function recoverDeletedSignatures() {
 
     var recoveryCount = 0;
     var skipCount = 0;
+    var deleteCount = 0;
 
     // 시트 데이터 전체 로드 (성능 최적화)
     var range = sheet.getDataRange();
@@ -1055,6 +1056,8 @@ function recoverDeletedSignatures() {
         if (targetCol === -1) continue; // 해당 날짜를 시트에서 못 찾으면 패스
 
         var currentTeacher = "";
+        var isMatched = false;
+
         for (var i = 2; i < data.length; i++) {
             if (data[i][1] && data[i][1].toString().trim() !== "") {
                 currentTeacher = data[i][1].toString().trim().replace(/[^가-힣a-zA-Z0-9]/g, "");
@@ -1065,24 +1068,38 @@ function recoverDeletedSignatures() {
                 var rowShiftSafe = rowShiftRaw.replace(/[^0-9]/g, "");
 
                 if (rowShiftSafe === fShift) {
-                    var signatureCell = sheet.getRange(i + 2, targetCol); // 싸인 셀 (보통 학생명 바로 아래)
-                    var currentVal = signatureCell.getValue();
+                    // 시트 상의 학생명 가져오기
+                    var sheetStudentRaw = data[i][col] ? data[i][col].toString().trim() : "";
+                    var sheetStudentSafe = sheetStudentRaw.replace(/[^가-힣a-zA-Z0-9]/g, "");
 
-                    // 이미 값이 있으면 스킵 (중복 방지)
-                    if (currentVal && (currentVal.toString().startsWith("http") || currentVal.toString().startsWith("=IMAGE"))) {
-                        skipCount++;
-                        continue;
+                    // 파일명의 학생명과 시트 상의 학생명이 일치하는 경우에만 유효한 수업기록으로 판단
+                    if (sheetStudentSafe === fStudent && fStudent !== "") {
+                        isMatched = true;
+
+                        var signatureCell = sheet.getRange(i + 2, targetCol); // 싸인 셀 (보통 학생명 바로 아래)
+                        var currentVal = signatureCell.getValue();
+
+                        // 이미 값이 있으면 스킵 (중복 방지)
+                        if (currentVal && (currentVal.toString().startsWith("http") || currentVal.toString().startsWith("=IMAGE"))) {
+                            skipCount++;
+                        } else {
+                            // 복구 실행
+                            var imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
+                            signatureCell.setValue(imageUrl);
+                            recoveryCount++;
+                        }
+                        break;
                     }
-
-                    // 복구 실행
-                    var imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
-                    signatureCell.setValue(imageUrl);
-                    recoveryCount++;
-                    break;
                 }
             }
         }
+
+        // 해당 날짜 열이 존재하는데도 시트에서 일치하는 수업 기록을 찾지 못한 경우 (학생명 변경 등) 구글 드라이브 파일 삭제
+        if (!isMatched) {
+            file.setTrashed(true);
+            deleteCount++;
+        }
     }
 
-    ui.alert("✅ 복구 작업 완료!\n- 복구된 링크: " + recoveryCount + "개\n- 기존 유지: " + skipCount + "개");
+    ui.alert("✅ 복구 및 정리 작업 완료!\n- 복구된 링크: " + recoveryCount + "개\n- 기존 유지: " + skipCount + "개\n- 삭제된 불일치 싸인 파일: " + deleteCount + "개");
 }
