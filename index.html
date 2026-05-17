@@ -4360,11 +4360,11 @@
                               const isMultipleStudents = studentNames.length >= 2;
                               const stuLen = (row.student || "").length;
 
-                              let dynamicStuSizeClass = hasKiosk ? "text-[14px] md:text-[15px] landscape:text-[18px]" : "text-[15px] md:text-[17px] landscape:text-[19px]";
+                              let dynamicStuSizeClass = hasKiosk ? "text-[15px] md:text-[16px] landscape:text-[19px]" : "text-[16px] md:text-[18px] landscape:text-[20px]";
                               if (stuLen >= 9) {
-                                dynamicStuSizeClass = "text-[11px] min-[360px]:text-[12px] md:text-[14px] landscape:text-[16px] tracking-tighter";
+                                dynamicStuSizeClass = "text-[12px] min-[360px]:text-[13px] md:text-[15px] landscape:text-[17px] tracking-tighter";
                               } else if (stuLen >= 6) {
-                                dynamicStuSizeClass = "text-[13px] min-[360px]:text-[14px] md:text-[15px] landscape:text-[17px] tracking-tight";
+                                dynamicStuSizeClass = "text-[14px] min-[360px]:text-[15px] md:text-[16px] landscape:text-[18px] tracking-tight";
                               }
 
                               return (
