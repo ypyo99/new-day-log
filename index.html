@@ -240,6 +240,24 @@
       </svg>
     );
 
+    function getGroupWeight(group) {
+      if (!group) return 99;
+      if (group === "오전") return 1;
+      if (group === "오후") return 2;
+      const match = group.match(/(\d+)조/);
+      if (match) return parseInt(match[1]);
+      return 99;
+    }
+
+    function getShiftWeight(shift) {
+      if (!shift) return 9999;
+      const match = shift.match(/(\d+):(\d+)/);
+      if (match) {
+        return parseInt(match[1]) * 60 + parseInt(match[2]);
+      }
+      return 9999;
+    }
+
     const teamList = ["1팀", "2팀", "3팀", "취업팀"];
 
 
@@ -4321,6 +4339,24 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 }
               }
 
+              // 💡 조(Group) -> 선생님("표영" 팀장 우선, 그 외 가나다순) -> 시간(Shift) 순으로 정렬
+              parsedData.sort((a, b) => {
+                const weightA = getGroupWeight(a.group);
+                const weightB = getGroupWeight(b.group);
+                if (weightA !== weightB) return weightA - weightB;
+
+                const isLeaderA = a.teacher === "표영";
+                const isLeaderB = b.teacher === "표영";
+                if (isLeaderA && !isLeaderB) return -1;
+                if (!isLeaderA && isLeaderB) return 1;
+
+                if (a.teacher !== b.teacher) {
+                  return a.teacher.localeCompare(b.teacher);
+                }
+
+                return getShiftWeight(a.time) - getShiftWeight(b.time);
+              });
+
               for (let i = 0; i < parsedData.length; i++) {
                 parsedData[i].rowspan = { group: 1, teacher: 1, time: 1 };
                 parsedData[i].render = { group: true, teacher: true, time: true };
@@ -5785,24 +5821,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       }
     };
 
-    function getGroupWeight(group) {
-      if (!group) return 99;
-      if (group === "오전") return 1;
-      if (group === "오후") return 2;
-      const match = group.match(/(\d+)조/);
-      if (match) return parseInt(match[1]);
-      return 99;
-    }
-
-    function getShiftWeight(shift) {
-      if (!shift) return 9999;
-      const match = shift.match(/(\d+):(\d+)/);
-      if (match) {
-        return parseInt(match[1]) * 60 + parseInt(match[2]);
-      }
-      return 9999;
-    }
-
     function TeamScheduleApp({ team, onNavigateBack }) {
       const [data, setData] = useState([]);
       const [loading, setLoading] = useState(true);
@@ -5887,7 +5905,13 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         const weightB = getGroupWeight(b.groupName);
         if (weightA !== weightB) return weightA - weightB;
         
-        if (a.teacher !== b.teacher) return a.teacher.localeCompare(b.teacher);
+        if (a.teacher !== b.teacher) {
+          const isLeaderA = a.teacher === "표영";
+          const isLeaderB = b.teacher === "표영";
+          if (isLeaderA && !isLeaderB) return -1;
+          if (!isLeaderA && isLeaderB) return 1;
+          return a.teacher.localeCompare(b.teacher);
+        }
         return getShiftWeight(a.shift) - getShiftWeight(b.shift);
       });
 
