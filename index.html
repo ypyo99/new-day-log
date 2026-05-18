@@ -4383,19 +4383,14 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 }
               }
 
-              // 💡 조(Group) -> 선생님("표영" 팀장 우선, 그 외 가나다순) -> 시간(Shift) 순으로 정렬
+              // 💡 조(Group) -> 선생님(TEACHER_GROUPS 공식 조별/선생님 순서) -> 시간(Shift) 순으로 정렬
               parsedData.sort((a, b) => {
                 const weightA = getGroupWeight(a.group);
                 const weightB = getGroupWeight(b.group);
                 if (weightA !== weightB) return weightA - weightB;
 
-                const isLeaderA = a.teacher === "표영";
-                const isLeaderB = b.teacher === "표영";
-                if (isLeaderA && !isLeaderB) return -1;
-                if (!isLeaderA && isLeaderB) return 1;
-
                 if (a.teacher !== b.teacher) {
-                  return a.teacher.localeCompare(b.teacher);
+                  return getTeacherSortWeight(team, a.teacher) - getTeacherSortWeight(team, b.teacher);
                 }
 
                 return getShiftWeight(a.time) - getShiftWeight(b.time);
@@ -5925,11 +5920,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         if (weightA !== weightB) return weightA - weightB;
         
         if (a.teacher !== b.teacher) {
-          const isLeaderA = a.teacher === "표영";
-          const isLeaderB = b.teacher === "표영";
-          if (isLeaderA && !isLeaderB) return -1;
-          if (!isLeaderA && isLeaderB) return 1;
-          return a.teacher.localeCompare(b.teacher);
+          return getTeacherSortWeight(team, a.teacher) - getTeacherSortWeight(team, b.teacher);
         }
         return getShiftWeight(a.shift) - getShiftWeight(b.shift);
       });
