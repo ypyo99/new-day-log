@@ -1453,8 +1453,21 @@
           }
           const isSignBlank = !currentLoc || (!currentLoc.startsWith('data:image') && !currentLoc.startsWith('http') && !currentLoc.includes('drive.google.com') && !currentLoc.startsWith('=IMAGE'));
 
+          // [신규 추가] 2명 이상 수업 시 한 명만 출결 체크된 경우 에러 검증 (메모 여부 무관, 과거 혹은 오늘 날짜)
+          if (!isFutureDate && studentNames.length >= 2 && !hasAssistant && !isBalGul) {
+            if (checkedCount > 0 && checkedCount < studentNames.length) {
+              const displayNames = studentNames.join('/');
+              setValidationErrorMsg(`${displayNames} 님의 출결 상태를 모두 체크해 주세요! (한 명만 체크할 수 없습니다.)`);
+              setValidationErrorIndex(i);
+              setValidationErrorType("attendance");
+              setShowValidationError(true);
+              return false;
+            }
+          }
+
           // 1. 출결 누락 체크 (보조강사 및 대상자 발굴 제외, 미래 날짜 제외)
-          if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul) {
+          // 💡 [수정] 오늘 혹은 오늘 이전 날짜일 때, 메모필드가 비어 있으면 출결 체크 여부를 검증하지 않음 (강제하지 않음)
+          if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && memo !== "") {
             // 1. 전체 출결 여부 확인
             if (!hasCheckedAttendance) {
               const displayNames = studentNames.join('/');
@@ -1519,8 +1532,8 @@
               const isVacation = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("선생님휴가") : false);
               const isCancel = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("취소") : false);
 
-              // 사용자 요청: '결석', '선생님휴가', '취소'가 모두 체크되어 있지 않으면서 인원수 필드가 비어 있으면 팝업
-              if (!isGyeolseok && !isVacation && !isCancel && hc === "") {
+              // 사용자 요청: '결석', '선생님휴가', '취소'가 모두 체크되어 있지 않으면서 인원수 필드가 비어 있고, 메모필드에 내용이 있을 때만 팝업 (메모필드가 비어있으면 체크 제외)
+              if (!isGyeolseok && !isVacation && !isCancel && hc === "" && memo !== "") {
                 setValidationErrorMsg(`${targetNameForHeadcount} 참석인원 또는 출결사항을 확인해 주세요!`);
                 setValidationErrorIndex(i);
                 setValidationErrorType("headcount");
@@ -2324,7 +2337,7 @@
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-                v260517-validation
+                v260518-dual-student-validation
               </div>
             </div>
           </div>
