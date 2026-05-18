@@ -734,6 +734,9 @@
       const [isFetchingSchedule, setIsFetchingSchedule] = useState(false);
       const [isSyncing, setIsSyncing] = useState(false);
       const [isSubmitting, setIsSubmitting] = useState(false);
+      const isDataLoading = isFetchingSchedule || isSyncing || isSubmitting;
+      const [specialAlerts, setSpecialAlerts] = useState([]);
+      const [studentCounts, setStudentCounts] = useState({});
       const [records, setRecords] = useState([]);
       const [errorMessage, setErrorMessage] = useState("");
       const [showSavePopup, setShowSavePopup] = useState(false);
@@ -1773,8 +1776,6 @@
       }, [date, availableDates, allScheduleData, logs, selectedTeam, isFetchingSchedule, isSyncing, isSubmitting]);
       const minDate = availableDates.length > 0 ? availableDates[0] : "";
       const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
-
-      const isDataLoading = isFetchingSchedule || isSyncing || isSubmitting;
 
       useEffect(() => {
         if (availableDates.length === 0) return;
