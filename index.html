@@ -6060,18 +6060,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                    ======================================================== */
                 <div className="bg-white rounded-xl shadow-md border border-gray-300 overflow-hidden">
                   <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
-                    <table className="table-fixed text-center border-collapse text-[10px] sm:text-xs md:text-sm lg:text-base min-w-[900px] w-full">
+                    <table className="table-fixed text-center border-collapse text-[13px] sm:text-sm md:text-base lg:text-lg min-w-[900px] w-full">
                       <thead className="sticky top-0 z-30 bg-[#2b5ce6] text-white">
                         <tr>
-                          <th className="border border-gray-300 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-gray-700 bg-gray-100 text-[10px] sm:text-xs md:text-sm lg:text-base">연번</th>
-                          <th className="border border-gray-300 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-gray-700 bg-gray-100 text-[10px] sm:text-xs md:text-sm lg:text-base">성명</th>
-                          <th className="border border-gray-300 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-gray-700 bg-gray-100 text-[10px] sm:text-xs md:text-sm lg:text-base">시간</th>
+                          <th className="border border-gray-300 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-gray-700 bg-gray-100 text-[13px] sm:text-sm md:text-base lg:text-lg">연번</th>
+                          <th className="border border-gray-300 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-gray-700 bg-gray-100 text-[13px] sm:text-sm md:text-base lg:text-lg">성명</th>
+                          <th className="border border-gray-300 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-gray-700 bg-gray-100 text-[13px] sm:text-sm md:text-base lg:text-lg">시간</th>
                           {uniqueDates.map(dateStr => {
                              const m = dateStr.split('-')[1];
                              const d = dateStr.split('-')[2];
                              const dayName = getDayName(dateStr);
                              return (
-                               <th key={dateStr} className="border border-gray-300 py-2 w-[90px] sm:w-[105px] md:w-[120px] lg:w-[135px] font-bold text-sky-900 bg-sky-50 break-keep text-[10px] sm:text-xs md:text-sm lg:text-base">
+                               <th key={dateStr} className="border border-gray-300 py-2 w-[90px] sm:w-[105px] md:w-[120px] lg:w-[135px] font-bold text-sky-900 bg-sky-50 break-keep text-[13px] sm:text-sm md:text-base lg:text-lg">
                                  {parseInt(m)}/{parseInt(d)}<br />({dayName})
                                </th>
                              );
@@ -6089,19 +6089,19 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                              : (isNewTeacher ? { borderTop: '2px solid #64748b' } : (isNewShift ? { borderTop: '1px solid #cbd5e1' } : {}));
 
                            return (
-                             <tr key={idx} className="hover:bg-blue-50/40 bg-white" style={{ ...borderStyle, height: '32px' }}>
+                             <tr key={idx} className="hover:bg-blue-50/40 bg-white" style={{ ...borderStyle, height: '36px' }}>
                                {row.renderGroup && (
-                                 <td className="border border-gray-300 font-extrabold text-gray-800 bg-gray-50/80 align-middle py-1.5 px-0.5 text-[10px] sm:text-xs md:text-sm lg:text-base" rowSpan={row.rowspanGroup}>
+                                 <td className="border border-gray-300 font-extrabold text-gray-800 bg-gray-50/80 align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanGroup}>
                                    {row.groupName}
                                  </td>
                                )}
                                {row.renderTeacher && (
-                                 <td className="border border-gray-300 font-bold text-gray-800 bg-white align-middle py-1.5 px-0.5 text-[10px] sm:text-xs md:text-sm lg:text-base" rowSpan={row.rowspanTeacher}>
+                                 <td className="border border-gray-300 font-bold text-gray-800 bg-white align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanTeacher}>
                                    {row.teacher}
                                  </td>
                                )}
                                {row.renderShift && (
-                                 <td className="border border-gray-300 text-gray-700 font-bold align-middle py-1.5 px-0.5 text-[9px] sm:text-[11px] md:text-xs lg:text-[14px] bg-white" rowSpan={row.rowspanShift}>
+                                 <td className="border border-gray-300 text-gray-700 font-bold align-middle py-1.5 px-0.5 text-[12px] sm:text-[13px] md:text-sm lg:text-base bg-white" rowSpan={row.rowspanShift}>
                                    {row.shift}
                                  </td>
                                )}
@@ -6119,31 +6119,31 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                    if (isHoliday) {
                                      if (row.category === "대상") {
                                        cellContent = item.student || '공휴일';
-                                       cellClass = "bg-red-700 text-white font-extrabold text-[9px] sm:text-[10px] md:text-xs lg:text-sm py-1 px-1";
+                                       cellClass = "bg-red-700 text-white font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                      } else if (row.category === "장소") {
                                        cellContent = item.location || '공휴일';
-                                       cellClass = "bg-red-700 text-white font-extrabold text-[11px] py-1 px-1";
+                                       cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                      } else if (row.category === "진행") {
                                        cellContent = item.status || '공휴일';
-                                       cellClass = "bg-red-700 text-white font-extrabold text-[11px] py-1 px-1";
+                                       cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                      }
                                    } else {
                                      if (row.category === "대상") {
                                        cellContent = item.student || '';
                                        if (item.student?.includes('보조강사')) {
-                                         cellClass = "bg-yellow-300 text-gray-950 font-extrabold text-[9px] sm:text-[10px] md:text-xs lg:text-sm py-1 px-1";
+                                         cellClass = "bg-yellow-300 text-gray-950 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                        } else if (item.student) {
                                          cellClass = "text-gray-950 font-bold bg-white";
                                        }
                                      } else if (row.category === "장소") {
                                        if (item.signature_url) {
                                          cellContent = (
-                                           <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-extrabold hover:text-blue-800">서명 보기</a>
+                                           <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-[12px] sm:text-[13px] md:text-sm lg:text-base font-extrabold hover:text-blue-800">서명 보기</a>
                                          );
                                          cellClass = "bg-white";
                                        } else {
                                          cellContent = (
-                                           <span className="text-gray-600 font-medium truncate max-w-[75px] sm:max-w-[95px] lg:max-w-[125px] block mx-auto text-[9px] sm:text-[11px] md:text-xs lg:text-sm">
+                                           <span className="text-gray-600 font-medium truncate max-w-[75px] sm:max-w-[95px] lg:max-w-[125px] block mx-auto text-[11px] sm:text-[13px] md:text-sm lg:text-base">
                                              {item.location || ''}
                                            </span>
                                          );
@@ -6164,7 +6164,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                  }
                                  
                                  return (
-                                   <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[10px] sm:text-xs md:text-sm lg:text-[15px] ${cellClass}`} style={{ height: '32px' }}>{cellContent || '\u00A0'}
+                                   <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] ${cellClass}`} style={{ height: '36px' }}>{cellContent || '\u00A0'}
                                    </td>
                                  );
                                })}
