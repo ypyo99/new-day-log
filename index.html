@@ -4601,7 +4601,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           ) : (
                             scheduleData.map((row, index) => {
                               const isNewTeacher = index > 0 && row.render.teacher;
-                              const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
+                              const isNewTime = index > 0 && row.render.time && !row.render.teacher;
+                               const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : (isNewTime ? { borderTop: '2px solid #93c5fd' } : {});
 
                               const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
 
