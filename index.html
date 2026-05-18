@@ -4011,13 +4011,13 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         touchStartY.current = null;
       };
 
-      const [rawData, setRawData] = useState({ csv: "", sign: {} });
+      const [rawData, setRawData] = useState({ csv: "", sign: {}, supabaseRecords: [] });
 
       const fetchTeamData = useCallback(async (teamName, displayDate) => {
         if (!teamName) return;
         setIsLoading(true);
         setScheduleData([]);
-        setRawData({ csv: "", sign: {} });
+        setRawData({ csv: "", sign: {}, supabaseRecords: [] });
 
         try {
           const baseUrl = SHEET_URLS[teamName] || SHEET_URLS["1팀"];
@@ -4026,9 +4026,17 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const csvRes = await fetch(`${exportUrl}&t=${Date.now()}`);
           const csvText = await csvRes.text();
 
-          // 취업팀 싸인 데이터는 CSV 파싱 과정에서 currentLocation(장소/싸인 행)을 통해 이미 수집됨
+          // Supabase에서 해당 날짜, 해당 팀의 최신 레코드 페치
+          const dateStr = getLocalDateString(displayDate);
+          const { data: supabaseRecords, error: supabaseError } = await window.supabaseClient
+            .from('daily_logs')
+            .select('*')
+            .eq('team', teamName)
+            .eq('log_date', dateStr);
 
-          setRawData({ csv: csvText, sign: {} });
+          if (supabaseError) throw supabaseError;
+
+          setRawData({ csv: csvText, sign: {}, supabaseRecords: supabaseRecords || [] });
         } catch (error) {
           console.error("데이터 로드 에러:", error);
           setNotice("⚠️ 데이터를 가져오지 못했습니다.");
@@ -4373,6 +4381,16 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         finalStatus = (finalStatus ? finalStatus + ", " : "") + specialDayInfo.memo;
                       }
                       isSpecialSlot = true;
+                    }
+                  }
+
+                  // Supabase 데이터가 있다면 최신 데이터로 최종 덮어씌움
+                  if (rawData.supabaseRecords && rawData.supabaseRecords.length > 0) {
+                    const supRec = rawData.supabaseRecords.find(r => r.teacher === currentTeacher && r.shift === currentTime);
+                    if (supRec) {
+                      finalStu = supRec.student !== undefined && supRec.student !== null ? supRec.student : finalStu;
+                      finalLoc = supRec.signature_url || supRec.location || finalLoc;
+                      finalStatus = supRec.status !== undefined && supRec.status !== null ? supRec.status : finalStatus;
                     }
                   }
 
@@ -5398,6 +5416,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [sheetRange, setSheetRange] = useState({ min: null, max: null });
       const [notice, setNotice] = useState("");
       const [cachedCsv, setCachedCsv] = useState("");
+      const [supabaseRecords, setSupabaseRecords] = useState([]);
 
       const weekDays = ['월', '화', '수', '목', '금'];
       const [timeSlots, setTimeSlots] = useState([]);
@@ -5478,6 +5497,38 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             setIsLoading(false);
           });
       }, [team]);
+
+      // 1.5 주간 Supabase 데이터 페칭 (요일 범위나 팀, 선생님 변경 시)
+      useEffect(() => {
+        if (!team || !teacher || !currentWeekStart) return;
+
+        const fetchWeeklySupabase = async () => {
+          try {
+            const days = getCurrentWeekDays();
+            const startStr = getLocalDateString(days[0]);
+            const endStr = getLocalDateString(days[4]);
+
+            let query = window.supabaseClient
+              .from('daily_logs')
+              .select('*')
+              .eq('team', team)
+              .gte('log_date', startStr)
+              .lte('log_date', endStr);
+            
+            if (teacher !== "__ALL__") {
+              query = query.eq('teacher', teacher);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            setSupabaseRecords(data || []);
+          } catch (e) {
+            console.error("주간 Supabase 데이터 로드 실패:", e);
+          }
+        };
+
+        fetchWeeklySupabase();
+      }, [team, teacher, currentWeekStart]);
 
       // 2. 데이터 파싱 (CSV 데이터, 선생님, 또는 주간 시작일이 바뀔 때)
       useEffect(() => {
@@ -5608,6 +5659,16 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         }
                       }
 
+                      // Supabase 데이터가 있다면 최신 데이터로 최종 덮어씌움
+                      if (supabaseRecords && supabaseRecords.length > 0) {
+                        const supRec = supabaseRecords.find(r => r.log_date === dateStr && r.shift === timeKey && r.teacher === teacher);
+                        if (supRec) {
+                          finalStu = supRec.student !== undefined && supRec.student !== null ? supRec.student : finalStu;
+                          finalLoc = supRec.signature_url || supRec.location || finalLoc;
+                          finalStatus = supRec.status !== undefined && supRec.status !== null ? supRec.status : finalStatus;
+                        }
+                      }
+
                       parsedData[timeKey][dateStr] = {
                         student: finalStu,
                         location: finalLoc,
@@ -5627,7 +5688,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             setScheduleData(parsedData);
           }
         });
-      }, [cachedCsv, teacher, currentWeekStart]);
+      }, [cachedCsv, teacher, currentWeekStart, supabaseRecords]);
 
       const getStatusColorClass = (statusStr) => {
         if (!statusStr) return "text-gray-800";
