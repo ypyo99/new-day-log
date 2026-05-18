@@ -6086,7 +6086,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                            
                            const borderStyle = isNewGroup 
                              ? { borderTop: '2.5px solid #334155' } 
-                             : (isNewTeacher ? { borderTop: '2px solid #64748b' } : (isNewShift ? { borderTop: '1px solid #cbd5e1' } : {}));
+                             : (isNewTeacher ? { borderTop: '2px solid #64748b' } : (isNewShift ? { borderTop: '1.5px solid #93c5fd' } : {}));
 
                            return (
                              <tr key={idx} className="hover:bg-blue-50/40 bg-white" style={{ ...borderStyle, height: '36px' }}>
