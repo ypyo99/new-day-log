@@ -228,6 +228,16 @@ function saveLog(p) {
                     var locationCell = sheet.getRange(i + 2, targetCol);
                     var statusCell = sheet.getRange(i + 3, targetCol);
 
+                    // 취업팀에서 대상자 이름(student)이 빈값인 경우, 기존 싸인 삭제 처리 및 전체 필드 초기화
+                    if (p.team.indexOf("취업팀") !== -1 && (!p.student || p.student.trim() === "")) {
+                        var originalLocation = locationCell.getValue() ? locationCell.getValue().toString().trim() : "";
+                        if (originalLocation) {
+                            deleteDriveFileByUrl(originalLocation);
+                        }
+                        p.location = "";
+                        p.status = "";
+                    }
+
                     // 데이터 저장
                     studentCell.setValue(p.student);
                     locationCell.setValue(p.location);
@@ -357,6 +367,17 @@ function saveLogBatch(p) {
 
                     var finalLocation = item.location || "";
                     
+                    // 취업팀에서 대상자 이름(student)이 빈값인 경우, 기존 싸인 삭제 처리 및 전체 필드 초기화
+                    if (p.team.indexOf("취업팀") !== -1 && (!item.student || item.student.trim() === "")) {
+                        var originalLocation = locationCell.getValue() ? locationCell.getValue().toString().trim() : "";
+                        if (originalLocation) {
+                            deleteDriveFileByUrl(originalLocation);
+                        }
+                        finalLocation = "";
+                        item.status = "";
+                        item.signatureData = null; // 드라이브 추가 업로드 패스
+                    }
+
                     // 싸인 데이터 처리 (취업팀 등)
                     if (item.signatureData) {
                         var uploadRes = uploadSignatureToDrive(p.date, p.teacher, item.shift, item.student, item.signatureData);
@@ -698,6 +719,16 @@ function handleSignatureUpload(p) {
                     var studentCell = sheet.getRange(i + 1, targetCol);
                     var signatureCell = sheet.getRange(i + 2, targetCol); // 싸인 들어갈 셀
                     var statusCell = sheet.getRange(i + 3, targetCol);
+
+                    // 취업팀에서 대상자 이름(student)이 빈값인 경우, 기존 싸인 삭제 처리 및 전체 필드 초기화
+                    if (p.team.indexOf("취업팀") !== -1 && (!p.student || p.student.trim() === "")) {
+                        var originalLocation = signatureCell.getValue() ? signatureCell.getValue().toString().trim() : "";
+                        if (originalLocation) {
+                            deleteDriveFileByUrl(originalLocation);
+                        }
+                        imageUrl = "";
+                        p.status = "";
+                    }
 
                     // 데이터 저장
                     studentCell.setValue(p.student);
@@ -1102,4 +1133,40 @@ function recoverDeletedSignatures() {
     }
 
     ui.alert("✅ 복구 및 정리 작업 완료!\n- 복구된 링크: " + recoveryCount + "개\n- 기존 유지: " + skipCount + "개\n- 삭제된 불일치 싸인 파일: " + deleteCount + "개");
+}
+
+// =========================================================================
+// [추가] 구글 드라이브 파일 삭제 관련 헬퍼 함수
+// =========================================================================
+function extractFileIdFromUrl(url) {
+    if (!url) return null;
+    var fileId = null;
+    if (url.indexOf('drive.google.com/file/d/') !== -1) {
+        var match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) fileId = match[1];
+    } else if (url.indexOf('drive.google.com/uc') !== -1) {
+        var match = url.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) fileId = match[1];
+    } else if (url.indexOf('drive.google.com/open?id=') !== -1) {
+        var match = url.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) fileId = match[1];
+    }
+    return fileId;
+}
+
+function deleteDriveFileByUrl(url) {
+    try {
+        var fileId = extractFileIdFromUrl(url);
+        if (fileId) {
+            var file = DriveApp.getFileById(fileId);
+            if (file) {
+                file.setTrashed(true); // 휴지통으로 이동
+                Logger.log("성공적으로 드라이브 파일을 휴지통으로 이동함: " + fileId);
+                return true;
+            }
+        }
+    } catch (e) {
+        Logger.log("드라이브 파일 삭제 실패 (" + url + "): " + e.toString());
+    }
+    return false;
 }

@@ -193,7 +193,7 @@
 
 
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzoeFaLqmzvy_TLNV-xxU-QPTJpz6T4AnRjsN7KMdjwK07a-p0H3SNcRAIm1RJdZGWXmw/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtz2B3wl9Bk3AgoPEO9Jz3PkPRAJEq11N28YW8fZC4x3oVo0ls1p9rkUxMEnL7_ak5Hg/exec";
 
 
 
@@ -1461,7 +1461,7 @@
               const isKyungrodangEntry = displayNames.includes("경로당");
               const msg = isKyungrodangEntry
                 ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
-                : `${displayNames} 님의 출결사항을 체크해 주세요!`;
+                : `${displayNames} 님의 [출결 버튼]을 체크해 주세요!`;
 
               setValidationErrorMsg(msg);
               setValidationErrorIndex(i);
@@ -1481,7 +1481,7 @@
               const isKyungrodangEntry = displayNames.includes("경로당");
               const msg = isKyungrodangEntry
                 ? `${displayNames} 님 참석인원 또는 출결사항을 확인해 주세요!`
-                : `${displayNames} 님의 출결사항을 체크해 주세요!`;
+                : `${displayNames} 님의 [출결 버튼]을 체크해 주세요!`;
 
               setValidationErrorMsg(msg);
               setValidationErrorIndex(i);
@@ -1537,7 +1537,7 @@
                 // 인원체크 건너뜀
               } else {
                 if (!/^\d+/.test(hc)) {
-                  setValidationErrorMsg(`${targetNameForHeadcount} 수업 내용이 있으면 참석인원을 입력해야 합니다.`);
+                  setValidationErrorMsg(`${targetNameForHeadcount} 수업 내용이 있으면 왼쪽의 [인원] 입력란에 참석인원을 입력해야 합니다.`);
                   setValidationErrorIndex(i);
                   setValidationErrorType("headcount");
                   setShowValidationError(true);
@@ -2041,7 +2041,25 @@
       };
 
       const handleLogChange = (index, field, value) => {
-        setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
+        if (field === 'student' && (!value || value.trim() === "")) {
+          // 대상자 이름이 블랭크가 되면 출결(추결) 버튼, 메모, 인원수, 싸인 데이터를 모두 초기화
+          setLogs(prev => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              student: "",
+              selectedTags: [[]],
+              memo: "",
+              headcount: "",
+              location: ""
+            }
+          }));
+          const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
+          window.localStorage.removeItem(backupKey);
+        } else {
+          setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
+        }
+
         if (validationErrorIndex === index) setValidationErrorIndex(null);
 
         // 💡 [추가] 메모 데이터 실시간 로컬 저장 (백업)
@@ -5061,7 +5079,7 @@
           const weekEnd = new Date(newDate);
           weekEnd.setDate(weekEnd.getDate() + 4);
           if (weekEnd < sheetRange.min || newDate > sheetRange.max) {
-            setNotice("⚠️ 더 이상 이동할 수 없습니다. (시트 데이터 범위 초과)");
+            setNotice("⚠️ 더 이상 데이터가 없습니다.");
             setTimeout(() => setNotice(""), 3000);
             return;
           }
