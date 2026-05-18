@@ -273,8 +273,9 @@
 
     function getTeacherSortWeight(team, teacher) {
       if (!TEACHER_GROUPS || !TEACHER_GROUPS[team]) return 999;
+      const cleanTeacher = (teacher || "").trim().replace(/[\s\n\r]/g, "");
       const keys = Object.keys(TEACHER_GROUPS[team]);
-      const idx = keys.indexOf(teacher);
+      const idx = keys.findIndex(k => k.trim().replace(/[\s\n\r]/g, "") === cleanTeacher);
       return idx !== -1 ? idx : 999;
     }
 
@@ -969,7 +970,10 @@
           try {
             const parsed = JSON.parse(cachedTeachers);
             if (parsed && parsed.length > 0) {
-              setTeachers(parsed);
+              const sortedCached = parsed.sort((a, b) => {
+                return getTeacherSortWeight(selectedTeam, a) - getTeacherSortWeight(selectedTeam, b);
+              });
+              setTeachers(sortedCached);
               return;
             }
           } catch (e) { }
