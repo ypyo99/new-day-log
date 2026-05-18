@@ -4390,7 +4390,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 if (weightA !== weightB) return weightA - weightB;
 
                 if (a.teacher !== b.teacher) {
-                  return getTeacherSortWeight(team, a.teacher) - getTeacherSortWeight(team, b.teacher);
+                  return getTeacherSortWeight(selectedTeam, a.teacher) - getTeacherSortWeight(selectedTeam, b.teacher);
                 }
 
                 return getShiftWeight(a.time) - getShiftWeight(b.time);
