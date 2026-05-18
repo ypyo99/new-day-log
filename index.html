@@ -5873,6 +5873,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           if (records) {
              setData(records);
              const tSet = new Set();
+             // 💡 [신규] 해당 팀의 TEACHER_GROUPS 기본 선생님 목록을 디폴트로 무조건 포함시킴!
+             if (TEACHER_GROUPS && TEACHER_GROUPS[team]) {
+               Object.keys(TEACHER_GROUPS[team]).forEach(t => tSet.add(t));
+             }
              records.forEach(r => { if (r.teacher) tSet.add(r.teacher); });
              setUniqueTeachers(Array.from(tSet).sort((a, b) => {
                return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
@@ -5913,15 +5917,32 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const uniqueDates = Array.from(new Set(filteredData.map(item => item.log_date))).sort();
 
       const teacherShiftsMap = {};
-      filteredData.forEach(item => {
-        const key = `${item.teacher}::${item.shift}`;
-        if (!teacherShiftsMap[key]) {
+      
+      // 💡 [신규] 해당 팀이 '취업팀'인 경우, 공식 교사 4명의 기본 행(디폴트 시간대 포함)을 무조건 먼저 생성해 둠!
+      if (team === "취업팀" && TEACHER_GROUPS["취업팀"]) {
+        Object.entries(TEACHER_GROUPS["취업팀"]).forEach(([t, g]) => {
+          const defaultShift = "9:30~10:30";
+          const key = `${t}::${defaultShift}`;
           teacherShiftsMap[key] = {
-            teacher: item.teacher,
-            shift: item.shift,
-            groupName: (TEACHER_GROUPS[team] && TEACHER_GROUPS[team][item.teacher]) || "기타"
+            teacher: t,
+            shift: defaultShift,
+            groupName: g
           };
+        });
+      }
+
+      filteredData.forEach(item => {
+        // 💡 [필터링] 취업팀 화면에서는 취업팀 공식 멤버가 아닌 강사(예: test_teacher 등)는 배제함!
+        if (team === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
+          return;
         }
+
+        const key = `${item.teacher}::${item.shift}`;
+        teacherShiftsMap[key] = {
+          teacher: item.teacher,
+          shift: item.shift,
+          groupName: (TEACHER_GROUPS[team] && TEACHER_GROUPS[team][item.teacher]) || "기타"
+        };
       });
 
       const sortedTeacherShifts = Object.values(teacherShiftsMap).sort((a, b) => {
