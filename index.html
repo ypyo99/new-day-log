@@ -944,13 +944,21 @@
           if (error) throw error;
           
           let fetchedTeachers = [];
-          if (data && data.length > 0) {
-            const teacherSet = new Set();
-            data.forEach(row => { if (row.teacher) teacherSet.add(row.teacher); });
-            fetchedTeachers = Array.from(teacherSet).sort((a, b) => {
-              return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
-            });
+          const teacherSet = new Set();
+
+          // 💡 [신규] TEACHER_GROUPS에 설정된 해당 팀 소속 기본 교사 목록을 디폴트로 자동 주입함
+          if (TEACHER_GROUPS && TEACHER_GROUPS[team]) {
+            Object.keys(TEACHER_GROUPS[team]).forEach(t => teacherSet.add(t));
           }
+
+          if (data && data.length > 0) {
+            data.forEach(row => { if (row.teacher) teacherSet.add(row.teacher); });
+          }
+
+          fetchedTeachers = Array.from(teacherSet).sort((a, b) => {
+            return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
+          });
+
           if (fetchedTeachers.length === 0) {
             fetchedTeachers = ["이름입력(직접타이핑)"]; 
           }
@@ -969,7 +977,8 @@
         if (cachedTeachers) {
           try {
             const parsed = JSON.parse(cachedTeachers);
-            if (parsed && parsed.length > 0) {
+            // 💡 [보완] 캐시에 단순 '이름입력(직접타이핑)'만 들어있어 교사 목록이 빈 깡통 상태인 경우엔 캐시를 무시하고 새로 패치함!
+            if (parsed && parsed.length > 0 && !(parsed.length === 1 && parsed[0] === "이름입력(직접타이핑)")) {
               const sortedCached = parsed.sort((a, b) => {
                 return getTeacherSortWeight(selectedTeam, a) - getTeacherSortWeight(selectedTeam, b);
               });
