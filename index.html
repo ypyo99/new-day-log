@@ -243,6 +243,41 @@
       </svg>
     );
 
+    // 교사 및 팀별 조 정보 매핑 (상단 이동)
+    const TEACHER_GROUPS = {
+      "1팀": {
+        "김종철": "1조", "이근홍": "1조",
+        "김성수": "2조", "이혜섭": "2조",
+        "이성호": "3조", "김영송": "3조",
+        "권오삼": "4조", "육수영": "4조",
+        "천은선": "5조", "서승희": "5조"
+      },
+      "2팀": {
+        "표영": "1조", "주청자": "1조",
+        "김겸숙": "2조", "이광범": "2조",
+        "박정숙": "3조", "백응현": "3조",
+        "권용의": "4조", "김향숙": "4조"
+      },
+      "3팀": {
+        "강계환": "1조", "박선화": "1조",
+        "윤성배": "2조", "천은선": "2조",
+        "이근수": "3조", "서승희": "3조",
+        "이현숙": "4조", "김용하": "4조",
+        "강미영": "5조", "김금미": "5조"
+      },
+      "취업팀": {
+        "이수인": "오전", "강유정": "오전",
+        "전성주": "오후", "차미혜": "오후"
+      }
+    };
+
+    function getTeacherSortWeight(team, teacher) {
+      if (!TEACHER_GROUPS || !TEACHER_GROUPS[team]) return 999;
+      const keys = Object.keys(TEACHER_GROUPS[team]);
+      const idx = keys.indexOf(teacher);
+      return idx !== -1 ? idx : 999;
+    }
+
     function getGroupWeight(group) {
       if (!group) return 99;
       if (group === "오전") return 1;
@@ -911,7 +946,9 @@
           if (data && data.length > 0) {
             const teacherSet = new Set();
             data.forEach(row => { if (row.teacher) teacherSet.add(row.teacher); });
-            fetchedTeachers = Array.from(teacherSet);
+            fetchedTeachers = Array.from(teacherSet).sort((a, b) => {
+              return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
+            });
           }
           if (fetchedTeachers.length === 0) {
             fetchedTeachers = ["이름입력(직접타이핑)"]; 
@@ -5796,33 +5833,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
     // =====================================================================
     // 🖥️ 신규: 팀 별 전체 일정 보기 프로그램
     // =====================================================================
-    // 교사 및 팀별 조 정보 매핑
-    const TEACHER_GROUPS = {
-      "1팀": {
-        "김종철": "1조", "이근홍": "1조",
-        "김성수": "2조", "이혜섭": "2조",
-        "이성호": "3조", "김영송": "3조",
-        "권오삼": "4조", "육수영": "4조",
-        "천은선": "5조", "서승희": "5조"
-      },
-      "2팀": {
-        "표영": "1조", "주청자": "1조",
-        "김겸숙": "2조", "이광범": "2조",
-        "박정숙": "3조", "백응현": "3조",
-        "권용의": "4조", "김향숙": "4조"
-      },
-      "3팀": {
-        "강계환": "1조", "박선화": "1조",
-        "윤성배": "2조", "천은선": "2조",
-        "이근수": "3조", "서승희": "3조",
-        "이현숙": "4조", "김용하": "4조",
-        "강미영": "5조", "김금미": "5조"
-      },
-      "취업팀": {
-        "이수인": "오전", "강유정": "오전",
-        "전성주": "오후", "차미혜": "오후"
-      }
-    };
 
     function TeamScheduleApp({ team, onNavigateBack }) {
       const [data, setData] = useState([]);
@@ -5855,7 +5865,9 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
              setData(records);
              const tSet = new Set();
              records.forEach(r => { if (r.teacher) tSet.add(r.teacher); });
-             setUniqueTeachers(Array.from(tSet).sort());
+             setUniqueTeachers(Array.from(tSet).sort((a, b) => {
+               return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
+             }));
           }
         } catch (e) {
           console.error("데이터 로딩 실패:", e);
