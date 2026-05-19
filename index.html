@@ -5377,11 +5377,11 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       });
 
       return (
-        <div className="max-w-7xl mx-auto min-h-screen bg-gray-50 flex flex-col font-sans sm:px-0 lg:px-4 lg:py-6">
-          <div className="bg-white lg:rounded-2xl lg:shadow-xl lg:border lg:border-blue-100 flex-1 flex flex-col overflow-hidden relative">
+        <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans">
+          <div className="bg-white flex-1 flex flex-col overflow-hidden relative">
             {/* Header */}
             <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative">
-              <div className="max-w-7xl mx-auto px-4 pb-3 pt-3 flex justify-between items-start">
+              <div className="w-full px-4 pb-3 pt-3 flex justify-between items-start">
                 <div>
                   <div className="flex items-center mb-1">
                     <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
@@ -5440,7 +5440,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             </div>
 
             {/* 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-1 bg-slate-50">
               {loading ? (
                 <div className="flex flex-col items-center justify-center h-40 text-blue-500">
                   <RotateCcw className="w-8 h-8 animate-spin mb-3" />
@@ -5697,55 +5697,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   })}
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // 셀 편집 서브컴포넌트 (훅 규칙 준수를 위해 분리)
-    function CellEditModal({ editCell, onSave, onCancel }) {
-      const dayNames = ['', '월', '화', '수', '목', '금'];
-      const [tempStudent, setTempStudent] = useState(editCell.student);
-      const [tempLocation, setTempLocation] = useState(editCell.location);
-      return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-2xl p-7 max-w-sm w-full mx-4 animate-fadeIn">
-            <div className="mb-5">
-              <h3 className="text-base font-black text-gray-800 mb-1">✏️ 셀 수정</h3>
-              <p className="text-xs text-gray-400 font-bold">
-                {editCell.teacherName} · {editCell.shift} · {dayNames[editCell.dayNum]}요일
-              </p>
-              <p className="text-[10px] text-amber-600 mt-1 font-bold">⚠️ 같은 요일의 모든 날짜에 일괄 적용됩니다.</p>
-            </div>
-            <div className="space-y-3 mb-6">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">대상자명</label>
-                <input
-                  type="text"
-                  value={tempStudent}
-                  onChange={e => setTempStudent(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') onSave(tempStudent.trim(), tempLocation.trim()); }}
-                  placeholder="대상자 이름 입력"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">장소</label>
-                <input
-                  type="text"
-                  value={tempLocation}
-                  onChange={e => setTempLocation(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') onSave(tempStudent.trim(), tempLocation.trim()); }}
-                  placeholder="장소 입력"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={onCancel} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-extrabold rounded-xl hover:bg-gray-200 transition-colors text-sm">취소</button>
-              <button onClick={() => onSave(tempStudent.trim(), tempLocation.trim())} className="flex-1 py-2.5 bg-indigo-600 text-white font-extrabold rounded-xl hover:bg-indigo-700 transition-colors shadow-md text-sm">저장</button>
             </div>
           </div>
         </div>
@@ -6240,31 +6191,89 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             const student = cell.student.trim();
                             const location = cell.location.trim();
                             
+                            const isEditing = editCell
+                              && editCell.teacherName === teacherName
+                              && editCell.dayNum === dayNum
+                              && editCell.shift === shift;
+
                             const isHighlight = student && (student.includes("보조강사") || student.includes("컴기초") || student.includes("스마트폰"));
                             const isExclude = student && EXCLUDE_KEYWORDS.some(kw => student.includes(kw));
                             
-                            let cellBg = "bg-white";
-                            if (isHighlight) cellBg = "bg-yellow-100";
-                            else if (isExclude) cellBg = "bg-gray-100 text-gray-400";
+                            let cellBg = isEditing ? "bg-indigo-50" : "bg-white";
+                            if (!isEditing && isHighlight) cellBg = "bg-yellow-100";
+                            else if (!isEditing && isExclude) cellBg = "bg-gray-100 text-gray-400";
                             
                             const borderClass = isLastShift ? 'border-b-2 border-gray-400' : 'border-b border-gray-200';
                             
                             return (
                               <td
                                 key={dayNum}
-                                onClick={() => setEditCell({ teacherName, dayNum, shift, student, location })}
-                                className={`py-3.5 px-2 border-r border-gray-400 ${borderClass} align-middle ${cellBg} min-w-[120px] cursor-pointer group relative`}
+                                onClick={() => { if (!isEditing) setEditCell({ teacherName, dayNum, shift, student, location }); }}
+                                className={`border-r border-gray-400 ${borderClass} align-top ${cellBg} min-w-[120px] ${isEditing ? 'p-1' : 'py-3.5 px-2 cursor-pointer group relative'}`}
                               >
-                                <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-60 text-gray-400 text-[10px]">✏️</span>
-                                {student ? (
-                                  <div>
-                                    <div className={`font-black text-gray-800 text-[13px] ${isExclude ? 'text-gray-400 font-bold' : ''}`}>{student}</div>
-                                    {location && !location.startsWith("http") && (
-                                      <div className="text-[10px] text-gray-500 mt-1 font-bold">{location}</div>
-                                    )}
+                                {isEditing ? (
+                                  <div className="flex flex-col gap-1">
+                                    <input
+                                      type="text"
+                                      defaultValue={student}
+                                      id={`edit-student-${teacherName}-${dayNum}-${shift}`}
+                                      placeholder="대상자명"
+                                      autoFocus
+                                      onKeyDown={e => {
+                                        if (e.key === 'Escape') { setEditCell(null); }
+                                        if (e.key === 'Enter') {
+                                          const s = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`)?.value.trim() ?? '';
+                                          const l = document.getElementById(`edit-loc-${teacherName}-${dayNum}-${shift}`)?.value.trim() ?? '';
+                                          handleCellEdit(teacherName, dayNum, shift, s, l);
+                                        }
+                                      }}
+                                      className="w-full px-2 py-1 border border-indigo-400 rounded-lg text-[12px] font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    />
+                                    <input
+                                      type="text"
+                                      defaultValue={location.startsWith('http') ? '' : location}
+                                      id={`edit-loc-${teacherName}-${dayNum}-${shift}`}
+                                      placeholder="장소"
+                                      onKeyDown={e => {
+                                        if (e.key === 'Escape') { setEditCell(null); }
+                                        if (e.key === 'Enter') {
+                                          const s = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`)?.value.trim() ?? '';
+                                          const l = document.getElementById(`edit-loc-${teacherName}-${dayNum}-${shift}`)?.value.trim() ?? '';
+                                          handleCellEdit(teacherName, dayNum, shift, s, l);
+                                        }
+                                      }}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-[11px] text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                                    />
+                                    <div className="flex gap-1 mt-0.5">
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setEditCell(null); }}
+                                        className="flex-1 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded font-bold hover:bg-gray-200"
+                                      >취소</button>
+                                      <button
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          const s = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`)?.value.trim() ?? '';
+                                          const l = document.getElementById(`edit-loc-${teacherName}-${dayNum}-${shift}`)?.value.trim() ?? '';
+                                          handleCellEdit(teacherName, dayNum, shift, s, l);
+                                        }}
+                                        className="flex-1 py-0.5 text-[10px] bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700"
+                                      >저장</button>
+                                    </div>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-300 font-normal italic">-</span>
+                                  <>
+                                    <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-50 text-gray-400 text-[10px]">✏️</span>
+                                    {student ? (
+                                      <div>
+                                        <div className={`font-black text-gray-800 text-[13px] ${isExclude ? 'text-gray-400 font-bold' : ''}`}>{student}</div>
+                                        {location && !location.startsWith("http") && (
+                                          <div className="text-[10px] text-gray-500 mt-1 font-bold">{location}</div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-300 font-normal italic">-</span>
+                                    )}
+                                  </>
                                 )}
                               </td>
                             );
@@ -6347,14 +6356,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               </div>
             )}
 
-            {/* ── 셀 편집 모달 ── */}
-            {editCell && (
-              <CellEditModal
-                editCell={editCell}
-                onSave={(newStudent, newLocation) => handleCellEdit(editCell.teacherName, editCell.dayNum, editCell.shift, newStudent, newLocation)}
-                onCancel={() => setEditCell(null)}
-              />
-            )}
           </main>
         </div>
       );
