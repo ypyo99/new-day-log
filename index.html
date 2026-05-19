@@ -6161,17 +6161,17 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </div>
 
                 <div className="overflow-x-auto border border-gray-200 rounded-xl mb-6 scrollbar-thin">
-                  <table className="w-full text-center border-collapse text-xs border border-gray-400">
+                  <table className="w-full text-center border-collapse text-xs border border-gray-600">
                     <thead>
                       <tr className="bg-blue-50 text-blue-900 font-black border-b border-gray-300 sticky top-0 z-10 text-[13px]">
-                        <th className="py-3 px-2 border-r border-gray-400 w-16">조</th>
-                        <th className="py-3 px-2 border-r border-gray-400 w-24">선생님</th>
-                        <th className="py-3 px-2 border-r border-gray-400 w-28">시간</th>
-                        <th className="py-3 px-2 border-r border-gray-400">월요일</th>
-                        <th className="py-3 px-2 border-r border-gray-400">화요일</th>
-                        <th className="py-3 px-2 border-r border-gray-400">수요일</th>
-                        <th className="py-3 px-2 border-r border-gray-400">목요일</th>
-                        <th className="py-3 px-2 border-r border-gray-400">금요일</th>
+                        <th className="py-3 px-2 border-r border-gray-600 w-16">조</th>
+                        <th className="py-3 px-2 border-r border-gray-600 w-24">선생님</th>
+                        <th className="py-3 px-2 border-r border-gray-600 w-28">시간</th>
+                        <th className="py-3 px-2 border-r border-gray-600">월요일</th>
+                        <th className="py-3 px-2 border-r border-gray-600">화요일</th>
+                        <th className="py-3 px-2 border-r border-gray-600">수요일</th>
+                        <th className="py-3 px-2 border-r border-gray-600">목요일</th>
+                        <th className="py-3 px-2 border-r border-gray-600">금요일</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-300 font-semibold">
@@ -6183,8 +6183,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         return tData.shifts.map((shift, sIdx) => {
                           const isLastShift = sIdx === shiftsCount - 1;
                           
-                          const renderRowspanGroup = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-400 border-b-2 border-gray-400 bg-gray-50/50 font-bold align-middle whitespace-nowrap">{tData.group}</td> : null;
-                          const renderRowspanTeacher = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-400 border-b-2 border-gray-400 bg-gray-50/50 font-bold text-indigo-700 align-middle whitespace-nowrap text-[13px]">{teacherName}</td> : null;
+                          const renderRowspanGroup = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-600 border-b-2 border-gray-400 bg-gray-50/50 font-bold align-middle whitespace-nowrap">{tData.group}</td> : null;
+                          const renderRowspanTeacher = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-600 border-b-2 border-gray-400 bg-gray-50/50 font-bold text-indigo-700 align-middle whitespace-nowrap text-[13px]">{teacherName}</td> : null;
                           
                           const daysCells = [1, 2, 3, 4, 5].map(dayNum => {
                             const cell = tData.days[dayNum]?.[shift] || { student: "", location: "" };
@@ -6209,7 +6209,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                               <td
                                 key={dayNum}
                                 onClick={() => { if (!isEditing) setEditCell({ teacherName, dayNum, shift, student, location }); }}
-                                className={`border-r border-gray-400 ${borderClass} align-top ${cellBg} min-w-[120px] ${isEditing ? 'p-1' : 'py-3.5 px-2 cursor-pointer group relative'}`}
+                                className={`border-r border-gray-600 ${borderClass} align-top ${cellBg} min-w-[120px] ${isEditing ? 'p-1' : 'py-3.5 px-2 cursor-pointer group relative'}`}
                               >
                                 {isEditing ? (
                                   <input
@@ -6260,7 +6260,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             <tr key={`${teacherName}-${shift}`} className="hover:bg-gray-50/30">
                               {renderRowspanGroup}
                               {renderRowspanTeacher}
-                              <td className={`py-3 px-2 border-r border-gray-400 ${timeBorderClass} text-blue-800 font-extrabold whitespace-nowrap bg-blue-50/30 align-middle text-[11px]`}>{shift}</td>
+                              <td className={`py-3 px-2 border-r border-gray-600 ${timeBorderClass} text-blue-800 font-extrabold whitespace-nowrap bg-blue-50/30 align-middle text-[11px]`}>{shift}</td>
                               {daysCells}
                             </tr>
                           );
