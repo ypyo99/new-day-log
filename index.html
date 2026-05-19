@@ -994,7 +994,7 @@
     // =====================================================================
     // 🖥️ 1. 메인 업무일지 프로그램
     // =====================================================================
-    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule, onNavigateToTeamSchedule, onNavigateToTeacherManagement }) {
+    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule, onNavigateToTeamSchedule, onNavigateToTeacherManagement, onNavigateToAutoSchedule }) {
       const [selectedTeam, setSelectedTeam] = useState(() => getSavedItem('sungdong_team', ""));
       const [currentUser, setCurrentUser] = useState(() => getSavedItem('sungdong_teacher', ""));
       const [date, setDate] = useState(() => getInitialWeekday());
@@ -2473,6 +2473,10 @@
 
                 <button onClick={onNavigateToTeacherManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-600 border-2 border-indigo-700 hover:bg-indigo-700 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
                   <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
+                </button>
+
+                <button onClick={onNavigateToAutoSchedule} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-600 border-2 border-rose-700 hover:bg-rose-700 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
+                  <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 자동 작성
                 </button>
               </div>
 
@@ -5699,6 +5703,663 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       );
     }
 
+    // 셀 편집 서브컴포넌트 (훅 규칙 준수를 위해 분리)
+    function CellEditModal({ editCell, onSave, onCancel }) {
+      const dayNames = ['', '월', '화', '수', '목', '금'];
+      const [tempStudent, setTempStudent] = useState(editCell.student);
+      const [tempLocation, setTempLocation] = useState(editCell.location);
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl p-7 max-w-sm w-full mx-4 animate-fadeIn">
+            <div className="mb-5">
+              <h3 className="text-base font-black text-gray-800 mb-1">✏️ 셀 수정</h3>
+              <p className="text-xs text-gray-400 font-bold">
+                {editCell.teacherName} · {editCell.shift} · {dayNames[editCell.dayNum]}요일
+              </p>
+              <p className="text-[10px] text-amber-600 mt-1 font-bold">⚠️ 같은 요일의 모든 날짜에 일괄 적용됩니다.</p>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">대상자명</label>
+                <input
+                  type="text"
+                  value={tempStudent}
+                  onChange={e => setTempStudent(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') onSave(tempStudent.trim(), tempLocation.trim()); }}
+                  placeholder="대상자 이름 입력"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">장소</label>
+                <input
+                  type="text"
+                  value={tempLocation}
+                  onChange={e => setTempLocation(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') onSave(tempStudent.trim(), tempLocation.trim()); }}
+                  placeholder="장소 입력"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onCancel} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-extrabold rounded-xl hover:bg-gray-200 transition-colors text-sm">취소</button>
+              <button onClick={() => onSave(tempStudent.trim(), tempLocation.trim())} className="flex-1 py-2.5 bg-indigo-600 text-white font-extrabold rounded-xl hover:bg-indigo-700 transition-colors shadow-md text-sm">저장</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================================
+    // 📅 6. 시간표 자동 작성 컴포넌트 (신규)
+    // =====================================================================
+    function AutoScheduleApp({ onNavigateBack }) {
+      const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${yyyy}-${mm}-01`;
+      });
+      const [endDate, setEndDate] = useState(() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + 2);
+        d.setDate(0);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      });
+      const [team, setTeam] = useState("1팀");
+      const [analyzing, setAnalyzing] = useState(false);
+      const [baseWeekDates, setBaseWeekDates] = useState([]);
+      const [draftRecords, setDraftRecords] = useState([]);
+      const [scheduleTemplates, setScheduleTemplates] = useState({}); // 요일별 미리보기용 템플릿
+      const [saving, setSaving] = useState(false);
+      const [progressMsg, setProgressMsg] = useState("");
+      const [notice, setNotice] = useState("");
+      const [previewFilter, setPreviewFilter] = useState("ALL");
+      const [showConfirmModal, setShowConfirmModal] = useState(false);
+      const [showSuccessModal, setShowSuccessModal] = useState(false);
+      const [editCell, setEditCell] = useState(null); // { teacherName, dayNum, shift, student, location }
+
+      const getPrevMonthLastWeek = (startDateStr) => {
+        const date = new Date(startDateStr);
+        date.setMonth(date.getMonth() - 1);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        
+        const weekdays = [];
+        let d = new Date(year, month + 1, 0);
+        while (weekdays.length < 5) {
+          const day = d.getDay();
+          if (day !== 0 && day !== 6) {
+            weekdays.push(new Date(d));
+          }
+          d.setDate(d.getDate() - 1);
+        }
+        weekdays.sort((a, b) => a - b);
+        return weekdays.map(d => {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        });
+      };
+
+      const getWeekdaysInRange = (startStr, endStr) => {
+        const list = [];
+        let curr = new Date(startStr);
+        const end = new Date(endStr);
+        while (curr <= end) {
+          const day = curr.getDay();
+          if (day !== 0 && day !== 6) {
+            const yyyy = curr.getFullYear();
+            const mm = String(curr.getMonth() + 1).padStart(2, '0');
+            const dd = String(curr.getDate()).padStart(2, '0');
+            list.push(`${yyyy}-${mm}-${dd}`);
+          }
+          curr.setDate(curr.getDate() + 1);
+        }
+        return list;
+      };
+
+      const getShiftWeight = (shift) => {
+        const m = shift.match(/(\d+):(\d+)/);
+        return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 0;
+      };
+
+      const getGroupWeight = (groupName) => {
+        if (!groupName) return 99;
+        if (groupName.includes("1조") || groupName.includes("A조")) return 1;
+        if (groupName.includes("2조") || groupName.includes("B조")) return 2;
+        if (groupName.includes("3조") || groupName.includes("C조")) return 3;
+        return 99;
+      };
+
+      const handleAnalyze = async () => {
+        if (!startDate || !endDate) {
+          alert("시작일자와 종료일자를 선택해주세요.");
+          return;
+        }
+        if (new Date(startDate) > new Date(endDate)) {
+          alert("시작일자는 종료일자보다 빠르거나 같아야 합니다.");
+          return;
+        }
+        
+        setAnalyzing(true);
+        setNotice("");
+        setDraftRecords([]);
+        setScheduleTemplates({});
+        setPreviewFilter("ALL");
+        setProgressMsg("선생님 명단 및 복제 기준 주간 계산 중...");
+        
+        try {
+          const { data: teacherList, error: tErr } = await window.supabaseClient
+            .from('teachers')
+            .select('*')
+            .eq('team', team);
+          
+          if (tErr) throw tErr;
+          if (!teacherList || teacherList.length === 0) {
+            setNotice(`⚠️ ${team}에 등록된 선생님이 없습니다.`);
+            setAnalyzing(false);
+            return;
+          }
+          
+          const teacherNames = teacherList.map(t => t.name.trim());
+          const baseDates = getPrevMonthLastWeek(startDate);
+          setBaseWeekDates(baseDates);
+          
+          setProgressMsg("기준 주간의 수업 기록 분석 중...");
+          let baseLogs = [];
+          const { data, error } = await window.supabaseClient
+            .from('daily_logs')
+            .select('*')
+            .eq('team', team)
+            .in('log_date', baseDates);
+          if (error) throw error;
+          baseLogs = data || [];
+          
+          const templates = {};
+          teacherNames.forEach(name => {
+            templates[name] = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+          });
+          
+          const previewTemplates = {};
+          
+          setProgressMsg("공휴일 및 휴강 일정 역추적 분석 중...");
+          const EXCLUDE_KEYWORDS = ["공휴일", "대체공휴일", "근로자의날", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "선거일", "간담회", "소양교육", "자체학습", "휴가", "휴강", "준비", "자체학습"];
+          
+          for (const teacherName of teacherNames) {
+            const teacherObj = teacherList.find(t => t.name.trim() === teacherName);
+            const tGroup = teacherObj.group_name || TEACHER_GROUPS[team]?.[teacherName] || "기타";
+            const shifts = [teacherObj.shift1, teacherObj.shift2, teacherObj.shift3].map(s => (s || "").trim()).filter(Boolean);
+            
+            previewTemplates[teacherName] = {
+              group: tGroup,
+              shifts: shifts,
+              days: { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} }
+            };
+            
+            for (let dayOfWeek = 1; dayOfWeek <= 5; dayOfWeek++) {
+              // 인덱스가 아닌, 실제 요일(getDay())이 일치하는 날짜를 찾습니다
+              const baseDate = baseDates.find(dateStr => {
+                const d = new Date(dateStr);
+                return d.getDay() === dayOfWeek;
+              });
+              
+              if (!baseDate) continue; // 해당 요일이 기준 주에 없으면 스킵
+              
+              let dayRecords = baseLogs.filter(l => l.teacher.trim() === teacherName && l.log_date === baseDate);
+              
+              let hasReal = dayRecords.some(r => {
+                const s = (r.student || "").trim();
+                return s && !EXCLUDE_KEYWORDS.some(kw => s.includes(kw));
+              });
+              
+              let targetRecords = dayRecords;
+              
+              if (!hasReal) {
+                let fallbackDate = baseDate;
+                for (let attempt = 1; attempt <= 5; attempt++) {
+                  const d = new Date(fallbackDate);
+                  d.setDate(d.getDate() - 7);
+                  
+                  const yyyy = d.getFullYear();
+                  const mm = String(d.getMonth() + 1).padStart(2, '0');
+                  const dd = String(d.getDate()).padStart(2, '0');
+                  fallbackDate = `${yyyy}-${mm}-${dd}`;
+                  
+                  const { data: fbRecords, error: fbErr } = await window.supabaseClient
+                    .from('daily_logs')
+                    .select('*')
+                    .eq('team', team)
+                    .eq('teacher', teacherName)
+                    .eq('log_date', fallbackDate);
+                  
+                  if (!fbErr && fbRecords && fbRecords.length > 0) {
+                    const fbHasReal = fbRecords.some(r => {
+                      const s = (r.student || "").trim();
+                      return s && !EXCLUDE_KEYWORDS.some(kw => s.includes(kw));
+                    });
+                    if (fbHasReal) {
+                      targetRecords = fbRecords;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              shifts.forEach(shift => {
+                const match = targetRecords.find(r => r.shift.trim() === shift);
+                const student = match ? (match.student || "") : "";
+                const location = match ? (match.signature_url || match.location || "") : "";
+                
+                templates[teacherName][dayOfWeek][shift] = {
+                  student: student,
+                  location: location
+                };
+                
+                previewTemplates[teacherName].days[dayOfWeek][shift] = {
+                  student: student,
+                  location: location
+                };
+              });
+            }
+          }
+          
+          setProgressMsg("대상 기간 시간표 드래프트 작성 중...");
+          const targetDates = getWeekdaysInRange(startDate, endDate);
+          const drafts = [];
+          
+          targetDates.forEach(dateStr => {
+            const d = new Date(dateStr);
+            const dayOfWeek = d.getDay();
+            
+            teacherList.forEach(t => {
+              const teacherName = t.name.trim();
+              const shifts = [t.shift1, t.shift2, t.shift3].map(s => (s || "").trim()).filter(Boolean);
+              
+              shifts.forEach(shift => {
+                const temp = templates[teacherName][dayOfWeek]?.[shift];
+                const student = temp ? temp.student : "";
+                const location = temp ? temp.location : "";
+                
+                const isUrl = location.startsWith("http");
+                const finalLocation = team === '취업팀' ? "" : (isUrl ? "" : location);
+                
+                drafts.push({
+                  team: team,
+                  log_date: dateStr,
+                  teacher: teacherName,
+                  shift: shift,
+                  student: student,
+                  location: finalLocation,
+                  status: "",
+                  signature_url: null
+                });
+              });
+            });
+          });
+          
+          drafts.sort((a, b) => {
+            if (a.log_date !== b.log_date) return a.log_date.localeCompare(b.log_date);
+            
+            const groupA = TEACHER_GROUPS[team]?.[a.teacher] || "기타";
+            const groupB = TEACHER_GROUPS[team]?.[b.teacher] || "기타";
+            const weightA = getGroupWeight(groupA);
+            const weightB = getGroupWeight(groupB);
+            if (weightA !== weightB) return weightA - weightB;
+            
+            if (a.teacher !== b.teacher) {
+              return getTeacherSortWeight(team, a.teacher) - getTeacherSortWeight(team, b.teacher);
+            }
+            
+            return getShiftWeight(a.shift) - getShiftWeight(b.shift);
+          });
+          
+          setDraftRecords(drafts);
+          setScheduleTemplates(previewTemplates);
+          if (drafts.length === 0) {
+            setNotice("⚠️ 작성할 수 있는 일정이 존재하지 않습니다.");
+          }
+        } catch (err) {
+          console.error(err);
+          setNotice("⚠️ 분석 중 오류가 발생했습니다: " + err.message);
+        } finally {
+          setAnalyzing(false);
+        }
+      };
+
+      const handleCellEdit = (teacherName, dayNum, shift, newStudent, newLocation) => {
+        // scheduleTemplates 업데이트
+        setScheduleTemplates(prev => {
+          const updated = JSON.parse(JSON.stringify(prev));
+          if (!updated[teacherName].days[dayNum]) updated[teacherName].days[dayNum] = {};
+          updated[teacherName].days[dayNum][shift] = { student: newStudent, location: newLocation };
+          return updated;
+        });
+        // draftRecords 업데이트 (같은 teacher + shift + 요일(getDay)인 모든 레코드)
+        setDraftRecords(prev => prev.map(r => {
+          if (r.teacher !== teacherName || r.shift !== shift) return r;
+          const d = new Date(r.log_date);
+          if (d.getDay() !== dayNum) return r;
+          return { ...r, student: newStudent, location: newLocation };
+        }));
+        setEditCell(null);
+      };
+
+      const handleSave = async () => {
+        if (draftRecords.length === 0) return;
+        setShowConfirmModal(false);
+        setSaving(true);
+        setProgressMsg("시간표 저장을 준비 중입니다...");
+        
+        try {
+          const chunkSize = 500;
+          let saved = 0;
+          for (let i = 0; i < draftRecords.length; i += chunkSize) {
+            const chunk = draftRecords.slice(i, i + chunkSize);
+            saved = Math.min(i + chunkSize, draftRecords.length);
+            setProgressMsg(`Supabase에 시간표 반영 중... (${saved} / ${draftRecords.length}건)`);
+            
+            const { error } = await window.supabaseClient
+              .from('daily_logs')
+              .upsert(chunk, { onConflict: 'team,log_date,teacher,shift' });
+            
+            if (error) throw error;
+          }
+          
+          setProgressMsg("저장 완료!");
+          setSaving(false);
+          setShowSuccessModal(true);
+        } catch (err) {
+          console.error(err);
+          setSaving(false);
+          setProgressMsg("");
+          setNotice("⚠️ 시간표 저장 중 오류가 발생했습니다: " + err.message);
+        }
+      };
+
+      const EXCLUDE_KEYWORDS = ["공휴일", "대체공휴일", "근로자의날", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "선거일", "간담회", "소양교육", "자체학습", "휴가", "휴강", "준비", "자체학습"];
+
+      const sortedTeacherNames = Object.keys(scheduleTemplates).sort((a, b) => {
+        const groupA = scheduleTemplates[a].group;
+        const groupB = scheduleTemplates[b].group;
+        const weightA = getGroupWeight(groupA);
+        const weightB = getGroupWeight(groupB);
+        if (weightA !== weightB) return weightA - weightB;
+        
+        return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
+      });
+
+      const filteredTeachers = previewFilter === "ALL" 
+        ? sortedTeacherNames 
+        : sortedTeacherNames.filter(name => name === previewFilter);
+
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
+          <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative shrink-0">
+            <div className="flex items-center">
+              <div className="flex flex-col">
+                <div className="flex items-center mb-1">
+                  <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+                  <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
+                </div>
+                <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
+                <p className="text-base opacity-95 flex items-center mt-1 font-bold">
+                  <LucideCalendar className="w-4 h-4 mr-1" /> 시간표 자동 작성
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onNavigateBack}
+              className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95"
+            >
+              <Home className="w-5 h-5 mb-1" /> 처음으로
+            </button>
+          </header>
+
+          <main className="flex-1 px-4 sm:px-6 md:px-8 pt-4 pb-12 w-full max-w-7xl mx-auto overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6 max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-4 gap-3">
+                <h2 className="text-lg font-bold text-gray-800">자동 작성 대상 기간 및 팀 선택</h2>
+                <button
+                  onClick={handleAnalyze}
+                  disabled={analyzing || saving}
+                  className="px-6 py-2.5 bg-blue-600 text-white font-extrabold rounded-xl shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-base shrink-0"
+                >
+                  {analyzing ? '분석 중...' : '시간표 분석 및 미리보기'}
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">시작일자</label>
+                  <input 
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => setStartDate(e.target.value)} 
+                    className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">종료일자</label>
+                  <input 
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => setEndDate(e.target.value)} 
+                    className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">팀 선택</label>
+                  <select 
+                    value={team} 
+                    onChange={(e) => setTeam(e.target.value)} 
+                    className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    <option value="1팀">1팀</option>
+                    <option value="2팀">2팀</option>
+                    <option value="3팀">3팀</option>
+                    <option value="취업팀">취업팀</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {(analyzing || saving) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-6 text-center shadow-sm max-w-4xl mx-auto">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                <p className="font-bold text-blue-800 text-base">{progressMsg}</p>
+              </div>
+            )}
+
+            {notice && (
+              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-6 text-center text-orange-700 font-bold shadow-sm max-w-4xl mx-auto">
+                {notice}
+              </div>
+            )}
+
+            {!analyzing && draftRecords.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 animate-fadeIn w-full">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-4 gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-800">작성될 시간표 미리보기 ({team})</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      기준 주간: {baseWeekDates[0]} ~ {baseWeekDates[baseWeekDates.length - 1]} (월~금)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-bold text-gray-700">선생님 필터:</label>
+                    <select
+                      value={previewFilter}
+                      onChange={(e) => setPreviewFilter(e.target.value)}
+                      className="p-1.5 border border-gray-300 rounded-lg text-xs bg-white font-bold"
+                    >
+                      <option value="ALL">전체 보기</option>
+                      {sortedTeacherNames.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto border border-gray-200 rounded-xl mb-6 scrollbar-thin">
+                  <table className="w-full text-center border-collapse text-xs border border-gray-400">
+                    <thead>
+                      <tr className="bg-blue-50 text-blue-900 font-black border-b border-gray-300 sticky top-0 z-10 text-[13px]">
+                        <th className="py-3 px-2 border-r border-gray-400 w-16">조</th>
+                        <th className="py-3 px-2 border-r border-gray-400 w-24">선생님</th>
+                        <th className="py-3 px-2 border-r border-gray-400 w-28">시간</th>
+                        <th className="py-3 px-2 border-r border-gray-400">월요일</th>
+                        <th className="py-3 px-2 border-r border-gray-400">화요일</th>
+                        <th className="py-3 px-2 border-r border-gray-400">수요일</th>
+                        <th className="py-3 px-2 border-r border-gray-400">목요일</th>
+                        <th className="py-3 px-2 border-r border-gray-400">금요일</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-300 font-semibold">
+                      {filteredTeachers.map((teacherName) => {
+                        const tData = scheduleTemplates[teacherName];
+                        const shiftsCount = tData.shifts.length;
+                        if (shiftsCount === 0) return null;
+                        
+                        return tData.shifts.map((shift, sIdx) => {
+                          const isLastShift = sIdx === shiftsCount - 1;
+                          
+                          const renderRowspanGroup = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-400 border-b-2 border-gray-400 bg-gray-50/50 font-bold align-middle whitespace-nowrap">{tData.group}</td> : null;
+                          const renderRowspanTeacher = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-400 border-b-2 border-gray-400 bg-gray-50/50 font-bold text-indigo-700 align-middle whitespace-nowrap text-[13px]">{teacherName}</td> : null;
+                          
+                          const daysCells = [1, 2, 3, 4, 5].map(dayNum => {
+                            const cell = tData.days[dayNum]?.[shift] || { student: "", location: "" };
+                            const student = cell.student.trim();
+                            const location = cell.location.trim();
+                            
+                            const isHighlight = student && (student.includes("보조강사") || student.includes("컴기초") || student.includes("스마트폰"));
+                            const isExclude = student && EXCLUDE_KEYWORDS.some(kw => student.includes(kw));
+                            
+                            let cellBg = "bg-white";
+                            if (isHighlight) cellBg = "bg-yellow-100";
+                            else if (isExclude) cellBg = "bg-gray-100 text-gray-400";
+                            
+                            const borderClass = isLastShift ? 'border-b-2 border-gray-400' : 'border-b border-gray-200';
+                            
+                            return (
+                              <td
+                                key={dayNum}
+                                onClick={() => setEditCell({ teacherName, dayNum, shift, student, location })}
+                                className={`py-3.5 px-2 border-r border-gray-400 ${borderClass} align-middle ${cellBg} min-w-[120px] cursor-pointer group relative`}
+                              >
+                                <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-60 text-gray-400 text-[10px]">✏️</span>
+                                {student ? (
+                                  <div>
+                                    <div className={`font-black text-gray-800 text-[13px] ${isExclude ? 'text-gray-400 font-bold' : ''}`}>{student}</div>
+                                    {location && !location.startsWith("http") && (
+                                      <div className="text-[10px] text-gray-500 mt-1 font-bold">{location}</div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-300 font-normal italic">-</span>
+                                )}
+                              </td>
+                            );
+                          });
+                          
+                          const timeBorderClass = isLastShift ? 'border-b-2 border-gray-400' : 'border-b border-gray-200';
+                          
+                          return (
+                            <tr key={`${teacherName}-${shift}`} className="hover:bg-gray-50/30">
+                              {renderRowspanGroup}
+                              {renderRowspanTeacher}
+                              <td className={`py-3 px-2 border-r border-gray-400 ${timeBorderClass} text-blue-800 font-extrabold whitespace-nowrap bg-blue-50/30 align-middle text-[11px]`}>{shift}</td>
+                              {daysCells}
+                            </tr>
+                          );
+                        });
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 max-w-4xl mx-auto">
+                  <p className="text-xs text-yellow-800 leading-relaxed font-bold">
+                    💡 <b>안내</b>: 실제 DB에 저장하기 전에 위의 스케줄이 올바른지 확인해 주세요.
+                    <br />수업 희망자가 없는 빈 시간대는 빈 공간으로 자동 준비되며, 저장 완료 시 기존 데이터베이스에 이전에 저장된 스케줄과 중복되더라도 자동으로 병합/덮어쓰기(upsert) 처리됩니다.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3 max-w-4xl mx-auto">
+                  <button
+                    onClick={() => setShowConfirmModal(true)}
+                    disabled={saving}
+                    className="px-6 py-3 bg-indigo-600 text-white font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
+                  >
+                    {saving ? '시간표 저장 중...' : '검토 완료 및 시간표 반영'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── 확인 모달 ── */}
+            {showConfirmModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-fadeIn">
+                  <div className="text-center mb-6">
+                    <div className="text-4xl mb-3">📋</div>
+                    <h3 className="text-lg font-black text-gray-800 mb-2">시간표 작성 확인</h3>
+                    <p className="text-sm text-gray-600 font-bold">이 일정으로 시간표를 작성하시겠습니까?</p>
+                    <p className="text-xs text-gray-400 mt-2">{team} · 총 {draftRecords.length}건의 일정이 DB에 반영됩니다.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowConfirmModal(false)}
+                      className="flex-1 py-3 bg-gray-100 text-gray-700 font-extrabold rounded-xl hover:bg-gray-200 transition-colors"
+                    >취소</button>
+                    <button
+                      onClick={handleSave}
+                      className="flex-1 py-3 bg-indigo-600 text-white font-extrabold rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
+                    >확인</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── 완료 모달 ── */}
+            {showSuccessModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-fadeIn">
+                  <div className="text-center mb-6">
+                    <div className="text-5xl mb-3">✅</div>
+                    <h3 className="text-lg font-black text-gray-800 mb-2">완료!</h3>
+                    <p className="text-sm text-gray-700 font-bold">시간표 작성이 완료되었습니다!</p>
+                    <p className="text-xs text-gray-400 mt-2">{team}의 시간표가 성공적으로 저장되었습니다.</p>
+                  </div>
+                  <button
+                    onClick={() => { setShowSuccessModal(false); onNavigateBack(); }}
+                    className="w-full py-3 bg-indigo-600 text-white font-extrabold rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
+                  >확인</button>
+                </div>
+              </div>
+            )}
+
+            {/* ── 셀 편집 모달 ── */}
+            {editCell && (
+              <CellEditModal
+                editCell={editCell}
+                onSave={(newStudent, newLocation) => handleCellEdit(editCell.teacherName, editCell.dayNum, editCell.shift, newStudent, newLocation)}
+                onCancel={() => setEditCell(null)}
+              />
+            )}
+          </main>
+        </div>
+      );
+    }
+
     function RootApp() {
       const [currentView, setCurrentView] = useState(() => getSessionItem('sungdong_current_view', 'main'));
       const [selectedTeamForSchedule, setSelectedTeamForSchedule] = useState(() => getSavedItem('sungdong_schedule_team', ''));
@@ -5732,6 +6393,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         return <TeacherManagementApp onNavigateBack={() => setCurrentView('main')} />;
       }
 
+      if (currentView === 'autoSchedule') {
+        return <AutoScheduleApp onNavigateBack={() => setCurrentView('main')} />;
+      }
+
       return <MainApp
         onNavigateToClassroom={() => setCurrentView('classroom')}
         onNavigateToDailySchedule={(team) => {
@@ -5752,6 +6417,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           setCurrentView('teamSchedule');
         }}
         onNavigateToTeacherManagement={() => setCurrentView('teacherManagement')}
+        onNavigateToAutoSchedule={() => setCurrentView('autoSchedule')}
       />;
     }
 
