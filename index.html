@@ -719,9 +719,272 @@
     };
 
     // =====================================================================
+    // 🖥️ 0. 선생님 명단 관리 프로그램
+    // =====================================================================
+    function TeacherManagementApp({ onNavigateBack }) {
+      const [teachers, setTeachers] = useState([]);
+      const [isEditing, setIsEditing] = useState(false);
+      const [currentId, setCurrentId] = useState(null);
+      const [isLoading, setIsLoading] = useState(false);
+      const [formData, setFormData] = useState({
+        team: '1팀',
+        group: '1조',
+        seq_num: '',
+        name: '',
+        shift1: '9:30~10:30',
+        shift2: '10:30~11:30',
+        shift3: '11:30~12:30'
+      });
+
+      const fetchTeachers = async () => {
+        setIsLoading(true);
+        try {
+          const { data, error } = await window.supabaseClient.from('teachers').select('*').order('team').order('group_name').order('seq_num').order('name');
+          if (error) throw error;
+          const formatted = data.map(t => ({
+             id: t.id,
+             team: t.team,
+             group: t.group_name || '',
+             seq_num: t.seq_num || '',
+             name: t.name,
+             shift1: t.shift1 || '',
+             shift2: t.shift2 || '',
+             shift3: t.shift3 || ''
+          }));
+          setTeachers(formatted);
+          window.localStorage.setItem('sungdong_teacher_list', JSON.stringify(formatted));
+        } catch (e) {
+          console.error("Error fetching teachers:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchTeachers();
+      }, []);
+
+      const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => {
+          const next = { ...prev, [name]: value };
+          if (name === 'team') {
+            if (value === '3팀') {
+              next.shift1 = '13:00~14:00';
+              next.shift2 = '14:00~15:00';
+              next.shift3 = '15:00~16:00';
+            } else {
+              next.shift1 = '9:30~10:30';
+              next.shift2 = '10:30~11:30';
+              next.shift3 = '11:30~12:30';
+            }
+          }
+          return next;
+        });
+      };
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.name.trim()) {
+          alert('이름을 입력해주세요.');
+          return;
+        }
+
+        const payload = {
+          team: formData.team,
+          group_name: formData.group,
+          seq_num: formData.seq_num ? parseInt(formData.seq_num, 10) : null,
+          name: formData.name,
+          shift1: formData.shift1,
+          shift2: formData.shift2,
+          shift3: formData.shift3
+        };
+
+        setIsLoading(true);
+        try {
+          if (isEditing && currentId) {
+            const { error } = await window.supabaseClient.from('teachers').update(payload).eq('id', currentId);
+            if (error) throw error;
+          } else {
+            const { error } = await window.supabaseClient.from('teachers').insert([payload]);
+            if (error) throw error;
+          }
+          await fetchTeachers();
+          const nextSeq = !isEditing && formData.seq_num ? (parseInt(formData.seq_num, 10) + 1).toString() : '';
+          setFormData(prev => ({
+            ...prev,
+            name: '',
+            seq_num: nextSeq
+          }));
+          setIsEditing(false);
+          setCurrentId(null);
+        } catch(err) {
+          console.error(err);
+          alert('저장에 실패했습니다.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const handleEdit = (teacher) => {
+        setFormData({
+          team: teacher.team,
+          group: teacher.group,
+          seq_num: teacher.seq_num || '',
+          name: teacher.name,
+          shift1: teacher.shift1 || '',
+          shift2: teacher.shift2 || '',
+          shift3: teacher.shift3 || ''
+        });
+        setCurrentId(teacher.id);
+        setIsEditing(true);
+      };
+
+      const handleDelete = async (id) => {
+        if (window.confirm('정말 삭제하시겠습니까?')) {
+          setIsLoading(true);
+          try {
+             const { error } = await window.supabaseClient.from('teachers').delete().eq('id', id);
+             if (error) throw error;
+             await fetchTeachers();
+          } catch(err) {
+             console.error(err);
+             alert('삭제에 실패했습니다.');
+          } finally {
+             setIsLoading(false);
+          }
+        }
+      };
+
+      const myTeam = getSavedItem('sungdong_team', '미선택');
+      const myTeacher = getSavedItem('sungdong_teacher', '선생님');
+
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
+          <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative shrink-0">
+            <div className="flex items-center">
+              <div className="flex flex-col">
+                <div className="flex items-center mb-1">
+                  <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+                  <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
+                </div>
+                <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
+                <p className="text-base opacity-95 flex items-center mt-1 font-bold">
+                  <User className="w-4 h-4 mr-1" /> 선생님 명단 관리
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onNavigateBack}
+              className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95"
+            >
+              <Home className="w-5 h-5 mb-1" /> 처음으로
+            </button>
+          </header>
+
+          <main className="flex-1 px-4 sm:px-6 md:px-8 pt-4 pb-12 w-full max-w-4xl mx-auto overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                  <h2 className="text-lg font-bold text-gray-800">
+                    {isEditing ? '선생님 정보 수정' : '새 선생님 등록'}
+                  </h2>
+                  <div className="flex gap-2">
+                    {isEditing && (
+                      <button type="button" onClick={() => { setIsEditing(false); setCurrentId(null); setFormData({ team: '1팀', group: '1조', seq_num: '', name: '', shift1: '9:30~10:30', shift2: '10:30~11:30', shift3: '11:30~12:30' }); }} className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors">
+                        취소
+                      </button>
+                    )}
+                    <button type="submit" disabled={isLoading} className="px-3 py-1.5 text-sm bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                      {isLoading ? '처리중...' : (isEditing ? '수정 저장' : '새로 등록')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  <div>
+                    <select name="team" value={formData.team} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base">
+                      <option value="1팀">1팀</option>
+                      <option value="2팀">2팀</option>
+                      <option value="3팀">3팀</option>
+                      <option value="취업팀">취업팀</option>
+                    </select>
+                  </div>
+                  <div>
+                    <input type="text" name="group" value={formData.group} onChange={handleInputChange} placeholder="예: 1조" className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base" />
+                  </div>
+                  <div className="flex gap-2 sm:gap-4 w-full">
+                    <input type="text" inputMode="numeric" name="seq_num" value={formData.seq_num} onChange={handleInputChange} placeholder="번호" className="w-16 border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base text-center" />
+                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="선생님 이름" className="flex-1 min-w-0 border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-2">
+                  <div>
+                    <input type="text" name="shift1" value={formData.shift1} onChange={handleInputChange} placeholder="9:30~10:30" className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base" />
+                  </div>
+                  <div>
+                    <input type="text" name="shift2" value={formData.shift2} onChange={handleInputChange} placeholder="10:30~11:30" className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base" />
+                  </div>
+                  <div>
+                    <input type="text" name="shift3" value={formData.shift3} onChange={handleInputChange} placeholder="11:30~12:30" className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base" />
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+              <div className="px-5 py-3 border-b bg-gray-50">
+                <h2 className="text-lg font-bold text-gray-800">등록된 선생님 목록</h2>
+              </div>
+              <div className="p-0 overflow-x-auto">
+                <table className="w-full text-center border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="bg-indigo-50 border-b border-gray-200 text-indigo-900 font-bold">
+                      <th className="py-2.5 px-2 border-r border-gray-200">팀</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">조</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">일련번호</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">이름</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">시간대 1</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">시간대 2</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">시간대 3</th>
+                      <th className="py-2.5 px-2">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teachers.length > 0 ? teachers.sort((a,b) => a.team.localeCompare(b.team) || ((a.seq_num||999) - (b.seq_num||999)) || a.group.localeCompare(b.group) || a.name.localeCompare(b.name)).map(t => (
+                      <tr key={t.id} className={`border-b border-gray-100 ${t.team === '2팀' || t.team === '취업팀' ? 'bg-sky-50 hover:bg-sky-100' : 'hover:bg-gray-50'}`}>
+                        <td className="py-2 px-2 border-r border-gray-100">{t.team.replace('팀', '')}</td>
+                        <td className="py-2 px-2 border-r border-gray-100">{t.group.replace('조', '')}</td>
+                        <td className="py-2 px-2 border-r border-gray-100">{t.seq_num}</td>
+                        <td className="py-2 px-2 border-r border-gray-100 font-bold">{t.name}</td>
+                        <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift1}</td>
+                        <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift2}</td>
+                        <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift3}</td>
+                        <td className="py-2 px-2 space-x-1">
+                          <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300">수정</button>
+                          <button onClick={() => handleDelete(t.id)} className="px-2 py-1 bg-red-200 text-red-800 text-xs font-bold rounded hover:bg-red-300">삭제</button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan="7" className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    // =====================================================================
     // 🖥️ 1. 메인 업무일지 프로그램
     // =====================================================================
-    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule, onNavigateToTeamSchedule }) {
+    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule, onNavigateToTeamSchedule, onNavigateToTeacherManagement }) {
       const [selectedTeam, setSelectedTeam] = useState(() => getSavedItem('sungdong_team', ""));
       const [currentUser, setCurrentUser] = useState(() => getSavedItem('sungdong_teacher', ""));
       const [date, setDate] = useState(() => getInitialWeekday());
@@ -754,8 +1017,44 @@
       const [selectedStudentDates, setSelectedStudentDates] = useState(null);
       const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
+      const [dbTeachers, setDbTeachers] = useState(() => {
+        try {
+          const stored = window.localStorage.getItem('sungdong_teacher_list');
+          return stored ? JSON.parse(stored) : [];
+        } catch(e) { return []; }
+      });
+
+      useEffect(() => {
+        const fetchDbTeachers = async () => {
+          try {
+            const { data, error } = await window.supabaseClient.from('teachers').select('*');
+            if (!error && data) {
+              const formatted = data.map(t => ({
+                id: t.id, team: t.team, group: t.group_name || '', seq_num: t.seq_num || null, name: t.name, shift1: t.shift1 || '', shift2: t.shift2 || '', shift3: t.shift3 || ''
+              }));
+              setDbTeachers(formatted);
+              window.localStorage.setItem('sungdong_teacher_list', JSON.stringify(formatted));
+            }
+          } catch(e) {}
+        };
+        fetchDbTeachers();
+      }, []);
+
       // 💡 [추가] 구글 시트 데이터에서 실제 수업 시간대 추출 및 정렬 로직
       useEffect(() => {
+        let customShifts = null;
+        if (dbTeachers.length > 0 && currentUser) {
+          const found = dbTeachers.find(t => t.team === selectedTeam && t.name === currentUser);
+          if (found && (found.shift1 || found.shift2 || found.shift3)) {
+            customShifts = [found.shift1, found.shift2, found.shift3].filter(Boolean);
+          }
+        }
+
+        if (customShifts && customShifts.length > 0) {
+          setShifts(customShifts);
+          return;
+        }
+
         if (!allScheduleData || Object.keys(allScheduleData).length === 0) {
           if (selectedTeam === "3팀") setShifts(["13:00~14:00", "14:00~15:00", "15:00~16:00"]);
           else setShifts(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
@@ -775,7 +1074,7 @@
           });
           setShifts(sorted);
         }
-      }, [allScheduleData, selectedTeam]);
+      }, [allScheduleData, selectedTeam, currentUser, dbTeachers]);
 
       const [hiddenLogs, setHiddenLogs] = useState({});
       const toggleHideLog = (index) => {
@@ -870,12 +1169,21 @@
           if (TEACHER_GROUPS && TEACHER_GROUPS[team]) {
             Object.keys(TEACHER_GROUPS[team]).forEach(t => teacherSet.add(t));
           }
+          
+          if (dbTeachers.length > 0) {
+            dbTeachers.filter(t => t.team === team).forEach(t => teacherSet.add(t.name));
+          }
 
           if (data && data.length > 0) {
             data.forEach(row => { if (row.teacher) teacherSet.add(row.teacher); });
           }
 
           fetchedTeachers = Array.from(teacherSet).sort((a, b) => {
+            const tA = dbTeachers.find(t => t.team === team && t.name === a);
+            const tB = dbTeachers.find(t => t.team === team && t.name === b);
+            const seqA = tA && tA.seq_num !== '' && tA.seq_num !== null ? parseInt(tA.seq_num, 10) : 999;
+            const seqB = tB && tB.seq_num !== '' && tB.seq_num !== null ? parseInt(tB.seq_num, 10) : 999;
+            if (seqA !== seqB) return seqA - seqB;
             return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
           });
 
@@ -900,7 +1208,17 @@
             // 💡 [보완] 캐시에 담긴 데이터 중 공식 소속 교사(TEACHER_GROUPS)가 한 명도 없다면 무효한 캐시로 취급하여 새로 패치함!
             const hasDefaultTeacher = parsed && parsed.some(t => TEACHER_GROUPS[selectedTeam] && TEACHER_GROUPS[selectedTeam][t]);
             if (parsed && parsed.length > 0 && hasDefaultTeacher) {
-              const sortedCached = parsed.sort((a, b) => {
+              const teacherSet = new Set(parsed);
+              const currentDbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
+              currentDbNames.forEach(name => teacherSet.add(name));
+              
+              const merged = Array.from(teacherSet);
+              const sortedCached = merged.sort((a, b) => {
+                const tA = dbTeachers.find(t => t.team === selectedTeam && t.name === a);
+                const tB = dbTeachers.find(t => t.team === selectedTeam && t.name === b);
+                const seqA = tA && tA.seq_num !== '' && tA.seq_num !== null ? parseInt(tA.seq_num, 10) : 999;
+                const seqB = tB && tB.seq_num !== '' && tB.seq_num !== null ? parseInt(tB.seq_num, 10) : 999;
+                if (seqA !== seqB) return seqA - seqB;
                 return getTeacherSortWeight(selectedTeam, a) - getTeacherSortWeight(selectedTeam, b);
               });
               setTeachers(sortedCached);
@@ -909,7 +1227,7 @@
           } catch (e) { }
         }
         fetchTeachersFromSheet(selectedTeam);
-      }, [selectedTeam]);
+      }, [selectedTeam, dbTeachers]);
 
 
 
@@ -2141,6 +2459,10 @@
 
                 <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-teal-50 border-2 border-teal-200 hover:bg-teal-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
                   <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><path d="M11 8a3 3 0 0 0-3 3" /></svg> 대상자 검색하기
+                </button>
+
+                <button onClick={onNavigateToTeacherManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-600 border-2 border-indigo-700 hover:bg-indigo-700 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
+                  <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
                 </button>
               </div>
 
@@ -4077,23 +4399,53 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           setIsLoading(true);
           try {
             setLoadProgress("전체 데이터 로딩 중...");
-            const teams = ["1팀", "2팀", "3팀", "취업팀"];
-            const queryPromises = teams.map(teamName => 
-              window.supabaseClient
-                .from('daily_logs')
-                .select('*')
-                .eq('team', teamName)
-                .neq('student', '')
-                .not('student', 'is', null)
-                .limit(1000)
-            );
-            
+            const teams = ["1팀", "2팀", "3팀", "취업팀", "기타참여자"];
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            // Supabase 1000개 제한을 우회하기 위해 range pagination을 사용하여 모든 레코드를 누락 없이 완벽히 가져옴
+            const fetchTeamRecords = async (teamName) => {
+              let allData = [];
+              let from = 0;
+              const step = 1000;
+              let hasMore = true;
+              
+              while (hasMore) {
+                const to = from + step - 1;
+                const { data, error } = await window.supabaseClient
+                  .from('daily_logs')
+                  .select('*')
+                  .eq('team', teamName)
+                  .neq('student', '')
+                  .not('student', 'is', null)
+                  .lte('log_date', todayStr) // 오늘까지 수업이 있는 사람들만 읽어옴
+                  .order('log_date', { ascending: false }) // 최신 데이터를 우선하여 가져옴
+                  .range(from, to);
+                  
+                if (error) throw error;
+                if (data && data.length > 0) {
+                  allData = allData.concat(data);
+                  if (data.length < step) {
+                    hasMore = false;
+                  } else {
+                    from += step;
+                  }
+                } else {
+                  hasMore = false;
+                }
+              }
+              return allData;
+            };
+
+            const queryPromises = teams.map(teamName => fetchTeamRecords(teamName));
             const results = await Promise.all(queryPromises);
             
             let records = [];
-            results.forEach(({ data, error }) => {
-              if (error) throw error;
-              if (data) records = records.concat(data);
+            results.forEach((teamRecords) => {
+              if (teamRecords) records = records.concat(teamRecords);
             });
 
             console.log("DB Unique Teams:", [...new Set((records || []).map(r => r.team))]);
@@ -4103,7 +4455,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               "1팀": [],
               "2팀": [],
               "3팀": [],
-              "취업팀": []
+              "취업팀": [],
+              "기타참여자": []
             };
 
             const allParsed = [];
@@ -4268,7 +4621,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0 ml-auto">
                       <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-                        {['전체', '1팀', '2팀', '3팀', '취업팀'].map(t => (
+                        {['전체', '1팀', '2팀', '3팀', '취업팀', '기타참여자'].map(t => (
                           <button key={t} onClick={() => { setTeamFilter(t); setTeacherFilter("전체"); }} className={`px-1 min-[360px]:px-1.5 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[12px] min-[360px]:text-[13px] min-[400px]:text-[14px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${teamFilter === t ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
                             {t}
                           </button>
@@ -4284,7 +4637,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           let list = [];
                           if (teamFilter === "전체") {
                             const uniqueTeachers = new Set();
-                            ["1팀", "2팀", "3팀", "취업팀"].forEach(t => {
+                            ["1팀", "2팀", "3팀", "취업팀", "기타참여자"].forEach(t => {
                               if (teacherListByTeam[t]) teacherListByTeam[t].forEach(name => uniqueTeachers.add(name));
                             });
                             list = Array.from(uniqueTeachers);
@@ -5365,6 +5718,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         return <StudentSearchApp onNavigateBack={() => setCurrentView('main')} />;
       }
 
+      if (currentView === 'teacherManagement') {
+        return <TeacherManagementApp onNavigateBack={() => setCurrentView('main')} />;
+      }
+
       return <MainApp
         onNavigateToClassroom={() => setCurrentView('classroom')}
         onNavigateToDailySchedule={(team) => {
@@ -5384,6 +5741,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           setSelectedTeamForSchedule(team);
           setCurrentView('teamSchedule');
         }}
+        onNavigateToTeacherManagement={() => setCurrentView('teacherManagement')}
       />;
     }
 
