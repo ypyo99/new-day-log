@@ -942,9 +942,9 @@
                 <table className="w-full text-center border-collapse min-w-[600px]">
                   <thead>
                     <tr className="bg-indigo-50 border-b border-gray-200 text-indigo-900 font-bold">
-                      <th className="py-2.5 px-2 border-r border-gray-200">팀</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">조</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">번호</th>
+                      <th className="py-2.5 px-1 border-r border-gray-200 w-10 whitespace-nowrap">팀</th>
+                      <th className="py-2.5 px-1 border-r border-gray-200 w-10 whitespace-nowrap">조</th>
+                      <th className="py-2.5 px-1 border-r border-gray-200 w-12 whitespace-nowrap">번호</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">이름</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">시간대 1</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">시간대 2</th>
@@ -955,10 +955,20 @@
                   <tbody>
                     {teachers.length > 0 ? teachers.sort((a,b) => a.team.localeCompare(b.team) || ((a.seq_num||999) - (b.seq_num||999)) || a.group.localeCompare(b.group) || a.name.localeCompare(b.name)).map(t => (
                       <tr key={t.id} className={`border-b border-gray-100 ${t.team === '2팀' || t.team === '취업팀' ? 'bg-sky-50 hover:bg-sky-100' : 'hover:bg-gray-50'}`}>
-                        <td className="py-2 px-2 border-r border-gray-100">{t.team.replace('팀', '')}</td>
-                        <td className="py-2 px-2 border-r border-gray-100">{t.group.replace('조', '')}</td>
-                        <td className="py-2 px-2 border-r border-gray-100">{t.seq_num}</td>
-                        <td className="py-2 px-2 border-r border-gray-100 font-bold">{t.name}</td>
+                        <td className="py-2 px-1 border-r border-gray-100 w-10 text-xs sm:text-sm">{t.team.replace('팀', '')}</td>
+                        <td className="py-2 px-1 border-r border-gray-100 w-10 text-xs sm:text-sm">{t.group.replace('조', '')}</td>
+                        <td className="py-2 px-1 border-r border-gray-100 w-12 whitespace-nowrap text-xs sm:text-sm">{t.seq_num}</td>
+                        <td className="py-2 px-2 border-r border-gray-100 font-bold text-xs sm:text-sm">
+                          {t.name.includes('/') ? (
+                            t.name.split('/').map((namePart, idx, arr) => (
+                              <span key={idx} className="block whitespace-nowrap">
+                                {namePart}{idx < arr.length - 1 ? '/' : ''}
+                              </span>
+                            ))
+                          ) : (
+                            t.name
+                          )}
+                        </td>
                         <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift1}</td>
                         <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift2}</td>
                         <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift3}</td>
