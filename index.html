@@ -944,11 +944,9 @@
                     <tr className="bg-indigo-50 border-b border-gray-200 text-indigo-900 font-bold">
                       <th className="py-2.5 px-2 border-r border-gray-200">팀</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">조</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">일련번호</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">번호</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">이름</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">시간대 1</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">시간대 2</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">시간대 3</th>
+                      <th className="py-2.5 px-2 border-r border-gray-200">시간대</th>
                       <th className="py-2.5 px-2">관리</th>
                     </tr>
                   </thead>
@@ -959,17 +957,18 @@
                         <td className="py-2 px-2 border-r border-gray-100">{t.group.replace('조', '')}</td>
                         <td className="py-2 px-2 border-r border-gray-100">{t.seq_num}</td>
                         <td className="py-2 px-2 border-r border-gray-100 font-bold">{t.name}</td>
-                        <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift1}</td>
-                        <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift2}</td>
-                        <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift3}</td>
-                        <td className="py-2 px-2 space-x-1">
+                        <td className="py-2 px-2 border-r border-gray-100 text-xs sm:text-sm text-gray-600">
+                          <div className="whitespace-nowrap">{t.shift1}</div>
+                          <div className="whitespace-nowrap text-gray-400 text-[10px] sm:text-xs">{t.shift2} | {t.shift3}</div>
+                        </td>
+                        <td className="py-2 px-2 space-x-1 whitespace-nowrap">
                           <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300">수정</button>
                           <button onClick={() => handleDelete(t.id)} className="px-2 py-1 bg-red-200 text-red-800 text-xs font-bold rounded hover:bg-red-300">삭제</button>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan="7" className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
+                        <td colSpan="6" className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
                       </tr>
                     )}
                   </tbody>
