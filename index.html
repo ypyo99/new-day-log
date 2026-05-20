@@ -5747,6 +5747,19 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     border: borderThin
                   };
                 }
+
+                // 💡 [테두리 개별 오버라이드] 셀 간 스타일 공유 오염 방지를 위해 얕은 복사 후 보더 재지정
+                const nextRowObj = R > 0 ? gridRows[R] : null;
+                const isTeacherBoundary = R > 0 && rowObj && (!nextRowObj || rowObj.teacher !== nextRowObj.teacher);
+
+                const currentBorder = {
+                  top: { style: "thin", color: { rgb: "E5E7EB" } },
+                  bottom: isTeacherBoundary ? { style: "medium", color: { rgb: "6B7280" } } : { style: "thin", color: { rgb: "E5E7EB" } },
+                  left: { style: "thin", color: { rgb: "E5E7EB" } },
+                  right: { style: "thin", color: { rgb: "E5E7EB" } }
+                };
+
+                cell.s = { ...cell.s, border: currentBorder };
               }
             }
 
