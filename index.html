@@ -6001,7 +6001,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   className="px-5 py-1.5 md:px-7 md:py-2 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-sm md:text-base transition-all flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <DownloadIcon className="w-4 h-4 md:w-5 md:h-5" />
-                  <span>{exporting ? "생성 중..." : "엑셀 내보내기"}</span>
+                  <span>{exporting ? "생성 중..." : "내보내기"}</span>
                 </button>
               </div>
 
@@ -6319,8 +6319,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                     <td className="border-r border-b border-gray-200 text-blue-700 font-bold align-middle py-2 px-1">{item.shift}</td>
                                     <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1">
                                       {item.student ? (
-                                        <span className={item.student?.includes('보조강사') 
-                                          ? 'bg-yellow-100 px-1.5 py-0.5 rounded text-yellow-800 text-[11px] font-bold' 
+                                        <span className={item.student?.includes('보조강사')
+                                          ? 'bg-yellow-100 px-1.5 py-0.5 rounded text-yellow-800 text-[11px] font-bold'
                                           : 'bg-sky-100 px-1.5 py-0.5 rounded text-sky-800 text-[11px] font-bold'}>
                                           {item.student}
                                         </span>
