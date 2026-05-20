@@ -5748,7 +5748,31 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const todayYYYY = today.getFullYear();
           const todayMM = String(today.getMonth() + 1).padStart(2, '0');
           const todayDD = String(today.getDate()).padStart(2, '0');
-          XLSX.writeFile(wb, `Digital-Supporters-${todayYYYY}-${todayMM}-${todayDD}.xlsx`);
+          const filename = `Digital-Supporters-${todayYYYY}-${todayMM}-${todayDD}.xlsx`;
+
+          // 안전한 Blob 기반 다운로드 트리거 (브라우저 파일명 유실 버그 방지)
+          const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+          const buf = new ArrayBuffer(wbout.length);
+          const view = new Uint8Array(buf);
+          for (let i = 0; i < wbout.length; i++) {
+            view[i] = wbout.charCodeAt(i) & 0xFF;
+          }
+          const blob = new Blob([buf], { type: 'application/octet-stream' });
+          
+          if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+            window.navigator.msSaveOrOpenBlob(blob, filename);
+          } else {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => {
+              window.URL.revokeObjectURL(url);
+            }, 100);
+          }
           alert("🎉 엑셀 내보내기가 완료되었습니다!");
         } catch (err) {
           console.error(err);
