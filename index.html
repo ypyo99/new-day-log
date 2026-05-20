@@ -5371,8 +5371,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
           if (error) throw error;
 
+          let firstWorkDateStr = `${yearStr}-01-01`; // 기본값
+          if (allRecords && allRecords.length > 0) {
+            const thisYearRecords = allRecords.filter(r => r.log_date && r.log_date.startsWith(yearStr));
+            if (thisYearRecords.length > 0) {
+              const sortedDates = thisYearRecords.map(r => r.log_date).sort();
+              firstWorkDateStr = sortedDates[0];
+            }
+          }
+
           const dateList = [];
-          let curr = new Date(year, 0, 1); // 올해 1월 1일부터 시작
+          const [startYear, startMonth, startDay] = firstWorkDateStr.split('-').map(Number);
+          let curr = new Date(startYear, startMonth - 1, startDay); // DB에 기록된 올해 첫 근무일부터 시작
           const endLimit = new Date(nextYear, nextMonth - 1, nextMonthLastDay);
           while (curr <= endLimit) {
             const yyyy = curr.getFullYear();
