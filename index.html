@@ -6828,14 +6828,14 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6 max-w-4xl mx-auto">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-4 gap-3">
-                  <h2 className="text-lg font-bold text-gray-800">기간 및 팀 선택</h2>
+                <div className="flex justify-between items-center border-b pb-3 mb-4 gap-2">
+                  <h2 className="text-base sm:text-lg font-bold text-gray-800">기간 및 팀 선택</h2>
                   <button
                     onClick={handleAnalyze}
                     disabled={analyzing || saving}
-                    className="px-6 py-2.5 bg-blue-600 text-white font-extrabold rounded-xl shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-base shrink-0"
+                    className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-blue-600 text-white font-extrabold rounded-xl shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-xs sm:text-base shrink-0"
                   >
-                    {analyzing ? '분석 중...' : '시간표 분석 및 미리보기'}
+                    {analyzing ? '분석 중...' : '주간 시간표 미리보기'}
                   </button>
                 </div>
 
