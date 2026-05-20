@@ -5740,21 +5740,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     }
                   }
 
-                  // 💡 [오작동 방지] 1/1 등의 진행값을 엑셀이 날짜 객체로 자동 해석하여 서식이 깨지는 문제를 방지하기 위해,
-                  // 원본 문자열 값을 강제 주입하고 데이터 타입을 문자열(t: 's')로 고정함
-                  let cellVal = "";
-                  if (item) {
-                    if (rowObj.category === "대상") {
-                      cellVal = item.student || "";
-                    } else if (rowObj.category === "장소") {
-                      cellVal = item.location || "";
-                    } else if (rowObj.category === "진행") {
-                      cellVal = item.status === "1" ? "1" : (item.status || "");
-                    }
-                  }
-                  cell.v = cellVal;
-                  cell.t = 's';
-
                   cell.s = {
                     font: { name: fontName, sz: 10, bold: isBold, color: { rgb: fontColorRGB } },
                     fill: { fgColor: { rgb: fillRGB } },
@@ -5763,7 +5748,33 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   };
                 }
 
-                // 💡 [테두리 개별 오버라이드] 셀 간 스타일 공유 오염 방지를 위해 얕은 복사 후 보더 재지정
+                // 💡 [오작동 방지 및 테두리 개별 오버라이드] 
+                // 1/1 등의 진행값을 엑셀이 날짜 객체로 자동 해석하여 서식이 깨지는 문제를 모든 열에 대해 원천 차단
+                if (R > 0 && rowObj) {
+                  let origVal = "";
+                  if (C === 0) {
+                    origVal = rowObj.groupName || "";
+                  } else if (C === 1) {
+                    origVal = rowObj.teacher || "";
+                  } else if (C === 2) {
+                    origVal = rowObj.shift || "";
+                  } else {
+                    const dateObj = dateList[C - 3];
+                    const item = dataLookup[`${rowObj.teacher}::${rowObj.shift}::${dateObj.dateStr}`];
+                    if (item) {
+                      if (rowObj.category === "대상") {
+                        origVal = item.student || "";
+                      } else if (rowObj.category === "장소") {
+                        origVal = item.location || "";
+                      } else if (rowObj.category === "진행") {
+                        origVal = item.status === "1" ? "1" : (item.status || "");
+                      }
+                    }
+                  }
+                  cell.v = origVal;
+                  cell.t = 's'; // 모든 데이터 셀을 텍스트 형식으로 고정
+                }
+
                 const nextRowObj = R > 0 ? gridRows[R] : null;
                 const isTeacherBoundary = R > 0 && rowObj && (!nextRowObj || rowObj.teacher !== nextRowObj.teacher);
 
