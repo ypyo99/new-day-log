@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -5291,6 +5291,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [uniqueTeachers, setUniqueTeachers] = useState([]);
       const [viewMode, setViewMode] = useState("sheet"); // "sheet" or "list"
       const [exporting, setExporting] = useState(false);
+      const [showExportModal, setShowExportModal] = useState(false);
 
       const fetchTeamData = async (month) => {
         setLoading(true);
@@ -5404,8 +5405,17 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
           const wb = XLSX.utils.book_new();
           const targetTeams = ["1팀", "2팀", "3팀", "취업팀"];
+          const exportExcludedTeachersByTeam = {
+            "1팀": new Set(["천은선", "서승희"])
+          };
 
           for (const tName of targetTeams) {
+            const isExcludedTeacherForExport = (teacher) => {
+              const excluded = exportExcludedTeachersByTeam[tName];
+              if (!excluded) return false;
+              return excluded.has((teacher || "").trim());
+            };
+
             // 해당 팀의 전체 데이터를 페이지 단위(Chunk)로 여러 번 나누어 받아와서 유실 방지 (Supabase 서버 강제 1000개 리밋 회피)
             let teamData = [];
             let start = 0;
@@ -5439,6 +5449,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             const teamTeacherShiftsMap = {};
             if (TEACHER_GROUPS[tName]) {
               Object.entries(TEACHER_GROUPS[tName]).forEach(([teacher, group]) => {
+                if (isExcludedTeacherForExport(teacher)) return;
                 const tLogs = teamData.filter(r => r.teacher === teacher);
                 if (tLogs.length > 0) {
                   tLogs.forEach(r => {
@@ -5450,7 +5461,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     };
                   });
                 } else {
-                  const defaultShift = "9:30~10:30";
+                  const defaultShift = (group === "오후" || tName === "3팀") ? "13:00~14:00" : "9:30~10:30";
                   const key = `${teacher}::${defaultShift}`;
                   teamTeacherShiftsMap[key] = {
                     teacher,
@@ -5462,6 +5473,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             }
 
             teamData.forEach(item => {
+              if (isExcludedTeacherForExport(item.teacher)) return;
               if (tName === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
                 return;
               }
@@ -5562,17 +5574,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               right: { style: "thin", color: { rgb: "D1D5DB" } }
             };
 
-            const baseHeaderStyle = {
+            const firstRowHeaderStyle = {
               font: { name: fontName, sz: 10, bold: true, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "2B5CE6" } },
+              fill: { fgColor: { rgb: "1E3A8A" } },
               alignment: { vertical: "center", horizontal: "center", wrapText: true },
-              border: borderThin
-            };
-
-            const colAHeaderStyle = {
-              font: { name: fontName, sz: 10, bold: true, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "2B5CE6" } },
-              alignment: { vertical: "center", horizontal: "center" },
               border: borderThin
             };
 
@@ -5667,35 +5672,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 const cell = ws[cellRef];
 
                 if (R === 0) {
-                  if (C === 0 || C === 1) {
-                    cell.s = colAHeaderStyle;
-                  } else if (C === 2) {
-                    cell.s = baseHeaderStyle;
-                  } else {
-                    const dateObj = dateList[C - 3];
-                    if (dateObj.dayIndex === 6) {
-                      cell.s = {
-                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "0284C7" } },
-                        fill: { fgColor: { rgb: "E0F2FE" } },
-                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
-                        border: borderThin
-                      };
-                    } else if (dateObj.dayIndex === 0) {
-                      cell.s = {
-                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "E11D48" } },
-                        fill: { fgColor: { rgb: "FFE4E6" } },
-                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
-                        border: borderThin
-                      };
-                    } else {
-                      cell.s = {
-                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "475569" } },
-                        fill: { fgColor: { rgb: "F8FAFC" } },
-                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
-                        border: borderThin
-                      };
-                    }
-                  }
+                  cell.s = firstRowHeaderStyle;
                   continue;
                 }
 
@@ -5719,42 +5696,41 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                       (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
                       (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
 
-                    if (isHoliday) {
+                    if (rowObj.category === "장소") {
+                      fillRGB = "FFFFFF";
+                      if (isHoliday) {
+                        fontColorRGB = "EF4444";
+                        isBold = true;
+                      } else if (item.signature_url) {
+                        fontColorRGB = "2563EB";
+                        isBold = true;
+                      } else if (item.location) {
+                        fontColorRGB = "475569";
+                      }
+                    } else if (isHoliday) {
                       fillRGB = "FEE2E2";
                       fontColorRGB = "EF4444";
                       isBold = true;
                     } else {
                       if (rowObj.category === "대상") {
                         if (item.student?.includes('보조강사')) {
-                          fillRGB = "FEF9C3";
-                          fontColorRGB = "A16207";
+                          fillRGB = "FFFF00";
+                          fontColorRGB = "000000";
                           isBold = true;
                         } else if (item.student) {
-                          fillRGB = "EEF2FF";
-                          fontColorRGB = "4F46E5";
+                          fillRGB = "E0F2FE";
+                          fontColorRGB = "000000";
                           isBold = true;
-                        }
-                      } else if (rowObj.category === "장소") {
-                        if (item.signature_url) {
-                          fillRGB = "FFFFFF";
-                          fontColorRGB = "2563EB";
-                          isBold = true;
-                        } else if (item.location) {
-                          fillRGB = "FFFFFF";
-                          fontColorRGB = "475569";
                         }
                       } else if (rowObj.category === "진행") {
-                        if (item.status === '1') {
-                          fillRGB = "DCFCE7";
-                          fontColorRGB = "15803D";
-                          isBold = true;
-                        } else if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                        if (item.status?.includes('결석') || item.status?.includes('취소')) {
                           fillRGB = "FEE2E2";
                           fontColorRGB = "DC2626";
                           isBold = true;
                         } else if (item.status) {
-                          fillRGB = "FFFFFF";
-                          fontColorRGB = "4F46E5";
+                          fillRGB = "F0FDF4";
+                          fontColorRGB = "15803D";
+                          isBold = true;
                         }
                       }
                     }
@@ -5797,12 +5773,31 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                 const nextRowObj = R > 0 ? gridRows[R] : null;
                 const isTeacherBoundary = R > 0 && rowObj && (!nextRowObj || rowObj.teacher !== nextRowObj.teacher);
+                const isShiftBoundary = R > 0 && rowObj && nextRowObj && rowObj.shift !== nextRowObj.shift;
+                let rightBorder = { style: "thin", color: { rgb: "D1D5DB" } };
+
+                if (C === 2) {
+                  rightBorder = { style: "thick", color: { rgb: "4B5563" } };
+                } else if (C >= 3) {
+                  const dateObj = dateList[C - 3];
+                  const nextDateObj = dateList[C - 2];
+                  const isFriday = dateObj && dateObj.dayIndex === 5;
+                  const isMonthEnd = dateObj && (!nextDateObj || dateObj.dateStr.slice(0, 7) !== nextDateObj.dateStr.slice(0, 7));
+
+                  if (isMonthEnd) {
+                    rightBorder = { style: "thick", color: { rgb: "4B5563" } };
+                  } else if (isFriday) {
+                    rightBorder = { style: "medium", color: { rgb: "2563EB" } };
+                  }
+                }
 
                 const currentBorder = {
                   top: { style: "thin", color: { rgb: "D1D5DB" } },
-                  bottom: isTeacherBoundary ? { style: "medium", color: { rgb: "6B7280" } } : { style: "thin", color: { rgb: "D1D5DB" } },
+                  bottom: isShiftBoundary
+                    ? { style: "medium", color: { rgb: "2563EB" } }
+                    : (isTeacherBoundary ? { style: "medium", color: { rgb: "6B7280" } } : { style: "thin", color: { rgb: "D1D5DB" } }),
                   left: { style: "thin", color: { rgb: "D1D5DB" } },
-                  right: { style: "thin", color: { rgb: "D1D5DB" } }
+                  right: rightBorder
                 };
 
                 cell.s = { ...cell.s, border: currentBorder };
@@ -5856,7 +5851,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               window.URL.revokeObjectURL(url);
             }, 100);
           }
-          alert("🎉 엑셀 내보내기가 완료되었습니다!");
+          setShowExportModal(true);
         } catch (err) {
           console.error(err);
           alert("⚠️ 엑셀 내보내기 중 오류가 발생했습니다: " + err.message);
@@ -5884,7 +5879,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       // 💡 [신규] 해당 팀이 '취업팀'인 경우, 공식 교사 4명의 기본 행(디폴트 시간대 포함)을 무조건 먼저 생성해 둠!
       if (currentTeam === "취업팀" && TEACHER_GROUPS["취업팀"]) {
         Object.entries(TEACHER_GROUPS["취업팀"]).forEach(([t, g]) => {
-          const defaultShift = "9:30~10:30";
+          const defaultShift = (g === "오후") ? "13:00~14:00" : "9:30~10:30";
           const key = `${t}::${defaultShift}`;
           teacherShiftsMap[key] = {
             teacher: t,
@@ -6092,16 +6087,24 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     <table className="table-fixed text-center border-collapse text-[13px] sm:text-sm md:text-base lg:text-lg min-w-[900px] w-full">
                       <thead className="sticky top-0 z-30 bg-[#2b5ce6] text-white">
                         <tr>
-                          <th className="border border-gray-300 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-gray-700 bg-gray-100 text-[13px] sm:text-sm md:text-base lg:text-lg">연번</th>
-                          <th className="border border-gray-300 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-gray-700 bg-gray-100 text-[13px] sm:text-sm md:text-base lg:text-lg">성명</th>
-                          <th className="border border-gray-300 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-gray-700 bg-gray-100 text-[13px] sm:text-sm md:text-base lg:text-lg">시간</th>
+                          <th className="border border-blue-700 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">연번</th>
+                          <th className="border border-blue-700 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">성명</th>
+                          <th className="border border-blue-700 border-r-2 border-r-gray-700 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">시간</th>
                           {uniqueDates.map(dateStr => {
                             const m = dateStr.split('-')[1];
                             const d = dateStr.split('-')[2];
                             const dayName = getDayName(dateStr);
+                            const dayIndex = new Date(dateStr).getDay();
+                            const isFriday = dayIndex === 5;
+                            const idx = uniqueDates.indexOf(dateStr);
+                            const nextDate = uniqueDates[idx + 1];
+                            const isMonthEnd = !nextDate || dateStr.slice(0, 7) !== nextDate.slice(0, 7);
+                            const rightBorderStyle = isMonthEnd
+                              ? "3px solid #4B5563"
+                              : (isFriday ? "2px solid #2563EB" : "1px solid #D1D5DB");
                             return (
-                              <th key={dateStr} className="border border-gray-300 py-2 w-[90px] sm:w-[105px] md:w-[120px] lg:w-[135px] font-bold text-sky-900 bg-sky-50 break-keep text-[13px] sm:text-sm md:text-base lg:text-lg">
-                                {parseInt(m)}/{parseInt(d)}<br />({dayName})
+                              <th key={dateStr} className="border border-blue-700 py-2 w-[90px] sm:w-[105px] md:w-[120px] lg:w-[135px] font-bold text-white bg-[#1E3A8A] whitespace-nowrap text-[13px] sm:text-sm md:text-base lg:text-lg" style={{ borderRight: rightBorderStyle }}>
+                                {parseInt(m)}/{parseInt(d)} ({dayName})
                               </th>
                             );
                           })}
@@ -6115,30 +6118,37 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                           const borderStyle = isNewGroup
                             ? { borderTop: '2.5px solid #334155' }
-                            : (isNewTeacher ? { borderTop: '2px solid #64748b' } : (isNewShift ? { borderTop: '2px solid #a5c9ff' } : {}));
+                            : (isNewTeacher ? { borderTop: '2px solid #64748b' } : (isNewShift ? { borderTop: '2px solid #2563EB' } : {}));
 
                           return (
-                            <tr key={idx} className="hover:bg-blue-50/40 bg-white" style={{ ...borderStyle, height: '36px' }}>
+                            <tr key={idx} className="hover:bg-blue-50/40 bg-gray-50" style={{ ...borderStyle, height: '36px' }}>
                               {row.renderGroup && (
                                 <td className="border border-gray-300 font-extrabold text-gray-800 bg-gray-50/80 align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanGroup}>
                                   {row.groupName}
                                 </td>
                               )}
                               {row.renderTeacher && (
-                                <td className="border border-gray-300 font-bold text-gray-800 bg-white align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanTeacher}>
+                                <td className="border border-gray-300 font-bold text-gray-800 bg-[#F3F4F6] align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanTeacher}>
                                   {row.teacher}
                                 </td>
                               )}
                               {row.renderShift && (
-                                <td className="border border-gray-300 text-gray-700 font-bold align-middle py-1.5 px-0.5 text-[12px] sm:text-[13px] md:text-sm lg:text-base bg-white" rowSpan={row.rowspanShift}>
+                                <td className="border border-gray-300 border-r-2 border-r-gray-700 text-gray-700 font-bold align-middle py-1.5 px-0.5 text-[12px] sm:text-[13px] md:text-sm lg:text-base bg-gray-50" rowSpan={row.rowspanShift}>
                                   {row.shift}
                                 </td>
                               )}
 
-                              {uniqueDates.map(dateStr => {
+                              {uniqueDates.map((dateStr, dateIdx) => {
                                 const item = dataLookup[`${row.teacher}::${row.shift}::${dateStr}`];
                                 let cellContent = '';
                                 let cellClass = "text-gray-400 font-normal bg-white";
+                                const dayIndex = new Date(dateStr).getDay();
+                                const isFriday = dayIndex === 5;
+                                const nextDate = uniqueDates[dateIdx + 1];
+                                const isMonthEnd = !nextDate || dateStr.slice(0, 7) !== nextDate.slice(0, 7);
+                                const rightBorderStyle = isMonthEnd
+                                  ? "3px solid #4B5563"
+                                  : (isFriday ? "2px solid #2563EB" : "1px solid #D1D5DB");
 
                                 if (item) {
                                   const isHoliday = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
@@ -6151,10 +6161,16 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       cellClass = "bg-red-700 text-white font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                     } else if (row.category === "장소") {
                                       cellContent = item.location || '공휴일';
-                                      cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      cellClass = "!bg-white text-red-700 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                     } else if (row.category === "진행") {
-                                      cellContent = item.status || '공휴일';
-                                      cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      cellContent = item.status || '';
+                                      if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                                        cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else if (item.status) {
+                                        cellClass = "bg-[#F0FDF4] text-green-800 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else {
+                                        cellClass = "bg-gray-50 text-gray-400 font-normal";
+                                      }
                                     }
                                   } else {
                                     if (row.category === "대상") {
@@ -6162,38 +6178,37 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       if (item.student?.includes('보조강사')) {
                                         cellClass = "bg-yellow-300 text-gray-950 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                       } else if (item.student) {
-                                        cellClass = "text-gray-950 font-bold bg-white";
+                                        cellClass = "text-gray-950 font-bold bg-sky-100";
                                       }
                                     } else if (row.category === "장소") {
                                       if (item.signature_url) {
                                         cellContent = (
                                           <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-[12px] sm:text-[13px] md:text-sm lg:text-base font-extrabold hover:text-blue-800">서명 보기</a>
                                         );
-                                        cellClass = "bg-white";
+                                        cellClass = "!bg-white";
                                       } else {
                                         cellContent = (
                                           <span className="text-gray-600 font-medium truncate max-w-[75px] sm:max-w-[95px] lg:max-w-[125px] block mx-auto text-[11px] sm:text-[13px] md:text-sm lg:text-base">
                                             {item.location || ''}
                                           </span>
                                         );
-                                        cellClass = "bg-white";
+                                        cellClass = "!bg-white";
                                       }
                                     } else if (row.category === "진행") {
                                       cellContent = item.status || '';
-                                      if (item.status === '1') {
-                                        cellContent = '1';
-                                        cellClass = "text-blue-700 font-extrabold bg-blue-50/30";
-                                      } else if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                                      if (item.status?.includes('결석') || item.status?.includes('취소')) {
                                         cellClass = "text-red-600 font-extrabold bg-red-50";
                                       } else if (item.status) {
-                                        cellClass = "text-indigo-600 font-bold bg-white";
+                                        cellClass = "text-green-800 font-bold bg-[#F0FDF4]";
+                                      } else {
+                                        cellClass = "text-gray-400 font-normal bg-white";
                                       }
                                     }
                                   }
                                 }
 
                                 return (
-                                  <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] ${cellClass}`} style={{ height: '36px' }}>{cellContent || '\u00A0'}
+                                  <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] ${cellClass}`} style={{ height: '36px', borderRight: rightBorderStyle, ...(row.category === "장소" ? { backgroundColor: "#ffffff" } : {}) }}>{cellContent || '\u00A0'}
                                   </td>
                                 );
                               })}
@@ -6303,9 +6318,13 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                     )}
                                     <td className="border-r border-b border-gray-200 text-blue-700 font-bold align-middle py-2 px-1">{item.shift}</td>
                                     <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1">
-                                      <span className={item.student?.includes('보조강사') ? 'bg-yellow-100 px-1.5 py-0.5 rounded text-yellow-800 text-[11px] font-bold' : ''}>
-                                        {item.student || '-'}
-                                      </span>
+                                      {item.student ? (
+                                        <span className={item.student?.includes('보조강사') 
+                                          ? 'bg-yellow-100 px-1.5 py-0.5 rounded text-yellow-800 text-[11px] font-bold' 
+                                          : 'bg-sky-100 px-1.5 py-0.5 rounded text-sky-800 text-[11px] font-bold'}>
+                                          {item.student}
+                                        </span>
+                                      ) : '-'}
                                     </td>
                                     <td className="border-r border-b border-gray-200 text-gray-600 align-middle py-2 px-1">
                                       {item.signature_url ? (
@@ -6331,6 +6350,26 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </div>
               )}
             </div>
+            {/* 엑셀 완료 안내 모달 */}
+            {showExportModal && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all border border-gray-100 flex flex-col items-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600 text-2xl">
+                    🎉
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">엑셀 다운로드 완료</h3>
+                  <p className="text-gray-500 text-sm text-center mb-6">
+                    디지털 서포터즈 일정표 엑셀 파일 내보내기가 완료되었습니다.
+                  </p>
+                  <button
+                    onClick={() => setShowExportModal(false)}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-md transition-colors active:scale-95"
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
