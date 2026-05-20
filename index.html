@@ -906,7 +906,7 @@
 
       return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
-          <header className="bg-blue-600 text-white px-4 py-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative shrink-0">
+          <header className="bg-blue-600 text-white px-4 pt-4 pb-7 shadow-lg z-40 flex justify-between items-start relative shrink-0 min-h-[96px]">
             {/* 타이틀 영역 */}
             <div className="flex items-center">
               <div className="flex flex-col">
@@ -921,11 +921,11 @@
               </div>
             </div>
 
-            {/* 담당자 로그인 버튼 영역 (선생님 명단 관리 우측 및 헤더 중앙) */}
-            <div className="flex justify-center items-center px-2">
+            {/* 담당자 로그인 버튼 영역 - 헤더 수직 아래 중앙 absolute 배치 */}
+            <div className="absolute left-1/2 bottom-1.5 transform -translate-x-1/2 z-50">
               <button
                 onClick={handleAdminClick}
-                className={`px-6 py-2 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation whitespace-nowrap ${isAdmin ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}
+                className={`px-6 py-1.5 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation whitespace-nowrap ${isAdmin ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}
               >
                 {isAdmin ? '담당자 모드 종료' : '담당자 로그인'}
               </button>
@@ -5861,7 +5861,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans">
           <div className="bg-white flex-1 flex flex-col overflow-hidden relative">
             {/* Header */}
-            <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex items-center px-4 py-2.5 min-h-[72px]">
+            <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex items-start px-4 pt-3 pb-7 min-h-[84px]">
               <div>
                 <div className="flex items-center mb-1">
                   <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
@@ -5872,12 +5872,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </p>
               </div>
 
-              {/* [엑셀 내보내기] 버튼 - 수평/수직 정중앙 absolute 배치 */}
-              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+              {/* [엑셀 내보내기] 버튼 - 수평 중앙 & 수직 하단 absolute 배치 */}
+              <div className="absolute left-1/2 bottom-1.5 transform -translate-x-1/2 z-50">
                 <button 
                   onClick={handleExportExcel} 
                   disabled={exporting}
-                  className="px-5 py-2 md:px-7 md:py-2.5 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-xs sm:text-sm md:text-base transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-1.5 md:px-7 md:py-2 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-sm md:text-base transition-all flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <DownloadIcon className="w-4 h-4 md:w-5 md:h-5" /> 
                   <span>{exporting ? "생성 중..." : "엑셀 내보내기"}</span>
@@ -6603,7 +6603,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
       return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
-          <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative shrink-0">
+          <header className="bg-blue-600 text-white px-4 pt-4 pb-7 shadow-lg z-40 flex justify-between items-start relative shrink-0 min-h-[96px]">
             <div className="flex items-center">
               <div className="flex flex-col">
                 <div className="flex items-center mb-1">
@@ -6617,11 +6617,11 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               </div>
             </div>
 
-            {/* 담당자 로그인 버튼 영역 (시간표 자동 작성 우측 및 헤더 중앙) */}
-            <div className="flex justify-center items-center px-2 relative z-50 pointer-events-auto">
+            {/* 담당자 로그인 버튼 영역 - 헤더 수직 아래 중앙 absolute 배치 */}
+            <div className="absolute left-1/2 bottom-1.5 transform -translate-x-1/2 z-50">
               <button
                 onClick={handleAdminClick}
-                className={`px-6 py-2 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation whitespace-nowrap ${isAdmin ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}
+                className={`px-6 py-1.5 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation whitespace-nowrap ${isAdmin ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}
               >
                 {isAdmin ? '담당자 모드 종료' : '담당자 로그인'}
               </button>
