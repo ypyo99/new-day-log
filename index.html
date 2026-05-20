@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -916,7 +916,7 @@
                 </div>
                 <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
                 <p className="text-base opacity-95 flex items-center mt-1 font-bold">
-                  <User className="w-4 h-4 mr-1" /> 선생님 명단 관리
+                  <User className="w-4 h-4 mr-1" /> 선생님 명단
                 </p>
               </div>
             </div>
@@ -2555,11 +2555,11 @@
                 </button>
 
                 <button onClick={onNavigateToTeacherManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-400 border-2 border-indigo-500 hover:bg-indigo-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
-                  <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
+                  <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단
                 </button>
 
                 <button onClick={onNavigateToAutoSchedule} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-400 border-2 border-rose-500 hover:bg-rose-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
-                  <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 자동 작성
+                  <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 작성
                 </button>
               </div>
 
@@ -6342,15 +6342,14 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       )}
                                     </td>
                                     <td className="border-b border-gray-200 align-middle py-2 px-1">
-                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${
-                                        item.status?.includes('결석') || item.status?.includes('취소')
+                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${item.status?.includes('결석') || item.status?.includes('취소')
                                           ? 'bg-red-50 text-red-500 border border-red-200'
                                           : item.status?.includes('휴가')
                                             ? 'bg-gray-100 text-gray-500 border border-gray-300'
                                             : item.status && item.status !== '1'
                                               ? 'bg-green-50 text-black border border-green-200'
                                               : 'text-gray-400'
-                                      }`}>
+                                        }`}>
                                         {item.status || '-'}
                                       </span>
                                     </td>
@@ -6793,7 +6792,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </div>
                 <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
                 <p className="text-base opacity-95 flex items-center mt-1 font-bold">
-                  <LucideCalendar className="w-4 h-4 mr-1" /> 시간표 자동 작성
+                  <LucideCalendar className="w-4 h-4 mr-1" /> 시간표 작성
                 </p>
               </div>
             </div>
@@ -6821,10 +6820,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center shadow-sm max-w-4xl mx-auto mb-6">
                 <div className="text-3xl mb-2">💡</div>
                 <p className="font-extrabold text-amber-800 text-base">
-                  시간표 자동 작성 및 예약을 하시려면 상단의 [담당자 로그인] 버튼을 눌러 인증해 주세요.
+                  시간표 자동 작성을 하시려면 상단의 [담당자 로그인] 버튼을 눌러 인증해 주세요.
                 </p>
                 <p className="text-xs text-amber-600 mt-2 font-bold">
-                  * 담당자 전용 인증 후에만 시간표 자동 완성, 미리보기 수정 및 DB 저장이 가능합니다.
+                  * 담당자 전용 인증 후에만 시간표 자동 작성, 미리보기 수정 및 DB 저장이 가능합니다.
                 </p>
               </div>
             ) : (
