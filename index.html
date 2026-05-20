@@ -5291,6 +5291,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [viewMode, setViewMode] = useState("sheet"); // "sheet" or "list"
       const [exporting, setExporting] = useState(false);
       const [showExportModal, setShowExportModal] = useState(false);
+      const [errorMessage, setErrorMessage] = useState("");
 
       const fetchTeamData = async (month) => {
         setLoading(true);
@@ -5334,12 +5335,44 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         if (currentTeam) fetchTeamData(selectedMonth);
       }, [currentTeam, selectedMonth]);
 
-      const changeMonth = (offset) => {
+      const changeMonth = async (offset) => {
         const [year, m] = selectedMonth.split('-');
         let d = new Date(parseInt(year), parseInt(m) - 1 + offset, 1);
         const newY = d.getFullYear();
         const newM = String(d.getMonth() + 1).padStart(2, '0');
-        setSelectedMonth(`${newY}-${newM}`);
+        const targetMonth = `${newY}-${newM}`;
+
+        try {
+          const firstDay = `${targetMonth}-01`;
+          const lastDay = new Date(parseInt(newY), parseInt(newM), 0).getDate();
+          const cleanLastDayStr = `${targetMonth}-${String(lastDay).padStart(2, '0')}`;
+
+          const { data: records, error } = await window.supabaseClient
+            .from('daily_logs')
+            .select('id')
+            .eq('team', currentTeam)
+            .gte('log_date', firstDay)
+            .lte('log_date', cleanLastDayStr)
+            .limit(1);
+
+          if (error) throw error;
+
+          if (!records || records.length === 0) {
+            setErrorMessage("해당 월에는 데이터가 없습니다.");
+            setTimeout(() => {
+              setErrorMessage("");
+            }, 2000);
+            return;
+          }
+
+          setSelectedMonth(targetMonth);
+        } catch (err) {
+          console.error("월 변경 체크 에러:", err);
+          setErrorMessage("데이터 확인 중 오류가 발생했습니다.");
+          setTimeout(() => {
+            setErrorMessage("");
+          }, 2000);
+        }
       };
 
       const handleExportExcel = async () => {
@@ -6018,10 +6051,17 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
             {/* 필터 및 월 선택 */}
             <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row gap-3 justify-between items-center z-10 shadow-sm relative">
-              <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-1 border border-blue-100 w-full md:w-auto justify-center">
-                <button onClick={() => changeMonth(-1)} className="p-1.5 text-blue-600 hover:bg-blue-200 rounded-md transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-                <div className="font-bold text-blue-900 px-2 min-w-[90px] text-center">{selectedMonth}</div>
-                <button onClick={() => changeMonth(1)} className="p-1.5 text-blue-600 hover:bg-blue-200 rounded-md transition-colors"><ChevronRight className="w-5 h-5" /></button>
+              <div className="flex flex-col items-center w-full md:w-auto">
+                <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-1 border border-blue-100 w-full md:w-auto justify-center">
+                  <button onClick={() => changeMonth(-1)} className="p-1.5 text-blue-600 hover:bg-blue-200 rounded-md transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                  <div className="font-bold text-blue-900 px-2 min-w-[90px] text-center">{selectedMonth}</div>
+                  <button onClick={() => changeMonth(1)} className="p-1.5 text-blue-600 hover:bg-blue-200 rounded-md transition-colors"><ChevronRight className="w-5 h-5" /></button>
+                </div>
+                {errorMessage && (
+                  <div className="text-red-500 text-xs font-bold mt-1 animate-fadeIn">
+                    {errorMessage}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-row flex-nowrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end">
