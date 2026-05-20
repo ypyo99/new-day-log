@@ -127,7 +127,7 @@ async function main() {
       const queryTeacherName = teacherName.replace(/\r?\n|\r/g, "/");
       let googleSchedule = {};
       let fetchSuccess = false;
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      for (let attempt = 1; attempt <= 5; attempt++) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 타임아웃
@@ -147,7 +147,7 @@ async function main() {
         } catch (err) {
           console.error(`    [시도 ${attempt}] 구글시트 로드 에러:`, err.message);
         }
-        if (attempt < 3) await sleep(1000);
+        if (attempt < 5) await sleep(1000);
       }
 
       if (!fetchSuccess) {
