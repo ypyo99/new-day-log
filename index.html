@@ -5350,7 +5350,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const year = parseInt(yearStr);
           const month = parseInt(monthStr);
 
-          const startDateStr = `${yearStr}-${monthStr}-01`;
+          // 올해(선택한 연도)의 1월 1일부터 검색
+          const startDateStr = `${yearStr}-01-01`;
 
           let nextYear = year;
           let nextMonth = month + 1;
@@ -5371,7 +5372,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           if (error) throw error;
 
           const dateList = [];
-          let curr = new Date(year, month - 1, 1);
+          let curr = new Date(year, 0, 1); // 올해 1월 1일부터 시작
           const endLimit = new Date(nextYear, nextMonth - 1, nextMonthLastDay);
           while (curr <= endLimit) {
             const yyyy = curr.getFullYear();
@@ -5729,7 +5730,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             XLSX.utils.book_append_sheet(wb, ws, tName);
           }
 
-          XLSX.writeFile(wb, `성동노인종합복지관_시간표_${yearStr}년${monthStr}월_내보내기.xlsx`);
+          XLSX.writeFile(wb, `성동노인종합복지관_시간표_${yearStr}년1월_${nextYear}년${nextMonth}월_내보내기.xlsx`);
           alert("🎉 엑셀 내보내기가 완료되었습니다!");
         } catch (err) {
           console.error(err);
