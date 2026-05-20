@@ -5364,22 +5364,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const nextMonthLastDay = new Date(nextYear, nextMonth, 0).getDate();
           const endDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextMonthLastDay).padStart(2, '0')}`;
 
-          const { data: allRecords, error } = await window.supabaseClient
-            .from('daily_logs')
-            .select('*')
-            .gte('log_date', startDateStr)
-            .lte('log_date', endDateStr)
-            .order('log_date', { ascending: true });
-
-          if (error) throw error;
-
+          // 올해 최초 근무일자 조회
           let firstWorkDateStr = `${yearStr}-01-01`; // 기본값
-          if (allRecords && allRecords.length > 0) {
-            const thisYearRecords = allRecords.filter(r => r.log_date && r.log_date.startsWith(yearStr));
-            if (thisYearRecords.length > 0) {
-              const sortedDates = thisYearRecords.map(r => r.log_date).sort();
-              firstWorkDateStr = sortedDates[0];
-            }
+          const { data: firstRec, error: firstRecErr } = await window.supabaseClient
+            .from('daily_logs')
+            .select('log_date')
+            .gte('log_date', `${yearStr}-01-01`)
+            .lte('log_date', endDateStr)
+            .order('log_date', { ascending: true })
+            .limit(1);
+          
+          if (!firstRecErr && firstRec && firstRec.length > 0) {
+            firstWorkDateStr = firstRec[0].log_date;
           }
 
           const dateList = [];
@@ -5410,7 +5406,17 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const targetTeams = ["1팀", "2팀", "3팀", "취업팀"];
 
           for (const tName of targetTeams) {
-            const teamData = (allRecords || []).filter(r => r.team === tName);
+            // 해당 팀의 데이터만 누락 없이 안전하게 개별 쿼리 (Supabase 1000개 조회 리밋 회피)
+            const { data: teamData, error: teamDataErr } = await window.supabaseClient
+              .from('daily_logs')
+              .select('*')
+              .eq('team', tName)
+              .gte('log_date', firstWorkDateStr)
+              .lte('log_date', endDateStr)
+              .range(0, 4000)
+              .order('log_date', { ascending: true });
+
+            if (teamDataErr) throw teamDataErr;
 
             const teamTeacherShiftsMap = {};
             if (TEACHER_GROUPS[tName]) {
