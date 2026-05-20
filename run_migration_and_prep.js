@@ -49,15 +49,24 @@ async function run() {
      console.log(`[${i+1}/${teachers.length}] ${team} - ${teacherName} 선생님의 일정 가져오는 중...`);
      
      let schedule = {};
-     try {
-       const schedRes = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${encodeURIComponent(team)}&teacher=${encodeURIComponent(teacherName)}`);
-       if (schedRes.ok) {
-          schedule = await schedRes.json();
-       } else {
-          console.warn(`  구글 시트 일정 가져오기 실패 (Status: ${schedRes.status})`);
+     let fetchSuccess = false;
+     for (let attempt = 1; attempt <= 3; attempt++) {
+       try {
+         const schedRes = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${encodeURIComponent(team)}&teacher=${encodeURIComponent(teacherName)}`);
+         if (schedRes.ok) {
+            schedule = await schedRes.json();
+            fetchSuccess = true;
+            break;
+         } else {
+            console.warn(`  구글 시트 일정 가져오기 시도 ${attempt} 실패 (Status: ${schedRes.status})`);
+         }
+       } catch (err) {
+          console.error(`  구글 시트 API 호출 시도 ${attempt} 에러:`, err);
        }
-     } catch (err) {
-        console.error(`  구글 시트 API 호출 에러:`, err);
+       if (attempt < 3) {
+         console.log(`  1.5초 후 재시도합니다...`);
+         await sleep(1500);
+       }
      }
 
      const activeDays = new Set();
