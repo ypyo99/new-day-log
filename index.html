@@ -5346,11 +5346,13 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         if (exporting) return;
         setExporting(true);
         try {
-          const [yearStr, monthStr] = selectedMonth.split('-');
-          const year = parseInt(yearStr);
-          const month = parseInt(monthStr);
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth() + 1;
+          const yearStr = String(year);
+          const monthStr = String(month).padStart(2, '0');
 
-          // 올해(선택한 연도)의 1월 1일부터 검색
+          // 올해(현재 연도)의 1월 1일부터 검색
           const startDateStr = `${yearStr}-01-01`;
 
           let nextYear = year;
