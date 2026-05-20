@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -6927,7 +6927,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 <div className="overflow-x-auto border border-gray-200 rounded-xl mb-6 scrollbar-thin">
                   <table className="w-full text-center border-collapse text-xs border border-gray-600">
                     <thead>
-                      <tr className="bg-blue-50 text-blue-900 font-black border-b border-gray-300 sticky top-0 z-10 text-[13px]">
+                      <tr className="bg-blue-50 text-blue-900 font-black border-b border-gray-300 sticky top-0 z-10 text-[13px] md:text-[15px] lg:text-[17px]">
                         <th className="py-3 px-2 border-r border-gray-600 w-16">조</th>
                         <th className="py-3 px-2 border-r border-gray-600 w-24">선생님</th>
                         <th className="py-3 px-2 border-r border-gray-600 w-28">시간</th>
@@ -6947,8 +6947,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         return tData.shifts.map((shift, sIdx) => {
                           const isLastShift = sIdx === shiftsCount - 1;
 
-                          const renderRowspanGroup = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-600 border-b-2 border-gray-400 bg-gray-50/50 font-bold align-middle whitespace-nowrap">{tData.group}</td> : null;
-                          const renderRowspanTeacher = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-600 border-b-2 border-gray-400 bg-gray-50/50 font-bold text-indigo-700 align-middle whitespace-nowrap text-[13px]">{teacherName}</td> : null;
+                          const renderRowspanGroup = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-600 border-b-2 border-gray-400 bg-gray-50/50 font-bold align-middle whitespace-nowrap md:text-[14px] lg:text-[16px]">{tData.group}</td> : null;
+                          const renderRowspanTeacher = sIdx === 0 ? <td rowSpan={shiftsCount} className="py-3 px-2 border-r border-gray-600 border-b-2 border-gray-400 bg-gray-50/50 font-bold text-indigo-700 align-middle whitespace-nowrap text-[13px] md:text-[15px] lg:text-[17px]">{teacherName}</td> : null;
 
                           const daysCells = [1, 2, 3, 4, 5].map(dayNum => {
                             const cell = tData.days[dayNum]?.[shift] || { student: "", location: "" };
@@ -7038,13 +7038,13 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                     <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-50 text-gray-400 text-[10px]">✏️</span>
                                     {student ? (
                                       <div>
-                                        <div className={`font-black text-gray-800 text-[13px] ${isExclude ? 'text-gray-400 font-bold' : ''}`}>{student}</div>
+                                        <div className={`font-black text-gray-800 text-[13px] md:text-[15px] lg:text-[17px] ${isExclude ? 'text-gray-400 font-bold' : ''}`}>{student}</div>
                                         {location && !location.startsWith("http") && (
-                                          <div className="text-[12px] text-gray-500 mt-1 font-bold">{location}</div>
+                                          <div className="text-[12px] md:text-[14px] lg:text-[16px] text-gray-500 mt-1 font-bold">{location}</div>
                                         )}
                                       </div>
                                     ) : (
-                                      <span className="text-gray-300 font-normal italic">-</span>
+                                      <span className="text-gray-300 font-normal italic md:text-sm lg:text-base">-</span>
                                     )}
                                   </>
                                 )}
