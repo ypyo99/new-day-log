@@ -121,6 +121,8 @@
       alert("⚠️ JS 오류 발생: " + e.message + "\n위치: " + e.filename + ":" + e.lineno);
     });
   </script>
+  <!-- Excel Export (xlsx-js-style) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 </head>
 
 <body class="">
@@ -157,6 +159,13 @@
     const Sparkles = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" /></svg>;
     const BookOpen = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>;
     const CalendarIcon = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>;
+    const DownloadIcon = ({ className }) => (
+      <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    );
 
     const VintageDivider = ({ className }) => (
       <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -5281,6 +5290,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [teacherFilter, setTeacherFilter] = useState("전체");
       const [uniqueTeachers, setUniqueTeachers] = useState([]);
       const [viewMode, setViewMode] = useState("sheet"); // "sheet" or "list"
+      const [exporting, setExporting] = useState(false);
 
       const fetchTeamData = async (month) => {
         setLoading(true);
@@ -5329,8 +5339,403 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         let d = new Date(parseInt(year), parseInt(m) - 1 + offset, 1);
         const newY = d.getFullYear();
         const newM = String(d.getMonth() + 1).padStart(2, '0');
-        setSelectedMonth(`${newY}-\ ` + String(newM));
         setSelectedMonth(`${newY}-${newM}`);
+      };
+
+      const handleExportExcel = async () => {
+        if (exporting) return;
+        setExporting(true);
+        try {
+          const [yearStr, monthStr] = selectedMonth.split('-');
+          const year = parseInt(yearStr);
+          const month = parseInt(monthStr);
+
+          const startDateStr = `${yearStr}-${monthStr}-01`;
+
+          let nextYear = year;
+          let nextMonth = month + 1;
+          if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear += 1;
+          }
+          const nextMonthLastDay = new Date(nextYear, nextMonth, 0).getDate();
+          const endDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextMonthLastDay).padStart(2, '0')}`;
+
+          const { data: allRecords, error } = await window.supabaseClient
+            .from('daily_logs')
+            .select('*')
+            .gte('log_date', startDateStr)
+            .lte('log_date', endDateStr)
+            .order('log_date', { ascending: true });
+
+          if (error) throw error;
+
+          const dateList = [];
+          let curr = new Date(year, month - 1, 1);
+          const endLimit = new Date(nextYear, nextMonth - 1, nextMonthLastDay);
+          while (curr <= endLimit) {
+            const yyyy = curr.getFullYear();
+            const mm = String(curr.getMonth() + 1).padStart(2, '0');
+            const dd = String(curr.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            
+            const dayOfWeek = ["일", "월", "화", "수", "목", "금", "토"][curr.getDay()];
+            const label = `${curr.getMonth() + 1}/${curr.getDate()} (${dayOfWeek})`;
+            
+            dateList.push({
+              dateStr,
+              label,
+              dayIndex: curr.getDay()
+            });
+            curr.setDate(curr.getDate() + 1);
+          }
+
+          const wb = XLSX.utils.book_new();
+          const targetTeams = ["1팀", "2팀", "3팀", "취업팀", "지하1층 평생교육실"];
+
+          for (const tName of targetTeams) {
+            const teamData = (allRecords || []).filter(r => r.team === tName);
+
+            const teamTeacherShiftsMap = {};
+            if (TEACHER_GROUPS[tName]) {
+              Object.entries(TEACHER_GROUPS[tName]).forEach(([teacher, group]) => {
+                const tLogs = teamData.filter(r => r.teacher === teacher);
+                if (tLogs.length > 0) {
+                  tLogs.forEach(r => {
+                    const key = `${teacher}::${r.shift}`;
+                    teamTeacherShiftsMap[key] = {
+                      teacher,
+                      shift: r.shift,
+                      groupName: group
+                    };
+                  });
+                } else {
+                  const defaultShift = "9:30~10:30";
+                  const key = `${teacher}::${defaultShift}`;
+                  teamTeacherShiftsMap[key] = {
+                    teacher,
+                    shift: defaultShift,
+                    groupName: group
+                  };
+                }
+              });
+            }
+
+            teamData.forEach(item => {
+              if (tName === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
+                return;
+              }
+              const key = `${item.teacher}::${item.shift}`;
+              if (!teamTeacherShiftsMap[key]) {
+                teamTeacherShiftsMap[key] = {
+                  teacher: item.teacher,
+                  shift: item.shift,
+                  groupName: (TEACHER_GROUPS[tName] && TEACHER_GROUPS[tName][item.teacher]) || "기타"
+                };
+              }
+            });
+
+            const sortedShifts = Object.values(teamTeacherShiftsMap).sort((a, b) => {
+              const weightA = getGroupWeight(a.groupName);
+              const weightB = getGroupWeight(b.groupName);
+              if (weightA !== weightB) return weightA - weightB;
+
+              if (a.teacher !== b.teacher) {
+                return getTeacherSortWeight(tName, a.teacher) - getTeacherSortWeight(tName, b.teacher);
+              }
+              return getShiftWeight(a.shift) - getShiftWeight(b.shift);
+            });
+
+            const gridRows = [];
+            sortedShifts.forEach(ts => {
+              gridRows.push({ ...ts, category: "대상" });
+              gridRows.push({ ...ts, category: "장소" });
+              gridRows.push({ ...ts, category: "진행" });
+            });
+
+            let startRowIdx = 0;
+            while (startRowIdx < gridRows.length) {
+              let count = 1;
+              for (let nextRow = startRowIdx + 1; nextRow < gridRows.length; nextRow++) {
+                if (gridRows[startRowIdx].groupName === gridRows[nextRow].groupName) {
+                  count++;
+                  gridRows[nextRow].renderGroup = false;
+                } else {
+                  break;
+                }
+              }
+              gridRows[startRowIdx].rowspanGroup = count;
+              gridRows[startRowIdx].renderGroup = true;
+              startRowIdx += count;
+            }
+
+            startRowIdx = 0;
+            while (startRowIdx < gridRows.length) {
+              let count = 1;
+              for (let nextRow = startRowIdx + 1; nextRow < gridRows.length; nextRow++) {
+                if (gridRows[startRowIdx].groupName === gridRows[nextRow].groupName &&
+                  gridRows[startRowIdx].teacher === gridRows[nextRow].teacher) {
+                  count++;
+                  gridRows[nextRow].renderTeacher = false;
+                } else {
+                  break;
+                }
+              }
+              gridRows[startRowIdx].rowspanTeacher = count;
+              gridRows[startRowIdx].renderTeacher = true;
+              startRowIdx += count;
+            }
+
+            startRowIdx = 0;
+            while (startRowIdx < gridRows.length) {
+              let count = 1;
+              for (let nextRow = startRowIdx + 1; nextRow < gridRows.length; nextRow++) {
+                if (gridRows[startRowIdx].groupName === gridRows[nextRow].groupName &&
+                  gridRows[startRowIdx].teacher === gridRows[nextRow].teacher &&
+                  gridRows[startRowIdx].shift === gridRows[nextRow].shift) {
+                  count++;
+                  gridRows[nextRow].renderShift = false;
+                } else {
+                  break;
+                }
+              }
+              gridRows[startRowIdx].rowspanShift = count;
+              gridRows[startRowIdx].renderShift = true;
+              startRowIdx += count;
+            }
+
+            const dataLookup = {};
+            teamData.forEach(item => {
+              const key = `${item.teacher}::${item.shift}::${item.log_date}`;
+              dataLookup[key] = item;
+            });
+
+            const wsData = [];
+            const headerRow = ["연번", "성명", "시간", ...dateList.map(d => d.label)];
+            wsData.push(headerRow);
+
+            const fontName = "Malgun Gothic";
+            const borderThin = {
+              top: { style: "thin", color: { rgb: "D1D5DB" } },
+              bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+              left: { style: "thin", color: { rgb: "D1D5DB" } },
+              right: { style: "thin", color: { rgb: "D1D5DB" } }
+            };
+
+            const baseHeaderStyle = {
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "1E3A8A" } },
+              fill: { fgColor: { rgb: "EFF6FF" } },
+              alignment: { vertical: "center", horizontal: "center", wrapText: true },
+              border: borderThin
+            };
+
+            const colAHeaderStyle = {
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "374151" } },
+              fill: { fgColor: { rgb: "F3F4F6" } },
+              alignment: { vertical: "center", horizontal: "center" },
+              border: borderThin
+            };
+
+            const cellStyleGroup = {
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "1F2937" } },
+              fill: { fgColor: { rgb: "F9FAFB" } },
+              alignment: { vertical: "center", horizontal: "center" },
+              border: borderThin
+            };
+
+            const cellStyleTeacher = {
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "111827" } },
+              fill: { fgColor: { rgb: "FFFFFF" } },
+              alignment: { vertical: "center", horizontal: "center" },
+              border: borderThin
+            };
+
+            const cellStyleShift = {
+              font: { name: fontName, sz: 9, bold: true, color: { rgb: "374151" } },
+              fill: { fgColor: { rgb: "FFFFFF" } },
+              alignment: { vertical: "center", horizontal: "center" },
+              border: borderThin
+            };
+
+            const merges = [];
+
+            gridRows.forEach((row, rIdx) => {
+              const excelRowIdx = rIdx + 1;
+              const rowArr = [];
+
+              rowArr.push(row.groupName);
+              rowArr.push(row.teacher);
+              rowArr.push(row.shift);
+
+              dateList.forEach(d => {
+                const item = dataLookup[`${row.teacher}::${row.shift}::${d.dateStr}`];
+                let val = "";
+                if (item) {
+                  if (row.category === "대상") {
+                    val = item.student || "";
+                  } else if (row.category === "장소") {
+                    val = item.location || "";
+                  } else if (row.category === "진행") {
+                    val = item.status === "1" ? "1" : (item.status || "");
+                  }
+                }
+                rowArr.push(val);
+              });
+
+              wsData.push(rowArr);
+
+              if (row.renderGroup && row.rowspanGroup > 1) {
+                merges.push({ s: { r: excelRowIdx, c: 0 }, e: { r: excelRowIdx + row.rowspanGroup - 1, c: 0 } });
+              }
+              if (row.renderTeacher && row.rowspanTeacher > 1) {
+                merges.push({ s: { r: excelRowIdx, c: 1 }, e: { r: excelRowIdx + row.rowspanTeacher - 1, c: 1 } });
+              }
+              if (row.renderShift && row.rowspanShift > 1) {
+                merges.push({ s: { r: excelRowIdx, c: 2 }, e: { r: excelRowIdx + row.rowspanShift - 1, c: 2 } });
+              }
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+              for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellRef]) {
+                  ws[cellRef] = { v: "" };
+                }
+                const cell = ws[cellRef];
+
+                if (R === 0) {
+                  if (C === 0 || C === 1) {
+                    cell.s = colAHeaderStyle;
+                  } else if (C === 2) {
+                    cell.s = baseHeaderStyle;
+                  } else {
+                    const dateObj = dateList[C - 3];
+                    if (dateObj.dayIndex === 6) {
+                      cell.s = {
+                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "1D4ED8" } },
+                        fill: { fgColor: { rgb: "EFF6FF" } },
+                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
+                        border: borderThin
+                      };
+                    } else if (dateObj.dayIndex === 0) {
+                      cell.s = {
+                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "B91C1C" } },
+                        fill: { fgColor: { rgb: "FEF2F2" } },
+                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
+                        border: borderThin
+                      };
+                    } else {
+                      cell.s = {
+                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "1F2937" } },
+                        fill: { fgColor: { rgb: "F9FAFB" } },
+                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
+                        border: borderThin
+                      };
+                    }
+                  }
+                  continue;
+                }
+
+                const rowObj = gridRows[R - 1];
+                if (C === 0) {
+                  cell.s = cellStyleGroup;
+                } else if (C === 1) {
+                  cell.s = cellStyleTeacher;
+                } else if (C === 2) {
+                  cell.s = cellStyleShift;
+                } else {
+                  const dateObj = dateList[C - 3];
+                  const item = dataLookup[`${rowObj.teacher}::${rowObj.shift}::${dateObj.dateStr}`];
+                  
+                  let fillRGB = "FFFFFF";
+                  let fontColorRGB = "333333";
+                  let isBold = false;
+
+                  if (item) {
+                    const isHoliday = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
+                      (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
+                      (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
+
+                    if (isHoliday) {
+                      fillRGB = "EF4444";
+                      fontColorRGB = "FFFFFF";
+                      isBold = true;
+                    } else {
+                      if (rowObj.category === "대상") {
+                        if (item.student?.includes('보조강사')) {
+                          fillRGB = "FEF08A";
+                          fontColorRGB = "1E293B";
+                          isBold = true;
+                        } else if (item.student) {
+                          fillRGB = "F8FAFC";
+                          isBold = true;
+                        }
+                      } else if (rowObj.category === "장소") {
+                        if (item.signature_url) {
+                          fillRGB = "FFFFFF";
+                          fontColorRGB = "2563EB";
+                          isBold = true;
+                        } else if (item.location) {
+                          fillRGB = "FFFFFF";
+                          fontColorRGB = "4B5563";
+                        }
+                      } else if (rowObj.category === "진행") {
+                        if (item.status === '1') {
+                          fillRGB = "EFF6FF";
+                          fontColorRGB = "1D4ED8";
+                          isBold = true;
+                        } else if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                          fillRGB = "FEF2F2";
+                          fontColorRGB = "DC2626";
+                          isBold = true;
+                        } else if (item.status) {
+                          fillRGB = "FFFFFF";
+                          fontColorRGB = "4F46E5";
+                        }
+                      }
+                    }
+                  }
+
+                  cell.s = {
+                    font: { name: fontName, sz: 10, bold: isBold, color: { rgb: fontColorRGB } },
+                    fill: { fgColor: { rgb: fillRGB } },
+                    alignment: { vertical: "center", horizontal: "center", wrapText: true },
+                    border: borderThin
+                  };
+                }
+              }
+            }
+
+            ws['!merges'] = merges;
+            
+            const wscols = [
+              { wch: 8 },
+              { wch: 11 },
+              { wch: 15 },
+              ...dateList.map(() => ({ wch: 14 }))
+            ];
+            ws['!cols'] = wscols;
+
+            const wsrows = [
+              { hpt: 35 },
+              ...gridRows.map(() => ({ hpt: 26 }))
+            ];
+            ws['!rows'] = wsrows;
+
+            XLSX.utils.book_append_sheet(wb, ws, tName);
+          }
+
+          XLSX.writeFile(wb, `성동노인종합복지관_시간표_${yearStr}년${monthStr}월_내보내기.xlsx`);
+          alert("🎉 엑셀 내보내기가 완료되었습니다!");
+        } catch (err) {
+          console.error(err);
+          alert("⚠️ 엑셀 내보내기 중 오류가 발생했습니다: " + err.message);
+        } finally {
+          setExporting(false);
+        }
       };
 
       const filteredData = data.filter(d => teacherFilter === "전체" || d.teacher === teacherFilter);
@@ -5455,8 +5860,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans">
           <div className="bg-white flex-1 flex flex-col overflow-hidden relative">
             {/* Header */}
-            <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative">
-              <div className="w-full px-4 pb-3 pt-3 flex justify-between items-start">
+            <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex flex-col items-center">
+              <div className="w-full px-4 pb-1 pt-3 flex justify-between items-start">
                 <div>
                   <div className="flex items-center mb-1">
                     <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
@@ -5469,6 +5874,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
                   <Home className="w-5 h-5 mb-1" />
                   <span>처음으로</span>
+                </button>
+              </div>
+
+              {/* 헤더 아래부분 중앙 내보내기 버튼 */}
+              <div className="pb-3 w-full flex justify-center">
+                <button 
+                  onClick={handleExportExcel} 
+                  disabled={exporting}
+                  className="px-8 py-2 md:px-12 md:py-2.5 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-xs sm:text-sm md:text-base transition-all flex items-center gap-2 pointer-events-auto relative z-50 disabled:opacity-50"
+                >
+                  <DownloadIcon className="w-4 h-4 md:w-5 md:h-5" /> 
+                  <span>{exporting ? "엑셀 생성 중..." : "엑셀 내보내기"}</span>
                 </button>
               </div>
             </div>
