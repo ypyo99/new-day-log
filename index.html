@@ -7058,7 +7058,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             <tr key={`${teacherName}-${shift}`} className="hover:bg-gray-50/30">
                               {renderRowspanGroup}
                               {renderRowspanTeacher}
-                              <td className={`py-3 px-2 border-r border-gray-600 ${timeBorderClass} text-blue-800 font-extrabold whitespace-nowrap bg-blue-50/30 align-middle text-[11px]`}>{shift}</td>
+                              <td className={`py-3 px-2 border-r border-gray-600 ${timeBorderClass} text-blue-800 font-extrabold whitespace-nowrap bg-blue-50/30 align-middle text-[11px] md:text-[13px] lg:text-[14px]`}>{shift}</td>
                               {daysCells}
                             </tr>
                           );
