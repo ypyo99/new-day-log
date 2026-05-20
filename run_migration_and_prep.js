@@ -50,9 +50,17 @@ async function run() {
      
      let schedule = {};
      let fetchSuccess = false;
+     const queryTeacherName = teacherName.replace(/\r?\n|\r/g, "/");
      for (let attempt = 1; attempt <= 3; attempt++) {
        try {
-         const schedRes = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${encodeURIComponent(team)}&teacher=${encodeURIComponent(teacherName)}`);
+         const controller = new AbortController();
+         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 타임아웃
+
+         const schedRes = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${encodeURIComponent(team)}&teacher=${encodeURIComponent(queryTeacherName)}`, {
+           signal: controller.signal
+         });
+         clearTimeout(timeoutId);
+
          if (schedRes.ok) {
             schedule = await schedRes.json();
             fetchSuccess = true;
@@ -61,7 +69,7 @@ async function run() {
             console.warn(`  구글 시트 일정 가져오기 시도 ${attempt} 실패 (Status: ${schedRes.status})`);
          }
        } catch (err) {
-          console.error(`  구글 시트 API 호출 시도 ${attempt} 에러:`, err);
+          console.error(`  구글 시트 API 호출 시도 ${attempt} 에러:`, err.message);
        }
        if (attempt < 3) {
          console.log(`  1.5초 후 재시도합니다...`);
