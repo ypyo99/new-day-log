@@ -116,6 +116,11 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91ZHJjZnhrbmVvcGd0Y2Zid2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNzk0MTYsImV4cCI6MjA5NDY1NTQxNn0.ovAp6X3VogCeyKa74pC3x2f4lKR6m3gkE0kEEhJbGpQ';
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   </script>
+  <script>
+    window.addEventListener('error', function(e) {
+      alert("⚠️ JS 오류 발생: " + e.message + "\n위치: " + e.filename + ":" + e.lineno);
+    });
+  </script>
 </head>
 
 <body class="">
@@ -726,6 +731,7 @@
       const [isEditing, setIsEditing] = useState(false);
       const [currentId, setCurrentId] = useState(null);
       const [isLoading, setIsLoading] = useState(false);
+      const [isAdmin, setIsAdmin] = useState(false);
       const [formData, setFormData] = useState({
         team: '1팀',
         group: '1조',
@@ -735,6 +741,36 @@
         shift2: '10:30~11:30',
         shift3: '11:30~12:30'
       });
+
+      const [showPwdModal, setShowPwdModal] = useState(false);
+      const [pwdInput, setPwdInput] = useState("");
+      const [pwdError, setPwdError] = useState(false);
+      const pwdInputRef = useRef(null);
+
+      useEffect(() => {
+        if (showPwdModal && pwdInputRef.current) {
+          pwdInputRef.current.focus();
+        }
+      }, [showPwdModal]);
+
+      const handleAdminClick = () => {
+        if (isAdmin) {
+          setIsAdmin(false);
+        } else {
+          setShowPwdModal(true);
+          setPwdInput("");
+          setPwdError(false);
+        }
+      };
+
+      const checkPassword = () => {
+        if (pwdInput === "qqq") {
+          setIsAdmin(true);
+          setShowPwdModal(false);
+        } else {
+          setPwdError(true);
+        }
+      };
 
       const fetchTeachers = async () => {
         setIsLoading(true);
@@ -861,7 +897,8 @@
 
       return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
-          <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative shrink-0">
+          <header className="bg-blue-600 text-white px-4 py-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative shrink-0">
+            {/* 타이틀 영역 */}
             <div className="flex items-center">
               <div className="flex flex-col">
                 <div className="flex items-center mb-1">
@@ -875,6 +912,17 @@
               </div>
             </div>
 
+            {/* 담당자 로그인 버튼 영역 (선생님 명단 관리 우측 및 헤더 중앙) */}
+            <div className="flex justify-center items-center px-2">
+              <button
+                onClick={handleAdminClick}
+                className={`px-6 py-2 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation whitespace-nowrap ${isAdmin ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}
+              >
+                {isAdmin ? '담당자 모드 종료' : '담당자 로그인'}
+              </button>
+            </div>
+
+            {/* 처음으로 버튼 영역 */}
             <button
               onClick={onNavigateBack}
               className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95"
@@ -883,8 +931,9 @@
             </button>
           </header>
 
-          <main className="flex-1 px-4 sm:px-6 md:px-8 pt-4 pb-12 w-full max-w-4xl mx-auto overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6">
+          <main className="flex-1 px-4 sm:px-6 md:px-8 pt-2 pb-12 w-full max-w-4xl mx-auto overflow-y-auto">
+            {isAdmin ? (
+              <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex justify-between items-center mb-4 border-b pb-2">
                   <h2 className="text-lg font-bold text-gray-800">
@@ -933,6 +982,11 @@
                 </div>
               </form>
             </div>
+          ) : (
+            <div className="bg-yellow-50 rounded-2xl border border-yellow-200 p-4 mb-6 text-center text-yellow-800 text-xs sm:text-sm font-bold shadow-sm">
+              💡 선생님 등록 및 수정을 하시려면 상단의 [담당자 로그인] 버튼을 눌러 인증해 주세요.
+            </div>
+          )}
 
             <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
               <div className="px-5 py-3 border-b bg-gray-50">
@@ -946,7 +1000,7 @@
                       <th className="py-2.5 px-1 border-r border-gray-200 w-10 whitespace-nowrap">조</th>
                       <th className="py-2.5 px-1 border-r border-gray-200 w-12 whitespace-nowrap">번호</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">이름</th>
-                      <th className="py-2.5 px-2 border-r border-gray-200">관리</th>
+                      {isAdmin && <th className="py-2.5 px-2 border-r border-gray-200">관리</th>}
                       <th className="py-2.5 px-2 border-r border-gray-200">시간대 1</th>
                       <th className="py-2.5 px-2 border-r border-gray-200">시간대 2</th>
                       <th className="py-2.5 px-2">시간대 3</th>
@@ -969,17 +1023,19 @@
                             t.name
                           )}
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-100 space-x-1 whitespace-nowrap">
-                          <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300">수정</button>
-                          <button onClick={() => handleDelete(t.id)} className="px-2 py-1 bg-red-200 text-red-800 text-xs font-bold rounded hover:bg-red-300">삭제</button>
-                        </td>
+                        {isAdmin && (
+                          <td className="py-2 px-2 border-r border-gray-100 space-x-1 whitespace-nowrap">
+                            <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300">수정</button>
+                            <button onClick={() => handleDelete(t.id)} className="px-2 py-1 bg-red-200 text-red-800 text-xs font-bold rounded hover:bg-red-300">삭제</button>
+                          </td>
+                        )}
                         <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift1}</td>
                         <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift2}</td>
                         <td className="py-2 px-2 text-sm text-gray-600">{t.shift3}</td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan="8" className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
+                        <td colSpan={isAdmin ? 8 : 7} className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
                       </tr>
                     )}
                   </tbody>
@@ -987,6 +1043,20 @@
               </div>
             </div>
           </main>
+
+          {showPwdModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">담당자 암호</h3>
+                <input ref={pwdInputRef} autoFocus type="password" value={pwdInput} onChange={(e) => { const val = e.target.value; setPwdInput(val); if (val === 'qqq') { setIsAdmin(true); window.localStorage.setItem('sungdong_admin_logged_in', 'true'); setShowPwdModal(false); } }} onKeyDown={(e) => e.key === 'Enter' && checkPassword()} className="w-full border-2 p-3 rounded-lg mb-4 text-center text-2xl tracking-widest outline-none focus:border-blue-500 text-black" placeholder="••••" />
+                {pwdError && <p className="text-red-500 text-xs text-center mb-4">비밀번호가 틀렸습니다.</p>}
+                <div className="flex gap-2 text-black">
+                  <button onClick={() => setShowPwdModal(false)} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold touch-manipulation">취소</button>
+                  <button onClick={checkPassword} className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold touch-manipulation">확인</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -2459,10 +2529,6 @@
                 )}
                 {errorMessage && <div className="text-red-600 font-bold text-center text-sm -mt-2 -mb-2">{errorMessage}</div>}
 
-                <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
-                  <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
-                </button>
-
                 <a href="https://docs.google.com/spreadsheets/d/1e4g_HIsmAQbLK8n0eMz_RGX3okou75tqKSSAkbWDsBk/edit?gid=936021842#gid=936021842" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-emerald-900 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 shadow-md transition-all active:scale-95 min-h-[54px]">
                   <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg> 수업 희망자 및 기타 참여자 관리
                 </a>
@@ -2471,11 +2537,19 @@
                   <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><path d="M11 8a3 3 0 0 0-3 3" /></svg> 대상자 검색하기
                 </button>
 
-                <button onClick={onNavigateToTeacherManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-600 border-2 border-indigo-700 hover:bg-indigo-700 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
+                <div className="flex justify-center items-center shrink-0 -my-1 sm:-my-1.5">
+                  <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
+                </div>
+
+                <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-purple-500 border-2 border-purple-600 hover:bg-purple-600 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
+                  <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
+                </button>
+
+                <button onClick={onNavigateToTeacherManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-400 border-2 border-indigo-500 hover:bg-indigo-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
                   <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
                 </button>
 
-                <button onClick={onNavigateToAutoSchedule} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-600 border-2 border-rose-700 hover:bg-rose-700 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
+                <button onClick={onNavigateToAutoSchedule} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] lg:text-[19px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-400 border-2 border-rose-500 hover:bg-rose-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px]">
                   <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 자동 작성
                 </button>
               </div>
@@ -5200,6 +5274,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
     // =====================================================================
 
     function TeamScheduleApp({ team, onNavigateBack }) {
+      const [currentTeam, setCurrentTeam] = useState(team);
       const [data, setData] = useState([]);
       const [loading, setLoading] = useState(true);
       const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
@@ -5218,7 +5293,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const { data: records, error } = await window.supabaseClient
             .from('daily_logs')
             .select('*')
-            .eq('team', team)
+            .eq('team', currentTeam)
             .gte('log_date', firstDay)
             .lte('log_date', cleanLastDayStr)
             .order('log_date', { ascending: false })
@@ -5230,12 +5305,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             setData(records);
             const tSet = new Set();
             // 💡 [신규] 해당 팀의 TEACHER_GROUPS 기본 선생님 목록을 디폴트로 무조건 포함시킴!
-            if (TEACHER_GROUPS && TEACHER_GROUPS[team]) {
-              Object.keys(TEACHER_GROUPS[team]).forEach(t => tSet.add(t));
+            if (TEACHER_GROUPS && TEACHER_GROUPS[currentTeam]) {
+              Object.keys(TEACHER_GROUPS[currentTeam]).forEach(t => tSet.add(t));
             }
             records.forEach(r => { if (r.teacher) tSet.add(r.teacher); });
             setUniqueTeachers(Array.from(tSet).sort((a, b) => {
-              return getTeacherSortWeight(team, a) - getTeacherSortWeight(team, b);
+              return getTeacherSortWeight(currentTeam, a) - getTeacherSortWeight(currentTeam, b);
             }));
           }
         } catch (e) {
@@ -5246,8 +5321,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       };
 
       useEffect(() => {
-        if (team) fetchTeamData(selectedMonth);
-      }, [team, selectedMonth]);
+        if (currentTeam) fetchTeamData(selectedMonth);
+      }, [currentTeam, selectedMonth]);
 
       const changeMonth = (offset) => {
         const [year, m] = selectedMonth.split('-');
@@ -5275,7 +5350,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const teacherShiftsMap = {};
 
       // 💡 [신규] 해당 팀이 '취업팀'인 경우, 공식 교사 4명의 기본 행(디폴트 시간대 포함)을 무조건 먼저 생성해 둠!
-      if (team === "취업팀" && TEACHER_GROUPS["취업팀"]) {
+      if (currentTeam === "취업팀" && TEACHER_GROUPS["취업팀"]) {
         Object.entries(TEACHER_GROUPS["취업팀"]).forEach(([t, g]) => {
           const defaultShift = "9:30~10:30";
           const key = `${t}::${defaultShift}`;
@@ -5289,7 +5364,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
       filteredData.forEach(item => {
         // 💡 [필터링] 취업팀 화면에서는 취업팀 공식 멤버가 아닌 강사(예: test_teacher 등)는 배제함!
-        if (team === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
+        if (currentTeam === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
           return;
         }
 
@@ -5297,7 +5372,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         teacherShiftsMap[key] = {
           teacher: item.teacher,
           shift: item.shift,
-          groupName: (TEACHER_GROUPS[team] && TEACHER_GROUPS[team][item.teacher]) || "기타"
+          groupName: (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][item.teacher]) || "기타"
         };
       });
 
@@ -5307,7 +5382,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         if (weightA !== weightB) return weightA - weightB;
 
         if (a.teacher !== b.teacher) {
-          return getTeacherSortWeight(team, a.teacher) - getTeacherSortWeight(team, b.teacher);
+          return getTeacherSortWeight(currentTeam, a.teacher) - getTeacherSortWeight(currentTeam, b.teacher);
         }
         return getShiftWeight(a.shift) - getShiftWeight(b.shift);
       });
@@ -5388,7 +5463,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     <h1 className="font-black text-xl sm:text-2xl leading-tight">성동노인종합복지관</h1>
                   </div>
                   <p className="text-sm sm:text-base font-bold text-yellow-300">
-                    디지털교육 서포터즈 ({team} 전체 일정)
+                    디지털교육 서포터즈
                   </p>
                 </div>
                 <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
@@ -5426,13 +5501,26 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </div>
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-sm font-bold text-gray-600 whitespace-nowrap">선생님:</span>
+                  <select
+                    className="w-24 sm:w-28 border border-gray-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm font-bold text-blue-800 bg-white shadow-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                    value={currentTeam}
+                    onChange={(e) => {
+                      setCurrentTeam(e.target.value);
+                      setTeacherFilter("전체");
+                    }}
+                  >
+                    <option value="" disabled hidden>팀</option>
+                    <option value="1팀">1팀</option>
+                    <option value="2팀">2팀</option>
+                    <option value="3팀">3팀</option>
+                    <option value="취업팀">취업팀</option>
+                  </select>
                   <select
                     className="w-28 sm:w-36 border border-gray-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm font-bold text-blue-800 bg-white shadow-sm focus:ring-2 focus:ring-blue-400 outline-none"
                     value={teacherFilter}
                     onChange={(e) => setTeacherFilter(e.target.value)}
                   >
-                    <option value="전체">전체보기</option>
+                    <option value="전체">선생님</option>
                     {uniqueTeachers.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
@@ -5578,8 +5666,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 <div className="space-y-5">
                   {Object.entries(groupedByDate).sort(([a], [b]) => b.localeCompare(a)).map(([dateStr, items]) => {
                     const sortedItems = [...items].sort((a, b) => {
-                      const groupA = (TEACHER_GROUPS[team] && TEACHER_GROUPS[team][a.teacher]) || "기타";
-                      const groupB = (TEACHER_GROUPS[team] && TEACHER_GROUPS[team][b.teacher]) || "기타";
+                      const groupA = (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][a.teacher]) || "기타";
+                      const groupB = (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][b.teacher]) || "기타";
 
                       const weightA = getGroupWeight(groupA);
                       const weightB = getGroupWeight(groupB);
@@ -5594,7 +5682,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                     const parsedItems = sortedItems.map(item => ({
                       ...item,
-                      groupName: (TEACHER_GROUPS[team] && TEACHER_GROUPS[team][item.teacher]) || "기타",
+                      groupName: (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][item.teacher]) || "기타",
                       rowspan: { group: 1, teacher: 1 },
                       render: { group: true, teacher: true }
                     }));
@@ -5707,6 +5795,49 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
     // 📅 6. 시간표 자동 작성 컴포넌트 (신규)
     // =====================================================================
     function AutoScheduleApp({ onNavigateBack }) {
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [showPwdModal, setShowPwdModal] = useState(false);
+      const [pwdInput, setPwdInput] = useState("");
+      const [pwdError, setPwdError] = useState(false);
+      const pwdInputRef = useRef(null);
+
+      useEffect(() => {
+        try {
+          if (showPwdModal && pwdInputRef.current) {
+            pwdInputRef.current.focus();
+          }
+        } catch (e) {
+          console.error("Focus useEffect Error:", e);
+        }
+      }, [showPwdModal]);
+
+      const handleAdminClick = () => {
+        try {
+          if (isAdmin) {
+            setIsAdmin(false);
+          } else {
+            setShowPwdModal(true);
+            setPwdInput("");
+            setPwdError(false);
+          }
+        } catch (e) {
+          alert("handleAdminClick 오류: " + e.message);
+        }
+      };
+
+      const checkPassword = () => {
+        try {
+          if (pwdInput === "qqq") {
+            setIsAdmin(true);
+            setShowPwdModal(false);
+          } else {
+            setPwdError(true);
+          }
+        } catch (e) {
+          alert("checkPassword 오류: " + e.message);
+        }
+      };
+
       const [startDate, setStartDate] = useState(() => {
         const d = new Date();
         d.setMonth(d.getMonth() + 1);
@@ -6067,6 +6198,16 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               </div>
             </div>
 
+            {/* 담당자 로그인 버튼 영역 (시간표 자동 작성 우측 및 헤더 중앙) */}
+            <div className="flex justify-center items-center px-2 relative z-50 pointer-events-auto">
+              <button
+                onClick={handleAdminClick}
+                className={`px-6 py-2 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation whitespace-nowrap ${isAdmin ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}
+              >
+                {isAdmin ? '담당자 모드 종료' : '담당자 로그인'}
+              </button>
+            </div>
+
             <button
               onClick={onNavigateBack}
               className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95"
@@ -6076,52 +6217,64 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           </header>
 
           <main className="flex-1 px-4 sm:px-6 md:px-8 pt-4 pb-12 w-full max-w-7xl mx-auto overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6 max-w-4xl mx-auto">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-4 gap-3">
-                <h2 className="text-lg font-bold text-gray-800">자동 작성 대상 기간 및 팀 선택</h2>
-                <button
-                  onClick={handleAnalyze}
-                  disabled={analyzing || saving}
-                  className="px-6 py-2.5 bg-blue-600 text-white font-extrabold rounded-xl shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-base shrink-0"
-                >
-                  {analyzing ? '분석 중...' : '시간표 분석 및 미리보기'}
-                </button>
+            {!isAdmin ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center shadow-sm max-w-4xl mx-auto mb-6">
+                <div className="text-3xl mb-2">💡</div>
+                <p className="font-extrabold text-amber-800 text-base">
+                  시간표 자동 작성 및 예약을 하시려면 상단의 [담당자 로그인] 버튼을 눌러 인증해 주세요.
+                </p>
+                <p className="text-xs text-amber-600 mt-2 font-bold">
+                  * 담당자 전용 인증 후에만 시간표 자동 완성, 미리보기 수정 및 DB 저장이 가능합니다.
+                </p>
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">시작일자</label>
-                  <input 
-                    type="date" 
-                    value={startDate} 
-                    onChange={(e) => setStartDate(e.target.value)} 
-                    className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">종료일자</label>
-                  <input 
-                    type="date" 
-                    value={endDate} 
-                    onChange={(e) => setEndDate(e.target.value)} 
-                    className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">팀 선택</label>
-                  <select 
-                    value={team} 
-                    onChange={(e) => setTeam(e.target.value)} 
-                    className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            ) : (
+              <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6 max-w-4xl mx-auto">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-4 gap-3">
+                  <h2 className="text-lg font-bold text-gray-800">자동 작성 대상 기간 및 팀 선택</h2>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={analyzing || saving}
+                    className="px-6 py-2.5 bg-blue-600 text-white font-extrabold rounded-xl shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-base shrink-0"
                   >
-                    <option value="1팀">1팀</option>
-                    <option value="2팀">2팀</option>
-                    <option value="3팀">3팀</option>
-                    <option value="취업팀">취업팀</option>
-                  </select>
+                    {analyzing ? '분석 중...' : '시간표 분석 및 미리보기'}
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">시작일자</label>
+                    <input 
+                      type="date" 
+                      value={startDate} 
+                      onChange={(e) => setStartDate(e.target.value)} 
+                      className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">종료일자</label>
+                    <input 
+                      type="date" 
+                      value={endDate} 
+                      onChange={(e) => setEndDate(e.target.value)} 
+                      className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">팀 선택</label>
+                    <select 
+                      value={team} 
+                      onChange={(e) => setTeam(e.target.value)} 
+                      className="w-full p-2.5 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    >
+                      <option value="1팀">1팀</option>
+                      <option value="2팀">2팀</option>
+                      <option value="3팀">3팀</option>
+                      <option value="취업팀">취업팀</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {(analyzing || saving) && (
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-6 text-center shadow-sm max-w-4xl mx-auto">
@@ -6205,36 +6358,70 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             
                             const borderClass = isLastShift ? 'border-b-2 border-gray-400' : 'border-b border-gray-200';
                             
+                            const saveCell = (sVal, lVal) => {
+                              handleCellEdit(teacherName, dayNum, shift, sVal.trim(), lVal.trim());
+                            };
+
                             return (
                               <td
                                 key={dayNum}
-                                onClick={() => { if (!isEditing) setEditCell({ teacherName, dayNum, shift, student, location }); }}
-                                className={`border-r border-gray-600 ${borderClass} align-top ${cellBg} min-w-[120px] ${isEditing ? 'p-1' : 'py-3.5 px-2 cursor-pointer group relative'}`}
+                                onClick={() => { if (isAdmin && !isEditing) setEditCell({ teacherName, dayNum, shift, student, location }); }}
+                                className={`border-r border-gray-600 ${borderClass} align-top ${cellBg} min-w-[130px] ${isEditing ? 'p-1.5' : `py-3.5 px-2 ${isAdmin ? 'cursor-pointer group' : 'cursor-default'} relative`}`}
                               >
                                 {isEditing ? (
-                                  <input
-                                    type="text"
-                                    defaultValue={student}
-                                    id={`edit-student-${teacherName}-${dayNum}-${shift}`}
-                                    placeholder="대상자명 입력"
-                                    autoFocus
-                                    onBlur={e => {
-                                      const s = e.target.value.trim();
-                                      const l = location.trim() || "복지관";
-                                      handleCellEdit(teacherName, dayNum, shift, s, l);
-                                    }}
-                                    onKeyDown={e => {
-                                      if (e.key === 'Escape') {
-                                        setEditCell(null);
-                                      }
-                                      if (e.key === 'Enter') {
-                                        const s = e.target.value.trim();
-                                        const l = location.trim() || "복지관";
-                                        handleCellEdit(teacherName, dayNum, shift, s, l);
-                                      }
-                                    }}
-                                    className="w-full px-2 py-1.5 border border-indigo-400 rounded-lg text-[12px] font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                  />
+                                  <div className="flex flex-col gap-1 w-full" onClick={e => e.stopPropagation()}>
+                                    <input
+                                      type="text"
+                                      defaultValue={student}
+                                      id={`edit-student-${teacherName}-${dayNum}-${shift}`}
+                                      placeholder="학생이름"
+                                      autoFocus
+                                      onKeyDown={e => {
+                                        if (e.key === 'Escape') setEditCell(null);
+                                        if (e.key === 'Enter') {
+                                          const sInput = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`);
+                                          const lInput = document.getElementById(`edit-location-${teacherName}-${dayNum}-${shift}`);
+                                          saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
+                                        }
+                                      }}
+                                      className="w-full px-1.5 py-1 border border-indigo-300 rounded text-[11px] font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    />
+                                    <input
+                                      type="text"
+                                      defaultValue={location || "복지관"}
+                                      id={`edit-location-${teacherName}-${dayNum}-${shift}`}
+                                      placeholder="장소"
+                                      onKeyDown={e => {
+                                        if (e.key === 'Escape') setEditCell(null);
+                                        if (e.key === 'Enter') {
+                                          const sInput = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`);
+                                          const lInput = document.getElementById(`edit-location-${teacherName}-${dayNum}-${shift}`);
+                                          saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
+                                        }
+                                      }}
+                                      className="w-full px-1.5 py-1 border border-indigo-300 rounded text-[11px] font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    />
+                                    <div className="flex gap-1 justify-end mt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditCell(null)}
+                                        className="px-1.5 py-0.5 text-[9px] bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-bold"
+                                      >
+                                        취소
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const sInput = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`);
+                                          const lInput = document.getElementById(`edit-location-${teacherName}-${dayNum}-${shift}`);
+                                          saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
+                                        }}
+                                        className="px-1.5 py-0.5 text-[9px] bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"
+                                      >
+                                        확인
+                                      </button>
+                                    </div>
+                                  </div>
                                 ) : (
                                   <>
                                     <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-50 text-gray-400 text-[10px]">✏️</span>
@@ -6332,6 +6519,20 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             )}
 
           </main>
+
+          {showPwdModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">담당자 암호</h3>
+                <input ref={pwdInputRef} autoFocus type="password" value={pwdInput} onChange={(e) => { const val = e.target.value; setPwdInput(val); if (val === 'qqq') { setIsAdmin(true); window.localStorage.setItem('sungdong_admin_logged_in', 'true'); setShowPwdModal(false); } }} onKeyDown={(e) => e.key === 'Enter' && checkPassword()} className="w-full border-2 p-3 rounded-lg mb-4 text-center text-2xl tracking-widest outline-none focus:border-blue-500 text-black" placeholder="••••" />
+                {pwdError && <p className="text-red-500 text-xs text-center mb-4">비밀번호가 틀렸습니다.</p>}
+                <div className="flex gap-2 text-black">
+                  <button onClick={() => setShowPwdModal(false)} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold touch-manipulation">취소</button>
+                  <button onClick={checkPassword} className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold touch-manipulation">확인</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
