@@ -6975,7 +6975,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     <select
                       value={team}
                       onChange={(e) => setTeam(e.target.value)}
-                      className="w-full p-1.5 sm:p-2.5 text-[13px] sm:text-[18px] border border-sky-300 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-sky-100 shadow-sm"
+                      className="w-full p-1.5 sm:p-2.5 text-[16px] sm:text-[21px] border border-sky-300 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-sky-100 shadow-sm"
                     >
                       <option value="1팀">1팀</option>
                       <option value="2팀">2팀</option>
@@ -6992,7 +6992,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         onChange={(e) => setStartDate(e.target.value)}
                         className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
                       />
-                      <div className="w-full p-1.5 sm:p-2.5 text-[13px] sm:text-[18px] border border-sky-300 rounded-xl font-bold bg-sky-100 flex items-center justify-between text-gray-800 shadow-sm min-h-[31px] sm:min-h-[46px]">
+                      <div className="w-full p-1.5 sm:p-2.5 text-[16px] sm:text-[21px] border border-sky-300 rounded-xl font-bold bg-sky-100 flex items-center justify-between text-gray-800 shadow-sm min-h-[31px] sm:min-h-[46px]">
                         <span>{startDate ? startDate.substring(5).replace('-', '/') : ""}</span>
                         <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-gray-400 shrink-0 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
                       </div>
@@ -7007,7 +7007,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         onChange={(e) => setEndDate(e.target.value)}
                         className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
                       />
-                      <div className="w-full p-1.5 sm:p-2.5 text-[13px] sm:text-[18px] border border-sky-300 rounded-xl font-bold bg-sky-100 flex items-center justify-between text-gray-800 shadow-sm min-h-[31px] sm:min-h-[46px]">
+                      <div className="w-full p-1.5 sm:p-2.5 text-[16px] sm:text-[21px] border border-sky-300 rounded-xl font-bold bg-sky-100 flex items-center justify-between text-gray-800 shadow-sm min-h-[31px] sm:min-h-[46px]">
                         <span>{endDate ? endDate.substring(5).replace('-', '/') : ""}</span>
                         <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-gray-400 shrink-0 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
                       </div>
