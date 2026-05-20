@@ -1488,6 +1488,96 @@
         });
       }, [date, allScheduleData, selectedTeam, currentUser, shifts]);
 
+      // 💡 [추가] 일지 작성 화면에서 학생별 수업 회차 계산 로직 (팀 전체 이력 조회 - DailyScheduleApp과 동일)
+      useEffect(() => {
+        if (!selectedTeam || !isLoggedIn) {
+          setStudentCounts({});
+          return;
+        }
+
+        let isMounted = true;
+        const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+
+        const calcCounts = async () => {
+          try {
+            // 팀 전체 이력 조회 (pagination)
+            let allTeamRecords = [];
+            let histFrom = 0;
+            const histStep = 1000;
+            let histHasMore = true;
+
+            while (histHasMore) {
+              const histTo = histFrom + histStep - 1;
+              const { data: histData, error: histError } = await window.supabaseClient
+                .from('daily_logs')
+                .select('log_date, student, status')
+                .eq('team', selectedTeam)
+                .neq('student', '')
+                .not('student', 'is', null)
+                .lte('log_date', date)
+                .order('log_date', { ascending: true })
+                .range(histFrom, histTo);
+
+              if (histError) throw histError;
+              if (histData && histData.length > 0) {
+                allTeamRecords = allTeamRecords.concat(histData);
+                histHasMore = histData.length >= histStep;
+                histFrom += histStep;
+              } else {
+                histHasMore = false;
+              }
+            }
+
+            if (!isMounted) return;
+
+            // 학생별 출석 날짜 목록 구성
+            const studentDatesMap = {};
+            allTeamRecords.forEach(hRow => {
+              if (!hRow.student) return;
+              const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+              names.forEach((name, nameIdx) => {
+                if (excludeKeywords.some(kw => name.includes(kw))) return;
+                let personalStatus = hRow.status || "";
+                if (personalStatus.includes('/')) {
+                  const segments = personalStatus.split('/');
+                  if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
+                }
+                const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+                if (!isAbsentOrCanceled) {
+                  if (!studentDatesMap[name]) studentDatesMap[name] = [];
+                  const dParts = hRow.log_date.split('-');
+                  const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
+                  const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
+                  if (!alreadyHas) studentDatesMap[name].push(dateObj);
+                }
+              });
+            });
+
+            // 현재 날짜의 각 슬롯에 대해 회차 정보 계산
+            const newCounts = {};
+            shifts.forEach((shift, index) => {
+              const log = logs[index];
+              if (!log || !log.student) return;
+              const names = log.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+              const countsForSlot = [];
+              names.forEach(name => {
+                if (excludeKeywords.some(kw => name.includes(kw))) return;
+                const dates = studentDatesMap[name] || [];
+                countsForSlot.push({ name, count: dates.length, dates });
+              });
+              if (countsForSlot.length > 0) newCounts[index] = countsForSlot;
+            });
+
+            if (isMounted) setStudentCounts(newCounts);
+          } catch (e) {
+            console.error("회차 계산 오류:", e);
+          }
+        };
+
+        calcCounts();
+        return () => { isMounted = false; };
+      }, [date, selectedTeam, isLoggedIn, logs, shifts]);
+
       const buildStatusString = (log) => {
         let tagsStrings = [];
         const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
@@ -5042,6 +5132,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [isLoading, setIsLoading] = useState(false);
       const [notice, setNotice] = useState("");
       const [supabaseRecords, setSupabaseRecords] = useState([]);
+      const [noDataMessage, setNoDataMessage] = useState("");
 
       const weekDays = ['월', '화', '수', '목', '금'];
       const [timeSlots, setTimeSlots] = useState([]);
@@ -5062,20 +5153,78 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const endMonth = currentDays[4].getMonth() + 1;
       const endDay = currentDays[4].getDate();
 
-      const changeWeek = (offsetWeeks) => {
+      const checkDataExistsForWeek = async (weekStart) => {
+        try {
+          const days = [];
+          for (let i = 0; i < 5; i++) {
+            const d = new Date(weekStart);
+            d.setDate(weekStart.getDate() + i);
+            days.push(d);
+          }
+          const startStr = getLocalDateString(days[0]);
+          const endStr = getLocalDateString(days[4]);
+
+          let query = window.supabaseClient
+            .from('daily_logs')
+            .select('id')
+            .eq('team', team)
+            .gte('log_date', startStr)
+            .lte('log_date', endStr);
+
+          if (teacher !== "__ALL__") {
+            query = query.eq('teacher', teacher);
+          }
+
+          const { data, error } = await query.limit(1);
+          if (error) throw error;
+          return data && data.length > 0;
+        } catch (e) {
+          console.error("데이터 체크 실패:", e);
+          return false;
+        }
+      };
+
+      const changeWeek = async (offsetWeeks) => {
+        if (isLoading) return;
         const newDate = new Date(currentWeekStart);
         newDate.setDate(newDate.getDate() + (offsetWeeks * 7));
+        
+        setIsLoading(true);
+        const hasData = await checkDataExistsForWeek(newDate);
+        setIsLoading(false);
+
+        if (!hasData) {
+          setNoDataMessage("더 이상 데이터가 없습니다.");
+          setTimeout(() => {
+            setNoDataMessage("");
+          }, 2000);
+          return;
+        }
         setCurrentWeekStart(newDate);
       };
 
-      const handleCurrentWeekClick = () => {
+      const handleCurrentWeekClick = async () => {
+        if (isLoading) return;
         const d = new Date();
         const day = d.getDay();
         if (day === 0) d.setDate(d.getDate() + 1);
         else if (day === 6) d.setDate(d.getDate() + 2);
         const newDay = d.getDay();
         const diff = d.getDate() - newDay + (newDay === 0 ? -6 : 1);
-        setCurrentWeekStart(new Date(d.setDate(diff)));
+        const targetDate = new Date(d.setDate(diff));
+
+        setIsLoading(true);
+        const hasData = await checkDataExistsForWeek(targetDate);
+        setIsLoading(false);
+
+        if (!hasData) {
+          setNoDataMessage("더 이상 데이터가 없습니다.");
+          setTimeout(() => {
+            setNoDataMessage("");
+          }, 2000);
+          return;
+        }
+        setCurrentWeekStart(targetDate);
       };
 
 
@@ -5257,6 +5406,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     <svg className="w-7 h-7 md:w-8 md:h-8" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
                   </button>
                 </div>
+                {noDataMessage && <div className="mt-2 text-red-600 font-bold text-center animate-fadeIn">{noDataMessage}</div>}
                 {notice && <div className="mt-2 text-red-600 font-bold text-center animate-fadeIn">{notice}</div>}
                 {isLoading && <div className="mt-3 text-sm sm:text-base text-red-600 font-bold flex items-center animate-pulse"><Clock className="w-4 h-4 mr-1 animate-spin" />일정 데이터를 불러오는 중...</div>}
               </div>
