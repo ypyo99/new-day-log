@@ -5740,6 +5740,21 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     }
                   }
 
+                  // 💡 [오작동 방지] 1/1 등의 진행값을 엑셀이 날짜 객체로 자동 해석하여 서식이 깨지는 문제를 방지하기 위해,
+                  // 원본 문자열 값을 강제 주입하고 데이터 타입을 문자열(t: 's')로 고정함
+                  let cellVal = "";
+                  if (item) {
+                    if (rowObj.category === "대상") {
+                      cellVal = item.student || "";
+                    } else if (rowObj.category === "장소") {
+                      cellVal = item.location || "";
+                    } else if (rowObj.category === "진행") {
+                      cellVal = item.status === "1" ? "1" : (item.status || "");
+                    }
+                  }
+                  cell.v = cellVal;
+                  cell.t = 's';
+
                   cell.s = {
                     font: { name: fontName, sz: 10, bold: isBold, color: { rgb: fontColorRGB } },
                     fill: { fgColor: { rgb: fillRGB } },
