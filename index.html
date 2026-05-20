@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -5705,7 +5705,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         fontColorRGB = "2563EB";
                         isBold = true;
                       } else if (item.location) {
-                        fontColorRGB = "475569";
+                        fontColorRGB = "000000";
                       }
                     } else if (isHoliday) {
                       fillRGB = "FEE2E2";
@@ -5727,10 +5727,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           fillRGB = "FEE2E2";
                           fontColorRGB = "DC2626";
                           isBold = true;
-                        } else if (item.status) {
+                        } else if (item.status?.includes('휴가')) {
+                          fillRGB = "F3F4F6";
+                          fontColorRGB = "6B7280";
+                          isBold = true;
+                        } else if (item.status === '1' || item.status?.includes('출석') || (item.status && /^\d+/.test(item.status.split(',')[0].trim()))) {
                           fillRGB = "F0FDF4";
                           fontColorRGB = "15803D";
                           isBold = true;
+                        } else if (item.status) {
+                          fillRGB = "FFFFFF";
+                          fontColorRGB = "000000";
+                          isBold = false;
                         }
                       }
                     }
@@ -6166,8 +6174,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       cellContent = item.status || '';
                                       if (item.status?.includes('결석') || item.status?.includes('취소')) {
                                         cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
-                                      } else if (item.status) {
+                                      } else if (item.status?.includes('휴가')) {
+                                        cellClass = "bg-gray-200 text-gray-700 font-bold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else if (item.status === '1' || item.status?.includes('출석') || (item.status && /^\d+/.test(item.status.split(',')[0].trim()))) {
                                         cellClass = "bg-[#F0FDF4] text-green-800 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else if (item.status) {
+                                        cellClass = "bg-white text-black font-medium text-[13px] sm:text-[14px] py-1 px-1";
                                       } else {
                                         cellClass = "bg-gray-50 text-gray-400 font-normal";
                                       }
@@ -6188,7 +6200,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                         cellClass = "!bg-white";
                                       } else {
                                         cellContent = (
-                                          <span className="text-gray-600 font-medium truncate max-w-[75px] sm:max-w-[95px] lg:max-w-[125px] block mx-auto text-[11px] sm:text-[13px] md:text-sm lg:text-base">
+                                          <span className="text-black font-medium truncate max-w-[75px] sm:max-w-[95px] lg:max-w-[125px] block mx-auto text-[11px] sm:text-[13px] md:text-sm lg:text-base">
                                             {item.location || ''}
                                           </span>
                                         );
@@ -6198,8 +6210,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       cellContent = item.status || '';
                                       if (item.status?.includes('결석') || item.status?.includes('취소')) {
                                         cellClass = "text-red-600 font-extrabold bg-red-50";
-                                      } else if (item.status) {
+                                      } else if (item.status?.includes('휴가')) {
+                                        cellClass = "text-gray-500 font-bold bg-gray-100";
+                                      } else if (item.status === '1' || item.status?.includes('출석') || (item.status && /^\d+/.test(item.status.split(',')[0].trim()))) {
                                         cellClass = "text-green-800 font-bold bg-[#F0FDF4]";
+                                      } else if (item.status) {
+                                        cellClass = "text-black font-medium bg-white";
                                       } else {
                                         cellClass = "text-gray-400 font-normal bg-white";
                                       }
@@ -6326,7 +6342,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                         </span>
                                       ) : '-'}
                                     </td>
-                                    <td className="border-r border-b border-gray-200 text-gray-600 align-middle py-2 px-1">
+                                    <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1">
                                       {item.signature_url ? (
                                         <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline text-xs font-bold hover:text-blue-700">서명 보기</a>
                                       ) : (
@@ -6334,7 +6350,17 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       )}
                                     </td>
                                     <td className="border-b border-gray-200 align-middle py-2 px-1">
-                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${item.status?.includes('결석') || item.status?.includes('취소') ? 'bg-red-50 text-red-500 border border-red-200' : (item.status && item.status !== '1' ? 'bg-green-50 text-green-600 border border-green-200' : 'text-gray-400')}`}>
+                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${
+                                        item.status?.includes('결석') || item.status?.includes('취소')
+                                          ? 'bg-red-50 text-red-500 border border-red-200'
+                                          : item.status?.includes('휴가')
+                                            ? 'bg-gray-100 text-gray-500 border border-gray-300'
+                                            : item.status === '1' || item.status?.includes('출석') || (item.status && /^\d+/.test(item.status.split(',')[0].trim()))
+                                              ? 'bg-green-50 text-green-600 border border-green-200'
+                                              : item.status
+                                                ? 'bg-white text-black border border-gray-300'
+                                                : 'text-gray-400'
+                                      }`}>
                                         {item.status || '-'}
                                       </span>
                                     </td>
