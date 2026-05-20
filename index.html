@@ -5293,65 +5293,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [exporting, setExporting] = useState(false);
       const [showExportModal, setShowExportModal] = useState(false);
 
-      const getTeamScheduleStatusStyle = (status) => {
-        if (!status) {
-          return {
-            fillRGB: "FFFFFF",
-            fontColorRGB: "9CA3AF",
-            isBold: false,
-            cellClassGrid: "text-gray-400 font-normal bg-white",
-            cellClassHolidayGrid: "bg-gray-50 text-gray-400 font-normal",
-            cellClassList: "text-gray-400"
-          };
-        }
-
-        const statusStr = String(status).trim();
-
-        if (statusStr.includes('결석') || statusStr.includes('취소')) {
-          return {
-            fillRGB: "FEE2E2",
-            fontColorRGB: "DC2626",
-            isBold: true,
-            cellClassGrid: "text-red-600 font-extrabold bg-red-50",
-            cellClassHolidayGrid: "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1",
-            cellClassList: "bg-red-50 text-red-500 border border-red-200"
-          };
-        }
-
-        if (statusStr.includes('휴가') || statusStr.includes('선생님휴가')) {
-          return {
-            fillRGB: "F3F4F6",
-            fontColorRGB: "6B7280",
-            isBold: true,
-            cellClassGrid: "text-gray-500 font-bold bg-gray-100",
-            cellClassHolidayGrid: "bg-gray-200 text-gray-700 font-bold text-[13px] sm:text-[14px] py-1 px-1",
-            cellClassList: "bg-gray-100 text-gray-500 border border-gray-300"
-          };
-        }
-
-        const isStrictlyAttendance = statusStr === '1' || statusStr === '출석';
-        if (isStrictlyAttendance) {
-          return {
-            fillRGB: "F0FDF4",
-            fontColorRGB: "15803D",
-            isBold: true,
-            cellClassGrid: "text-green-800 font-bold bg-[#F0FDF4]",
-            cellClassHolidayGrid: "bg-[#F0FDF4] text-green-800 font-extrabold text-[13px] sm:text-[14px] py-1 px-1",
-            cellClassList: "bg-green-50 text-green-600 border border-green-200"
-          };
-        }
-
-        // 메모가 있는 경우 또는 그 외의 텍스트인 경우 (예: "1, 진도느림" 또는 "진도느림" 등)
-        return {
-          fillRGB: "FFFFFF",
-          fontColorRGB: "000000",
-          isBold: false,
-          cellClassGrid: "text-black font-medium bg-white",
-          cellClassHolidayGrid: "bg-white text-black font-medium text-[13px] sm:text-[14px] py-1 px-1",
-          cellClassList: "bg-white text-black border border-gray-300"
-        };
-      };
-
       const fetchTeamData = async (month) => {
         setLoading(true);
         try {
@@ -5782,10 +5723,19 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           isBold = true;
                         }
                       } else if (rowObj.category === "진행") {
-                        const style = getTeamScheduleStatusStyle(item.status);
-                        fillRGB = style.fillRGB;
-                        fontColorRGB = style.fontColorRGB;
-                        isBold = style.isBold;
+                        if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                          fillRGB = "FEE2E2";
+                          fontColorRGB = "DC2626";
+                          isBold = true;
+                        } else if (item.status?.includes('휴가')) {
+                          fillRGB = "F3F4F6";
+                          fontColorRGB = "6B7280";
+                          isBold = true;
+                        } else if (item.status) {
+                          fillRGB = "F0FDF4";
+                          fontColorRGB = "000000";
+                          isBold = true;
+                        }
                       }
                     }
                   }
@@ -6218,7 +6168,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       cellClass = "!bg-white text-red-700 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                     } else if (row.category === "진행") {
                                       cellContent = item.status || '';
-                                      cellClass = getTeamScheduleStatusStyle(item.status).cellClassHolidayGrid;
+                                      if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                                        cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else if (item.status?.includes('휴가')) {
+                                        cellClass = "bg-gray-200 text-gray-700 font-bold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else if (item.status) {
+                                        cellClass = "bg-[#F0FDF4] text-black font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else {
+                                        cellClass = "bg-gray-50 text-gray-400 font-normal";
+                                      }
                                     }
                                   } else {
                                     if (row.category === "대상") {
@@ -6244,7 +6202,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       }
                                     } else if (row.category === "진행") {
                                       cellContent = item.status || '';
-                                      cellClass = getTeamScheduleStatusStyle(item.status).cellClassGrid;
+                                      if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                                        cellClass = "text-red-600 font-extrabold bg-red-50";
+                                      } else if (item.status?.includes('휴가')) {
+                                        cellClass = "text-gray-500 font-bold bg-gray-100";
+                                      } else if (item.status) {
+                                        cellClass = "text-black font-bold bg-[#F0FDF4]";
+                                      } else {
+                                        cellClass = "text-gray-400 font-normal bg-white";
+                                      }
                                     }
                                   }
                                 }
@@ -6376,7 +6342,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       )}
                                     </td>
                                     <td className="border-b border-gray-200 align-middle py-2 px-1">
-                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${getTeamScheduleStatusStyle(item.status).cellClassList}`}>
+                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${
+                                        item.status?.includes('결석') || item.status?.includes('취소')
+                                          ? 'bg-red-50 text-red-500 border border-red-200'
+                                          : item.status?.includes('휴가')
+                                            ? 'bg-gray-100 text-gray-500 border border-gray-300'
+                                            : item.status && item.status !== '1'
+                                              ? 'bg-green-50 text-black border border-green-200'
+                                              : 'text-gray-400'
+                                      }`}>
                                         {item.status || '-'}
                                       </span>
                                     </td>
