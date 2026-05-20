@@ -5406,17 +5406,35 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const targetTeams = ["1팀", "2팀", "3팀", "취업팀"];
 
           for (const tName of targetTeams) {
-            // 해당 팀의 데이터만 누락 없이 안전하게 개별 쿼리 (Supabase 1000개 조회 리밋 회피)
-            const { data: teamData, error: teamDataErr } = await window.supabaseClient
-              .from('daily_logs')
-              .select('*')
-              .eq('team', tName)
-              .gte('log_date', firstWorkDateStr)
-              .lte('log_date', endDateStr)
-              .range(0, 4000)
-              .order('log_date', { ascending: true });
+            // 해당 팀의 전체 데이터를 페이지 단위(Chunk)로 여러 번 나누어 받아와서 유실 방지 (Supabase 서버 강제 1000개 리밋 회피)
+            let teamData = [];
+            let start = 0;
+            const limit = 1000;
+            let hasMore = true;
 
-            if (teamDataErr) throw teamDataErr;
+            while (hasMore) {
+              const { data: chunk, error: chunkErr } = await window.supabaseClient
+                .from('daily_logs')
+                .select('*')
+                .eq('team', tName)
+                .gte('log_date', firstWorkDateStr)
+                .lte('log_date', endDateStr)
+                .range(start, start + limit - 1)
+                .order('log_date', { ascending: true });
+
+              if (chunkErr) throw chunkErr;
+
+              if (chunk && chunk.length > 0) {
+                teamData = teamData.concat(chunk);
+                if (chunk.length < limit) {
+                  hasMore = false;
+                } else {
+                  start += limit;
+                }
+              } else {
+                hasMore = false;
+              }
+            }
 
             const teamTeacherShiftsMap = {};
             if (TEACHER_GROUPS[tName]) {
