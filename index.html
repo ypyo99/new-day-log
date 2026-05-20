@@ -2298,7 +2298,7 @@
         if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
         else {
           setErrorMessage("⚠️ 데이터의 시작 날짜입니다. 이전 기록이 없습니다.");
-          setTimeout(() => setErrorMessage(""), 3000);
+          setTimeout(() => setErrorMessage(""), 2000);
         }
       };
 
@@ -2309,7 +2309,7 @@
         if (futureDates.length > 0) setDate(futureDates[0]);
         else {
           setErrorMessage("⚠️ 데이터의 마지막 날짜입니다. 이후 기록이 없습니다.");
-          setTimeout(() => setErrorMessage(""), 3000);
+          setTimeout(() => setErrorMessage(""), 2000);
         }
       };
 
