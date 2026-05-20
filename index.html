@@ -4496,7 +4496,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           setIsLoading(true);
           try {
             setLoadProgress("전체 데이터 로딩 중...");
-            const teams = ["1팀", "2팀", "3팀", "취업팀", "기타참여자"];
+            const teams = ["1팀", "2팀", "3팀", "취업팀"];
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -4552,8 +4552,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               "1팀": [],
               "2팀": [],
               "3팀": [],
-              "취업팀": [],
-              "기타참여자": []
+              "취업팀": []
             };
 
             const allParsed = [];
@@ -4718,7 +4717,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0 ml-auto">
                       <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-                        {['전체', '1팀', '2팀', '3팀', '취업팀', '기타참여자'].map(t => (
+                        {['전체', '1팀', '2팀', '3팀', '취업팀'].map(t => (
                           <button key={t} onClick={() => { setTeamFilter(t); setTeacherFilter("전체"); }} className={`px-1 min-[360px]:px-1.5 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[12px] min-[360px]:text-[13px] min-[400px]:text-[14px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${teamFilter === t ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
                             {t}
                           </button>
@@ -4734,7 +4733,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           let list = [];
                           if (teamFilter === "전체") {
                             const uniqueTeachers = new Set();
-                            ["1팀", "2팀", "3팀", "취업팀", "기타참여자"].forEach(t => {
+                            ["1팀", "2팀", "3팀", "취업팀"].forEach(t => {
                               if (teacherListByTeam[t]) teacherListByTeam[t].forEach(name => uniqueTeachers.add(name));
                             });
                             list = Array.from(uniqueTeachers);
