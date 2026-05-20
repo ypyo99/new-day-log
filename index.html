@@ -5742,7 +5742,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             XLSX.utils.book_append_sheet(wb, ws, tName);
           }
 
-          XLSX.writeFile(wb, `성동노인종합복지관_시간표_${yearStr}년1월_${nextYear}년${nextMonth}월_내보내기.xlsx`);
+          const todayYYYY = today.getFullYear();
+          const todayMM = String(today.getMonth() + 1).padStart(2, '0');
+          const todayDD = String(today.getDate()).padStart(2, '0');
+          XLSX.writeFile(wb, `디지털 서포터즈 일정표-${todayYYYY}-${todayMM}-${todayDD}.xlsx`);
           alert("🎉 엑셀 내보내기가 완료되었습니다!");
         } catch (err) {
           console.error(err);
