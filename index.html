@@ -5391,7 +5391,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           }
 
           const wb = XLSX.utils.book_new();
-          const targetTeams = ["1팀", "2팀", "3팀", "취업팀", "지하1층 평생교육실"];
+          const targetTeams = ["1팀", "2팀", "3팀", "취업팀"];
 
           for (const tName of targetTeams) {
             const teamData = (allRecords || []).filter(r => r.team === tName);
@@ -5516,42 +5516,42 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
             const fontName = "Malgun Gothic";
             const borderThin = {
-              top: { style: "thin", color: { rgb: "D1D5DB" } },
-              bottom: { style: "thin", color: { rgb: "D1D5DB" } },
-              left: { style: "thin", color: { rgb: "D1D5DB" } },
-              right: { style: "thin", color: { rgb: "D1D5DB" } }
+              top: { style: "thin", color: { rgb: "E2E8F0" } },
+              bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+              left: { style: "thin", color: { rgb: "E2E8F0" } },
+              right: { style: "thin", color: { rgb: "E2E8F0" } }
             };
 
             const baseHeaderStyle = {
-              font: { name: fontName, sz: 10, bold: true, color: { rgb: "1E3A8A" } },
-              fill: { fgColor: { rgb: "EFF6FF" } },
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "334155" } },
+              fill: { fgColor: { rgb: "F1F5F9" } },
               alignment: { vertical: "center", horizontal: "center", wrapText: true },
               border: borderThin
             };
 
             const colAHeaderStyle = {
-              font: { name: fontName, sz: 10, bold: true, color: { rgb: "374151" } },
-              fill: { fgColor: { rgb: "F3F4F6" } },
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "334155" } },
+              fill: { fgColor: { rgb: "F1F5F9" } },
               alignment: { vertical: "center", horizontal: "center" },
               border: borderThin
             };
 
             const cellStyleGroup = {
-              font: { name: fontName, sz: 10, bold: true, color: { rgb: "1F2937" } },
-              fill: { fgColor: { rgb: "F9FAFB" } },
+              font: { name: fontName, sz: 9, bold: true, color: { rgb: "64748B" } },
+              fill: { fgColor: { rgb: "F8FAFC" } },
               alignment: { vertical: "center", horizontal: "center" },
               border: borderThin
             };
 
             const cellStyleTeacher = {
-              font: { name: fontName, sz: 10, bold: true, color: { rgb: "111827" } },
+              font: { name: fontName, sz: 10, bold: true, color: { rgb: "0F172A" } },
               fill: { fgColor: { rgb: "FFFFFF" } },
               alignment: { vertical: "center", horizontal: "center" },
               border: borderThin
             };
 
             const cellStyleShift = {
-              font: { name: fontName, sz: 9, bold: true, color: { rgb: "374151" } },
+              font: { name: fontName, sz: 9, color: { rgb: "334155" } },
               fill: { fgColor: { rgb: "FFFFFF" } },
               alignment: { vertical: "center", horizontal: "center" },
               border: borderThin
@@ -5615,22 +5615,22 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     const dateObj = dateList[C - 3];
                     if (dateObj.dayIndex === 6) {
                       cell.s = {
-                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "1D4ED8" } },
-                        fill: { fgColor: { rgb: "EFF6FF" } },
+                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "0284C7" } },
+                        fill: { fgColor: { rgb: "E0F2FE" } },
                         alignment: { vertical: "center", horizontal: "center", wrapText: true },
                         border: borderThin
                       };
                     } else if (dateObj.dayIndex === 0) {
                       cell.s = {
-                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "B91C1C" } },
-                        fill: { fgColor: { rgb: "FEF2F2" } },
+                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "E11D48" } },
+                        fill: { fgColor: { rgb: "FFE4E6" } },
                         alignment: { vertical: "center", horizontal: "center", wrapText: true },
                         border: borderThin
                       };
                     } else {
                       cell.s = {
-                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "1F2937" } },
-                        fill: { fgColor: { rgb: "F9FAFB" } },
+                        font: { name: fontName, sz: 9, bold: true, color: { rgb: "475569" } },
+                        fill: { fgColor: { rgb: "F8FAFC" } },
                         alignment: { vertical: "center", horizontal: "center", wrapText: true },
                         border: borderThin
                       };
@@ -5651,7 +5651,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   const item = dataLookup[`${rowObj.teacher}::${rowObj.shift}::${dateObj.dateStr}`];
                   
                   let fillRGB = "FFFFFF";
-                  let fontColorRGB = "333333";
+                  let fontColorRGB = "475569";
                   let isBold = false;
 
                   if (item) {
@@ -5660,17 +5660,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                       (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
 
                     if (isHoliday) {
-                      fillRGB = "EF4444";
-                      fontColorRGB = "FFFFFF";
+                      fillRGB = "FEE2E2";
+                      fontColorRGB = "EF4444";
                       isBold = true;
                     } else {
                       if (rowObj.category === "대상") {
                         if (item.student?.includes('보조강사')) {
-                          fillRGB = "FEF08A";
-                          fontColorRGB = "1E293B";
+                          fillRGB = "FEF9C3";
+                          fontColorRGB = "A16207";
                           isBold = true;
                         } else if (item.student) {
-                          fillRGB = "F8FAFC";
+                          fillRGB = "EEF2FF";
+                          fontColorRGB = "4F46E5";
                           isBold = true;
                         }
                       } else if (rowObj.category === "장소") {
@@ -5680,15 +5681,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           isBold = true;
                         } else if (item.location) {
                           fillRGB = "FFFFFF";
-                          fontColorRGB = "4B5563";
+                          fontColorRGB = "475569";
                         }
                       } else if (rowObj.category === "진행") {
                         if (item.status === '1') {
-                          fillRGB = "EFF6FF";
-                          fontColorRGB = "1D4ED8";
+                          fillRGB = "DCFCE7";
+                          fontColorRGB = "15803D";
                           isBold = true;
                         } else if (item.status?.includes('결석') || item.status?.includes('취소')) {
-                          fillRGB = "FEF2F2";
+                          fillRGB = "FEE2E2";
                           fontColorRGB = "DC2626";
                           isBold = true;
                         } else if (item.status) {
@@ -5860,32 +5861,33 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans">
           <div className="bg-white flex-1 flex flex-col overflow-hidden relative">
             {/* Header */}
-            <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex flex-col items-center">
-              <div className="w-full px-4 pb-1 pt-3 flex justify-between items-start">
-                <div>
-                  <div className="flex items-center mb-1">
-                    <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
-                    <h1 className="font-black text-xl sm:text-2xl leading-tight">성동노인종합복지관</h1>
-                  </div>
-                  <p className="text-sm sm:text-base font-bold text-yellow-300">
-                    디지털교육 서포터즈
-                  </p>
+            <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex items-center px-4 py-2.5 min-h-[72px]">
+              <div>
+                <div className="flex items-center mb-1">
+                  <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+                  <h1 className="font-black text-xl sm:text-2xl leading-tight">성동노인종합복지관</h1>
                 </div>
-                <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
-                  <Home className="w-5 h-5 mb-1" />
-                  <span>처음으로</span>
-                </button>
+                <p className="text-sm sm:text-base font-bold text-yellow-300">
+                  디지털교육 서포터즈
+                </p>
               </div>
 
-              {/* 헤더 아래부분 중앙 내보내기 버튼 */}
-              <div className="pb-3 w-full flex justify-center">
+              {/* [엑셀 내보내기] 버튼 - 수평/수직 정중앙 absolute 배치 */}
+              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
                 <button 
                   onClick={handleExportExcel} 
                   disabled={exporting}
-                  className="px-8 py-2 md:px-12 md:py-2.5 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-xs sm:text-sm md:text-base transition-all flex items-center gap-2 pointer-events-auto relative z-50 disabled:opacity-50"
+                  className="px-5 py-2 md:px-7 md:py-2.5 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-xs sm:text-sm md:text-base transition-all flex items-center gap-2 disabled:opacity-50"
                 >
                   <DownloadIcon className="w-4 h-4 md:w-5 md:h-5" /> 
-                  <span>{exporting ? "엑셀 생성 중..." : "엑셀 내보내기"}</span>
+                  <span>{exporting ? "생성 중..." : "엑셀 내보내기"}</span>
+                </button>
+              </div>
+
+              <div className="ml-auto">
+                <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
+                  <Home className="w-5 h-5 mb-1" />
+                  <span>처음으로</span>
                 </button>
               </div>
             </div>
