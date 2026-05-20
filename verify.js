@@ -1,3 +1,5 @@
+// node verify.js 'C:\Users\ypyo9\Downloads\디지털_서포터즈_일정표-2026-05-20 (7).xlsx' 
+
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
