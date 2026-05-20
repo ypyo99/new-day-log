@@ -5637,6 +5637,26 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
             const ws = XLSX.utils.aoa_to_sheet(wsData, { raw: true });
 
+            // 💡 [날짜 오변환 완전 복원] xlsx-js-style이 raw:true를 무시하고 "1/1" 등을 Date로 자동 변환하는 문제 해결
+            // 시트 생성 직후 모든 셀을 순회하며, Date 객체로 잘못 변환된 값을 원본 문자열(wsData)로 강제 복원
+            const wsRange = XLSX.utils.decode_range(ws['!ref']);
+            for (let R2 = wsRange.s.r; R2 <= wsRange.e.r; ++R2) {
+              for (let C2 = wsRange.s.c; C2 <= wsRange.e.c; ++C2) {
+                const ref = XLSX.utils.encode_cell({ r: R2, c: C2 });
+                const c = ws[ref];
+                if (c && (c.t === 'd' || c.t === 'n' || c.v instanceof Date)) {
+                  // wsData의 원본 문자열 값으로 복원
+                  const origRow = wsData[R2];
+                  if (origRow && C2 < origRow.length) {
+                    c.v = String(origRow[C2] ?? "");
+                    c.t = 's';
+                    delete c.w;
+                    delete c.z;
+                  }
+                }
+              }
+            }
+
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
               for (let C = range.s.c; C <= range.e.c; ++C) {
