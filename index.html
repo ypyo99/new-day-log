@@ -5635,7 +5635,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
               }
             });
 
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const ws = XLSX.utils.aoa_to_sheet(wsData, { raw: true });
 
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
