@@ -1,0 +1,17 @@
+# Dependencies & tooling
+node_modules/
+package.json
+package-lock.json
+
+# Dev / migration scripts (app is self-contained in index.html)
+*.js
+scratch/
+
+# CI / git
+.github/
+.git/
+
+# Local temp files
+temp-index.html
+sync_today.js
+*.txt
