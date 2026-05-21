@@ -107,6 +107,18 @@
       animation: sparkle 0.6s infinite !important;
       border-width: 2.5px !important;
     }
+
+    @keyframes btnTextFade {
+      0% {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 
   <!-- 5. Supabase 설정 -->
@@ -2610,19 +2622,19 @@
                 {selectedTeam ? (
                   <>
                     <button onClick={() => onNavigateToDailySchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-                      <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 오늘 일정 보기
+                      <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 오늘 일정 보기
                     </button>
                     <button onClick={() => onNavigateToTeamSchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-                      <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 전체 일정 보기
+                      <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
                     </button>
                   </>
                 ) : (
                   <>
                     <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-                      <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 오늘 일정 보기
+                      <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 오늘 일정 보기
                     </button>
                     <button disabled className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-                      <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀 별 전체 일정 보기
+                      <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
                     </button>
                   </>
                 )}
@@ -4164,7 +4176,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 }
                 const dParts = hRow.log_date.split('-');
                 const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
-                
+
                 const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
                 if (!alreadyHas) {
                   studentDatesMap[name].push(dateObj);
@@ -5188,7 +5200,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         if (isLoading) return;
         const newDate = new Date(currentWeekStart);
         newDate.setDate(newDate.getDate() + (offsetWeeks * 7));
-        
+
         setIsLoading(true);
         const hasData = await checkDataExistsForWeek(newDate);
         setIsLoading(false);
@@ -5533,6 +5545,14 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [exporting, setExporting] = useState(false);
       const [showExportModal, setShowExportModal] = useState(false);
       const [errorMessage, setErrorMessage] = useState("");
+      const [downloadTextToggle, setDownloadTextToggle] = useState(false);
+
+      useEffect(() => {
+        const intervalId = setInterval(() => {
+          setDownloadTextToggle(prev => !prev);
+        }, 1200);
+        return () => clearInterval(intervalId);
+      }, []);
 
       const fetchTeamData = async (month) => {
         setLoading(true);
@@ -6131,7 +6151,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           setShowExportModal(true);
         } catch (err) {
           console.error(err);
-          alert("⚠️ 엑셀 내보내기 중 오류가 발생했습니다: " + err.message);
+          alert("⚠️ 엑셀 다운로드 중 오류가 발생했습니다: " + err.message);
         } finally {
           setExporting(false);
         }
@@ -6270,7 +6290,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </p>
               </div>
 
-              {/* [엑셀 내보내기] 버튼 - 수평 중앙 & 수직 하단 absolute 배치 */}
+              {/* [다운로드] 버튼 - 수평 중앙 & 수직 하단 absolute 배치 */}
               <div className="absolute left-1/2 bottom-1.5 transform -translate-x-1/2 z-50">
                 <button
                   onClick={handleExportExcel}
@@ -6278,7 +6298,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   className="px-5 py-1.5 md:px-7 md:py-2 rounded-lg border border-blue-900 bg-blue-800 text-white font-bold hover:bg-blue-900 shadow-lg active:scale-95 text-sm md:text-base transition-all flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <DownloadIcon className="w-4 h-4 md:w-5 md:h-5" />
-                  <span>{exporting ? "생성 중..." : "내보내기"}</span>
+                  <span
+                    key={exporting ? 'exporting' : String(downloadTextToggle)}
+                    style={{
+                      display: 'inline-block',
+                      animation: exporting ? 'none' : 'btnTextFade 0.4s ease-in-out'
+                    }}
+                  >
+                    {exporting ? "생성 중..." : (downloadTextToggle ? "엑셀화일" : "다운로드")}
+                  </span>
                 </button>
               </div>
 
@@ -6654,7 +6682,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">엑셀 다운로드 완료</h3>
                   <p className="text-gray-500 text-sm text-center mb-6">
-                    디지털 서포터즈 일정표 엑셀 파일 내보내기가 완료되었습니다.
+                    디지털 서포터즈 일정표 엑셀 파일 다운로드가 완료되었습니다.
                   </p>
                   <button
                     onClick={() => setShowExportModal(false)}
@@ -6718,6 +6746,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       };
 
       const [startDate, setStartDate] = useState(() => {
+        const saved = getSavedItem('sungdong_auto_startDate', '');
+        if (saved) return saved;
         const d = new Date();
         d.setMonth(d.getMonth() + 1);
         const yyyy = d.getFullYear();
@@ -6725,6 +6755,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         return `${yyyy}-${mm}-01`;
       });
       const [endDate, setEndDate] = useState(() => {
+        const saved = getSavedItem('sungdong_auto_endDate', '');
+        if (saved) return saved;
         const d = new Date();
         d.setMonth(d.getMonth() + 2);
         d.setDate(0);
@@ -6733,7 +6765,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         const dd = String(d.getDate()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}`;
       });
-      const [team, setTeam] = useState("1팀");
+      const [team, setTeam] = useState(() => getSavedItem('sungdong_auto_team', '1팀'));
       const [analyzing, setAnalyzing] = useState(false);
       const [baseWeekDates, setBaseWeekDates] = useState([]);
       const [draftRecords, setDraftRecords] = useState([]);
@@ -6745,6 +6777,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [showConfirmModal, setShowConfirmModal] = useState(false);
       const [showSuccessModal, setShowSuccessModal] = useState(false);
       const [editCell, setEditCell] = useState(null); // { teacherName, dayNum, shift, student, location }
+
+      useEffect(() => { setSavedItem('sungdong_auto_startDate', startDate); }, [startDate]);
+      useEffect(() => { setSavedItem('sungdong_auto_endDate', endDate); }, [endDate]);
+      useEffect(() => { setSavedItem('sungdong_auto_team', team); }, [team]);
 
       const getPrevMonthLastWeek = (startDateStr) => {
         const date = new Date(startDateStr);
@@ -7375,7 +7411,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     <div className="text-4xl mb-3">📋</div>
                     <h3 className="text-lg font-black text-gray-800 mb-2">시간표 작성 확인</h3>
                     <p className="text-sm text-gray-600 font-bold">이 일정으로 시간표를 작성하시겠습니까?</p>
-                    <p className="text-xs text-gray-400 mt-2">{team} · 총 {draftRecords.length}건의 일정이 DB에 반영됩니다.</p>
+                    <p className="text-sm text-gray-500 font-bold mt-2">📅 {startDate} ~ {endDate}</p>
+                    <p className="text-sm text-gray-400 mt-1">{team} · 총 {draftRecords.length}건의 일정이 DB에 반영됩니다.</p>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -7402,7 +7439,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     <p className="text-xs text-gray-400 mt-2">{team}의 시간표가 성공적으로 저장되었습니다.</p>
                   </div>
                   <button
-                    onClick={() => { setShowSuccessModal(false); onNavigateBack(); }}
+                    onClick={() => { setShowSuccessModal(false); }}
                     className="w-full py-3 bg-indigo-600 text-white font-extrabold rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
                   >확인</button>
                 </div>
