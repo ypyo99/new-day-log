@@ -1278,6 +1278,16 @@
       useEffect(() => { setSessionItem('sungdong_is_logged_in', isLoggedIn ? 'true' : ''); }, [isLoggedIn]);
 
       useEffect(() => {
+        if (selectedTeam === "1팀" && currentUser) {
+          const clean = currentUser.replace(/\s/g, "");
+          if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") {
+            setCurrentUser("");
+            window.localStorage.removeItem('sungdong_teacher');
+          }
+        }
+      }, [selectedTeam, currentUser]);
+
+      useEffect(() => {
         const handleBeforeUnload = (e) => {
           if (isSubmitting) {
             e.preventDefault();
@@ -1334,11 +1344,25 @@
           const teacherSet = new Set();
 
           if (dbTeachers.length > 0) {
-            dbTeachers.filter(t => t.team === team).forEach(t => teacherSet.add(t.name));
+            dbTeachers.filter(t => t.team === team).forEach(t => {
+              if (team === "1팀") {
+                const clean = (t.name || "").replace(/\s/g, "");
+                if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") return;
+              }
+              teacherSet.add(t.name);
+            });
           }
 
           if (data && data.length > 0) {
-            data.forEach(row => { if (row.teacher) teacherSet.add(row.teacher); });
+            data.forEach(row => {
+              if (row.teacher) {
+                if (team === "1팀") {
+                  const clean = (row.teacher || "").replace(/\s/g, "");
+                  if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") return;
+                }
+                teacherSet.add(row.teacher);
+              }
+            });
           }
 
           fetchedTeachers = Array.from(teacherSet).sort((a, b) => {
@@ -1371,9 +1395,22 @@
             const dbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
             const hasDefaultTeacher = parsed && dbNames.length > 0 && parsed.some(t => dbNames.includes(t));
             if (parsed && parsed.length > 0 && hasDefaultTeacher) {
-              const teacherSet = new Set(parsed);
+              let filteredParsed = parsed;
+              if (selectedTeam === "1팀") {
+                filteredParsed = parsed.filter(t => {
+                  const clean = (t || "").replace(/\s/g, "");
+                  return clean !== "천은선" && clean !== "서승희" && clean !== "천은선서승희" && clean !== "천은선/서승희";
+                });
+              }
+              const teacherSet = new Set(filteredParsed);
               const currentDbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
-              currentDbNames.forEach(name => teacherSet.add(name));
+              currentDbNames.forEach(name => {
+                if (selectedTeam === "1팀") {
+                  const clean = (name || "").replace(/\s/g, "");
+                  if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") return;
+                }
+                teacherSet.add(name);
+              });
 
               const merged = Array.from(teacherSet);
               const sortedCached = merged.sort((a, b) => {
