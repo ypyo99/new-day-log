@@ -7317,7 +7317,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       type="text"
                                       defaultValue={student}
                                       id={`edit-student-${teacherName}-${dayNum}-${shift}`}
-                                      placeholder="학생이름"
+                                      placeholder="학생이름 (Enter로 저장)"
                                       autoFocus
                                       onKeyDown={e => {
                                         if (e.key === 'Escape') setEditCell(null);
@@ -7327,13 +7327,20 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                           saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
                                         }
                                       }}
+                                      onBlur={e => {
+                                        // 같은 편집 그룹 내 다른 input으로 이동하면 저장 안 함
+                                        if (e.relatedTarget && e.relatedTarget.id === `edit-location-${teacherName}-${dayNum}-${shift}`) return;
+                                        const sInput = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`);
+                                        const lInput = document.getElementById(`edit-location-${teacherName}-${dayNum}-${shift}`);
+                                        saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
+                                      }}
                                       className="w-full px-1.5 py-1 border border-indigo-300 rounded text-[11px] font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                                     />
                                     <input
                                       type="text"
                                       defaultValue={location || "복지관"}
                                       id={`edit-location-${teacherName}-${dayNum}-${shift}`}
-                                      placeholder="장소"
+                                      placeholder="장소 (Enter로 저장)"
                                       onKeyDown={e => {
                                         if (e.key === 'Escape') setEditCell(null);
                                         if (e.key === 'Enter') {
@@ -7342,28 +7349,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                           saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
                                         }
                                       }}
+                                      onBlur={e => {
+                                        // 같은 편집 그룹 내 다른 input으로 이동하면 저장 안 함
+                                        if (e.relatedTarget && e.relatedTarget.id === `edit-student-${teacherName}-${dayNum}-${shift}`) return;
+                                        const sInput = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`);
+                                        const lInput = document.getElementById(`edit-location-${teacherName}-${dayNum}-${shift}`);
+                                        saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
+                                      }}
                                       className="w-full px-1.5 py-1 border border-indigo-300 rounded text-[11px] font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                                     />
-                                    <div className="flex gap-1 justify-end mt-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => setEditCell(null)}
-                                        className="px-1.5 py-0.5 text-[9px] bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-bold"
-                                      >
-                                        취소
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const sInput = document.getElementById(`edit-student-${teacherName}-${dayNum}-${shift}`);
-                                          const lInput = document.getElementById(`edit-location-${teacherName}-${dayNum}-${shift}`);
-                                          saveCell(sInput ? sInput.value : "", lInput ? lInput.value : "");
-                                        }}
-                                        className="px-1.5 py-0.5 text-[9px] bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"
-                                      >
-                                        확인
-                                      </button>
-                                    </div>
                                   </div>
                                 ) : (
                                   <>
