@@ -4748,6 +4748,9 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           setIsLoading(true);
           try {
             setLoadProgress("전체 데이터 로딩 중...");
+            if (getGlobalTeachersList().length === 0) {
+              await fetchAllTeachersFromDb();
+            }
             const teams = ["1팀", "2팀", "3팀", "취업팀"];
             const today = new Date();
             const year = today.getFullYear();
