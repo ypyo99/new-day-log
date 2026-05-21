@@ -193,39 +193,118 @@
       </svg>
     );
 
-    // 교사 및 팀별 조 정보 매핑 (상단 이동)
-    const TEACHER_GROUPS = {
-      "1팀": {
-        "김종철": "1조", "이근홍": "1조",
-        "김성수": "2조", "이혜섭": "2조",
-        "이성호": "3조", "김영송": "3조",
-        "권오삼": "4조", "육수영": "4조",
-        "천은선": "5조", "서승희": "5조"
-      },
-      "2팀": {
-        "표영": "1조", "주청자": "1조",
-        "김겸숙": "2조", "이광범": "2조",
-        "박정숙": "3조", "백응현": "3조",
-        "권용의": "4조", "김향숙": "4조"
-      },
-      "3팀": {
-        "강계환": "1조", "박선화": "1조",
-        "윤성배": "2조", "천은선": "2조",
-        "이근수": "3조", "서승희": "3조",
-        "이현숙": "4조", "김용하": "4조",
-        "강미영": "5조", "김금미": "5조"
-      },
-      "취업팀": {
-        "이수인": "오전", "강유정": "오전",
-        "전성주": "오후", "차미혜": "오후"
-      }
+    // teachers DB 기반 선생님·조·근무시간대 헬퍼
+    let globalTeachersList = [];
+
+    const formatTeacherRow = (t) => ({
+      id: t.id,
+      team: t.team,
+      group: t.group_name || '',
+      group_name: t.group_name || '',
+      seq_num: t.seq_num ?? null,
+      name: t.name,
+      shift1: t.shift1 || '',
+      shift2: t.shift2 || '',
+      shift3: t.shift3 || ''
+    });
+
+    const setGlobalTeachersList = (list) => {
+      globalTeachersList = Array.isArray(list) ? list : [];
+      try {
+        window.localStorage.setItem('sungdong_teacher_list', JSON.stringify(globalTeachersList));
+      } catch (e) { }
     };
 
-    function getTeacherSortWeight(team, teacher) {
-      if (!TEACHER_GROUPS || !TEACHER_GROUPS[team]) return 999;
-      const cleanTeacher = (teacher || "").trim().replace(/[\s\n\r]/g, "");
-      const keys = Object.keys(TEACHER_GROUPS[team]);
-      const idx = keys.findIndex(k => k.trim().replace(/[\s\n\r]/g, "") === cleanTeacher);
+    const getGlobalTeachersList = () => {
+      if (globalTeachersList.length > 0) return globalTeachersList;
+      try {
+        const stored = window.localStorage.getItem('sungdong_teacher_list');
+        if (stored) {
+          globalTeachersList = JSON.parse(stored);
+          return globalTeachersList;
+        }
+      } catch (e) { }
+      return [];
+    };
+
+    const normalizeTeacherName = (name) => (name || "").trim().replace(/[\s\n\r]/g, "");
+
+    const findTeacherRecord = (team, teacherName, teacherList = null) => {
+      const list = teacherList || getGlobalTeachersList();
+      const clean = normalizeTeacherName(teacherName);
+      return list.find(t => t.team === team && normalizeTeacherName(t.name) === clean) || null;
+    };
+
+    const getTeacherGroup = (team, teacherName, teacherList = null) => {
+      const rec = findTeacherRecord(team, teacherName, teacherList);
+      return rec ? (rec.group || rec.group_name || "기타") : "기타";
+    };
+
+    const isOfficialTeamTeacher = (team, teacherName, teacherList = null) => {
+      return !!findTeacherRecord(team, teacherName, teacherList);
+    };
+
+    const getTeacherShifts = (team, teacherName, teacherList = null) => {
+      const rec = findTeacherRecord(team, teacherName, teacherList);
+      if (!rec) return [];
+      return [rec.shift1, rec.shift2, rec.shift3].filter(Boolean);
+    };
+
+    const getTeacherDefaultShift = (team, teacherName, groupName = null, teacherList = null) => {
+      const rec = findTeacherRecord(team, teacherName, teacherList);
+      if (rec && rec.shift1) return rec.shift1;
+      const group = groupName || getTeacherGroup(team, teacherName, teacherList);
+      if (group === "오후" || team === "3팀") return "13:00~14:00";
+      return "9:30~10:30";
+    };
+
+    const getTeamTeacherNames = (team, teacherList = null) => {
+      return (teacherList || getGlobalTeachersList())
+        .filter(t => t.team === team)
+        .sort((a, b) => getTeacherSortWeight(team, a.name, teacherList) - getTeacherSortWeight(team, b.name, teacherList))
+        .map(t => t.name);
+    };
+
+    const getTeamDefaultShifts = (team, teacherList = null) => {
+      const list = (teacherList || getGlobalTeachersList()).filter(t => t.team === team);
+      const rec = list.find(t => t.shift1) || list[0];
+      if (rec) {
+        const shifts = [rec.shift1, rec.shift2, rec.shift3].filter(Boolean);
+        if (shifts.length > 0) return shifts;
+      }
+      if (team === "3팀") return ["13:00~14:00", "14:00~15:00", "15:00~16:00"];
+      return ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
+    };
+
+    const fetchAllTeachersFromDb = async () => {
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('teachers')
+          .select('*')
+          .order('team')
+          .order('group_name')
+          .order('seq_num')
+          .order('name');
+        if (!error && data) {
+          const formatted = data.map(formatTeacherRow);
+          setGlobalTeachersList(formatted);
+          return formatted;
+        }
+      } catch (e) {
+        console.error("선생님 DB 로딩 에러:", e);
+      }
+      return getGlobalTeachersList();
+    };
+
+    function getTeacherSortWeight(team, teacher, teacherList = null) {
+      const rec = findTeacherRecord(team, teacher, teacherList);
+      if (rec && rec.seq_num !== '' && rec.seq_num !== null && rec.seq_num !== undefined) {
+        const seq = parseInt(rec.seq_num, 10);
+        if (!isNaN(seq)) return seq;
+      }
+      const list = (teacherList || getGlobalTeachersList()).filter(t => t.team === team);
+      const cleanTeacher = normalizeTeacherName(teacher);
+      const idx = list.findIndex(t => normalizeTeacherName(t.name) === cleanTeacher);
       return idx !== -1 ? idx : 999;
     }
 
@@ -798,18 +877,9 @@
         try {
           const { data, error } = await window.supabaseClient.from('teachers').select('*').order('team').order('group_name').order('seq_num').order('name');
           if (error) throw error;
-          const formatted = data.map(t => ({
-            id: t.id,
-            team: t.team,
-            group: t.group_name || '',
-            seq_num: t.seq_num || '',
-            name: t.name,
-            shift1: t.shift1 || '',
-            shift2: t.shift2 || '',
-            shift3: t.shift3 || ''
-          }));
+          const formatted = data.map(formatTeacherRow);
           setTeachers(formatted);
-          window.localStorage.setItem('sungdong_teacher_list', JSON.stringify(formatted));
+          setGlobalTeachersList(formatted);
         } catch (e) {
           console.error("Error fetching teachers:", e);
         } finally {
@@ -1130,11 +1200,9 @@
           try {
             const { data, error } = await window.supabaseClient.from('teachers').select('*');
             if (!error && data) {
-              const formatted = data.map(t => ({
-                id: t.id, team: t.team, group: t.group_name || '', seq_num: t.seq_num || null, name: t.name, shift1: t.shift1 || '', shift2: t.shift2 || '', shift3: t.shift3 || ''
-              }));
+              const formatted = data.map(formatTeacherRow);
               setDbTeachers(formatted);
-              window.localStorage.setItem('sungdong_teacher_list', JSON.stringify(formatted));
+              setGlobalTeachersList(formatted);
             }
           } catch (e) { }
         };
@@ -1157,8 +1225,7 @@
         }
 
         if (!allScheduleData || Object.keys(allScheduleData).length === 0) {
-          if (selectedTeam === "3팀") setShifts(["13:00~14:00", "14:00~15:00", "15:00~16:00"]);
-          else setShifts(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
+          setShifts(getTeamDefaultShifts(selectedTeam, dbTeachers));
           return;
         }
         const extracted = new Set();
@@ -1266,11 +1333,6 @@
           let fetchedTeachers = [];
           const teacherSet = new Set();
 
-          // 💡 [신규] TEACHER_GROUPS에 설정된 해당 팀 소속 기본 교사 목록을 디폴트로 자동 주입함
-          if (TEACHER_GROUPS && TEACHER_GROUPS[team]) {
-            Object.keys(TEACHER_GROUPS[team]).forEach(t => teacherSet.add(t));
-          }
-
           if (dbTeachers.length > 0) {
             dbTeachers.filter(t => t.team === team).forEach(t => teacherSet.add(t.name));
           }
@@ -1306,8 +1368,8 @@
         if (cachedTeachers) {
           try {
             const parsed = JSON.parse(cachedTeachers);
-            // 💡 [보완] 캐시에 담긴 데이터 중 공식 소속 교사(TEACHER_GROUPS)가 한 명도 없다면 무효한 캐시로 취급하여 새로 패치함!
-            const hasDefaultTeacher = parsed && parsed.some(t => TEACHER_GROUPS[selectedTeam] && TEACHER_GROUPS[selectedTeam][t]);
+            const dbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
+            const hasDefaultTeacher = parsed && dbNames.length > 0 && parsed.some(t => dbNames.includes(t));
             if (parsed && parsed.length > 0 && hasDefaultTeacher) {
               const teacherSet = new Set(parsed);
               const currentDbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
@@ -4105,10 +4167,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
           // 레코드를 바탕으로 parsedData 배열 구성
           const parsedData = records.map(r => {
-            let group = "기타";
-            if (TEACHER_GROUPS[teamName] && TEACHER_GROUPS[teamName][r.teacher]) {
-              group = TEACHER_GROUPS[teamName][r.teacher];
-            }
+            const group = getTeacherGroup(teamName, r.teacher);
 
             return {
               group: group,
@@ -4213,7 +4272,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             }
           });
 
-          // 💡 조(Group) -> 선생님(TEACHER_GROUPS 공식 조별/선생님 순서) -> 시간(Shift) 순으로 정렬
+          // 💡 조(Group) -> 선생님(DB seq_num 순) -> 시간(Shift) 순으로 정렬
           parsedData.sort((a, b) => {
             const weightA = getGroupWeight(a.group);
             const weightB = getGroupWeight(b.group);
@@ -4742,10 +4801,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             console.log("DB Total Records Count:", (records || []).length);
 
             const teachersByTeam = {
-              "1팀": [],
-              "2팀": [],
-              "3팀": [],
-              "취업팀": []
+              "1팀": getTeamTeacherNames("1팀"),
+              "2팀": getTeamTeacherNames("2팀"),
+              "3팀": getTeamTeacherNames("3팀"),
+              "취업팀": getTeamTeacherNames("취업팀")
             };
 
             const allParsed = [];
@@ -4814,7 +4873,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     location: row.signature_url || row.location || "복지관",
                     attendanceTag,
                     memo,
-                    group: (TEACHER_GROUPS[row.team] && TEACHER_GROUPS[row.team][row.teacher]) || "기타"
+                    group: getTeacherGroup(row.team, row.teacher)
                   });
                 });
               });
@@ -5277,7 +5336,9 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       useEffect(() => {
         if (!teacher || !currentWeekStart) return;
 
-        const defaultSlots = ["9:30~10:30", "10:30~11:30", "11:30~12:30", "13:00~14:00", "14:00~15:00", "15:00~16:00"];
+        const defaultSlots = teacher && teacher !== "__ALL__"
+          ? getTeacherShifts(team, teacher)
+          : getTeamDefaultShifts(team);
 
         const extractedSlots = new Set();
         supabaseRecords.forEach(r => {
@@ -5292,7 +5353,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             };
             return getT(a) - getT(b);
           })
-          : defaultSlots;
+          : (defaultSlots.length > 0 ? defaultSlots : getTeamDefaultShifts(team));
 
         setTimeSlots(finalSlots);
 
@@ -5576,10 +5637,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           if (records) {
             setData(records);
             const tSet = new Set();
-            // 💡 [신규] 해당 팀의 TEACHER_GROUPS 기본 선생님 목록을 디폴트로 무조건 포함시킴!
-            if (TEACHER_GROUPS && TEACHER_GROUPS[currentTeam]) {
-              Object.keys(TEACHER_GROUPS[currentTeam]).forEach(t => tSet.add(t));
-            }
+            getTeamTeacherNames(currentTeam).forEach(t => tSet.add(t));
             records.forEach(r => { if (r.teacher) tSet.add(r.teacher); });
             setUniqueTeachers(Array.from(tSet).sort((a, b) => {
               return getTeacherSortWeight(currentTeam, a) - getTeacherSortWeight(currentTeam, b);
@@ -5740,34 +5798,34 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             }
 
             const teamTeacherShiftsMap = {};
-            if (TEACHER_GROUPS[tName]) {
-              Object.entries(TEACHER_GROUPS[tName]).forEach(([teacher, group]) => {
-                if (isExcludedTeacherForExport(teacher)) return;
-                const tLogs = teamData.filter(r => r.teacher === teacher);
-                if (tLogs.length > 0) {
-                  tLogs.forEach(r => {
-                    const key = `${teacher}::${r.shift}`;
-                    teamTeacherShiftsMap[key] = {
-                      teacher,
-                      shift: r.shift,
-                      groupName: group
-                    };
-                  });
-                } else {
-                  const defaultShift = (group === "오후" || tName === "3팀") ? "13:00~14:00" : "9:30~10:30";
-                  const key = `${teacher}::${defaultShift}`;
+            getGlobalTeachersList().filter(t => t.team === tName).forEach(rec => {
+              const teacher = rec.name;
+              const group = getTeacherGroup(tName, teacher);
+              if (isExcludedTeacherForExport(teacher)) return;
+              const tLogs = teamData.filter(r => r.teacher === teacher);
+              if (tLogs.length > 0) {
+                tLogs.forEach(r => {
+                  const key = `${teacher}::${r.shift}`;
                   teamTeacherShiftsMap[key] = {
                     teacher,
-                    shift: defaultShift,
+                    shift: r.shift,
                     groupName: group
                   };
-                }
-              });
-            }
+                });
+              } else {
+                const defaultShift = getTeacherDefaultShift(tName, teacher, group);
+                const key = `${teacher}::${defaultShift}`;
+                teamTeacherShiftsMap[key] = {
+                  teacher,
+                  shift: defaultShift,
+                  groupName: group
+                };
+              }
+            });
 
             teamData.forEach(item => {
               if (isExcludedTeacherForExport(item.teacher)) return;
-              if (tName === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
+              if (tName === "취업팀" && !isOfficialTeamTeacher("취업팀", item.teacher)) {
                 return;
               }
               const key = `${item.teacher}::${item.shift}`;
@@ -5775,7 +5833,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 teamTeacherShiftsMap[key] = {
                   teacher: item.teacher,
                   shift: item.shift,
-                  groupName: (TEACHER_GROUPS[tName] && TEACHER_GROUPS[tName][item.teacher]) || "기타"
+                  groupName: getTeacherGroup(tName, item.teacher)
                 };
               }
             });
@@ -6196,22 +6254,19 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
       const teacherShiftsMap = {};
 
-      // 💡 [신규] 해당 팀이 '취업팀'인 경우, 공식 교사 4명의 기본 행(디폴트 시간대 포함)을 무조건 먼저 생성해 둠!
-      if (currentTeam === "취업팀" && TEACHER_GROUPS["취업팀"]) {
-        Object.entries(TEACHER_GROUPS["취업팀"]).forEach(([t, g]) => {
-          const defaultShift = (g === "오후") ? "13:00~14:00" : "9:30~10:30";
-          const key = `${t}::${defaultShift}`;
-          teacherShiftsMap[key] = {
-            teacher: t,
-            shift: defaultShift,
-            groupName: g
-          };
-        });
-      }
+      getGlobalTeachersList().filter(t => t.team === currentTeam).forEach(rec => {
+        const g = getTeacherGroup(currentTeam, rec.name);
+        const defaultShift = getTeacherDefaultShift(currentTeam, rec.name, g);
+        const key = `${rec.name}::${defaultShift}`;
+        teacherShiftsMap[key] = {
+          teacher: rec.name,
+          shift: defaultShift,
+          groupName: g
+        };
+      });
 
       filteredData.forEach(item => {
-        // 💡 [필터링] 취업팀 화면에서는 취업팀 공식 멤버가 아닌 강사(예: test_teacher 등)는 배제함!
-        if (currentTeam === "취업팀" && TEACHER_GROUPS["취업팀"] && !TEACHER_GROUPS["취업팀"][item.teacher]) {
+        if (currentTeam === "취업팀" && !isOfficialTeamTeacher("취업팀", item.teacher)) {
           return;
         }
 
@@ -6219,7 +6274,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         teacherShiftsMap[key] = {
           teacher: item.teacher,
           shift: item.shift,
-          groupName: (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][item.teacher]) || "기타"
+          groupName: getTeacherGroup(currentTeam, item.teacher)
         };
       });
 
@@ -6565,8 +6620,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 <div className="space-y-5">
                   {Object.entries(groupedByDate).sort(([a], [b]) => b.localeCompare(a)).map(([dateStr, items]) => {
                     const sortedItems = [...items].sort((a, b) => {
-                      const groupA = (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][a.teacher]) || "기타";
-                      const groupB = (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][b.teacher]) || "기타";
+                      const groupA = getTeacherGroup(currentTeam, a.teacher);
+                      const groupB = getTeacherGroup(currentTeam, b.teacher);
 
                       const weightA = getGroupWeight(groupA);
                       const weightB = getGroupWeight(groupB);
@@ -6581,7 +6636,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                     const parsedItems = sortedItems.map(item => ({
                       ...item,
-                      groupName: (TEACHER_GROUPS[currentTeam] && TEACHER_GROUPS[currentTeam][item.teacher]) || "기타",
+                      groupName: getTeacherGroup(currentTeam, item.teacher),
                       rowspan: { group: 1, teacher: 1 },
                       render: { group: true, teacher: true }
                     }));
@@ -6908,7 +6963,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
           for (const teacherName of teacherNames) {
             const teacherObj = teacherList.find(t => t.name.trim() === teacherName);
-            const tGroup = teacherObj.group_name || TEACHER_GROUPS[team]?.[teacherName] || "기타";
+            const tGroup = teacherObj.group_name || getTeacherGroup(team, teacherName) || "기타";
             const shifts = [teacherObj.shift1, teacherObj.shift2, teacherObj.shift3].map(s => (s || "").trim()).filter(Boolean);
 
             previewTemplates[teacherName] = {
@@ -7021,8 +7076,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           drafts.sort((a, b) => {
             if (a.log_date !== b.log_date) return a.log_date.localeCompare(b.log_date);
 
-            const groupA = TEACHER_GROUPS[team]?.[a.teacher] || "기타";
-            const groupB = TEACHER_GROUPS[team]?.[b.teacher] || "기타";
+            const groupA = getTeacherGroup(team, a.teacher);
+            const groupB = getTeacherGroup(team, b.teacher);
             const weightA = getGroupWeight(groupA);
             const weightB = getGroupWeight(groupB);
             if (weightA !== weightB) return weightA - weightB;
@@ -7483,6 +7538,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       useEffect(() => { setSessionItem('sungdong_current_view', currentView); }, [currentView]);
       useEffect(() => { setSavedItem('sungdong_schedule_team', selectedTeamForSchedule); }, [selectedTeamForSchedule]);
       useEffect(() => { setSavedItem('sungdong_weekly_teacher', selectedTeacherForWeekly); }, [selectedTeacherForWeekly]);
+      useEffect(() => { fetchAllTeachersFromDb(); }, []);
 
       if (currentView === 'classroom') {
         return <ClassroomApp onNavigateBack={() => setCurrentView('main')} />;
