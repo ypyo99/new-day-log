@@ -1280,7 +1280,7 @@
       useEffect(() => {
         if (selectedTeam === "1팀" && currentUser) {
           const clean = currentUser.replace(/\s/g, "");
-          if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") {
+          if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") {
             setCurrentUser("");
             window.localStorage.removeItem('sungdong_teacher');
           }
@@ -1347,7 +1347,7 @@
             dbTeachers.filter(t => t.team === team).forEach(t => {
               if (team === "1팀") {
                 const clean = (t.name || "").replace(/\s/g, "");
-                if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") return;
+                if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
               }
               teacherSet.add(t.name);
             });
@@ -1358,7 +1358,7 @@
               if (row.teacher) {
                 if (team === "1팀") {
                   const clean = (row.teacher || "").replace(/\s/g, "");
-                  if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") return;
+                  if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
                 }
                 teacherSet.add(row.teacher);
               }
@@ -1399,7 +1399,7 @@
               if (selectedTeam === "1팀") {
                 filteredParsed = parsed.filter(t => {
                   const clean = (t || "").replace(/\s/g, "");
-                  return clean !== "천은선" && clean !== "서승희" && clean !== "천은선서승희" && clean !== "천은선/서승희";
+                  return clean !== "천은선" && clean !== "서승희" && clean !== "천은선서승희";
                 });
               }
               const teacherSet = new Set(filteredParsed);
@@ -1407,7 +1407,7 @@
               currentDbNames.forEach(name => {
                 if (selectedTeam === "1팀") {
                   const clean = (name || "").replace(/\s/g, "");
-                  if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희" || clean === "천은선/서승희") return;
+                  if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
                 }
                 teacherSet.add(name);
               });
@@ -6771,13 +6771,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       )}
                                     </td>
                                     <td className="border-b border-gray-200 align-middle py-2 px-1">
-                                      <span className={`text-sm font-bold ${
-                                        item.status?.includes('결석') || item.status?.includes('취소') ? 'text-red-500'
-                                        : item.status?.includes('선생님휴가') ? 'text-black'
-                                        : item.status?.includes('휴가') ? 'text-gray-400'
-                                        : item.status ? 'text-black'
-                                        : 'text-gray-400'
-                                      }`}>
+                                      <span className={`text-sm font-bold ${item.status?.includes('결석') || item.status?.includes('취소') ? 'text-red-500'
+                                          : item.status?.includes('선생님휴가') ? 'text-black'
+                                            : item.status?.includes('휴가') ? 'text-gray-400'
+                                              : item.status ? 'text-black'
+                                                : 'text-gray-400'
+                                        }`}>
                                         {item.status || '-'}
                                       </span>
                                     </td>
