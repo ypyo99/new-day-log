@@ -6634,13 +6634,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                     )}
                                     <td className="border-r border-b border-gray-200 text-blue-700 font-bold align-middle py-2 px-1">{item.shift}</td>
                                     <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1">
-                                      {item.student ? (
-                                        <span className={item.student?.includes('보조강사')
-                                          ? 'bg-yellow-100 px-1.5 py-0.5 rounded text-yellow-800 text-[11px] font-bold'
-                                          : 'bg-sky-100 px-1.5 py-0.5 rounded text-sky-800 text-[11px] font-bold'}>
-                                          {item.student}
-                                        </span>
-                                      ) : '-'}
+                                      <span className="text-sm font-bold text-gray-800">{item.student || '-'}</span>
                                     </td>
                                     <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1">
                                       {item.signature_url ? (
@@ -6650,14 +6644,13 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       )}
                                     </td>
                                     <td className="border-b border-gray-200 align-middle py-2 px-1">
-                                      <span className={`font-bold text-[11px] px-1.5 py-0.5 rounded ${item.status?.includes('결석') || item.status?.includes('취소')
-                                        ? 'bg-red-50 text-red-500 border border-red-200'
-                                        : item.status?.includes('휴가')
-                                          ? 'bg-gray-100 text-gray-500 border border-gray-300'
-                                          : item.status && item.status !== '1'
-                                            ? 'bg-green-50 text-black border border-green-200'
-                                            : 'text-gray-400'
-                                        }`}>
+                                      <span className={`text-sm font-bold ${
+                                        item.status?.includes('결석') || item.status?.includes('취소') ? 'text-red-500'
+                                        : item.status?.includes('선생님휴가') ? 'text-black'
+                                        : item.status?.includes('휴가') ? 'text-gray-400'
+                                        : item.status ? 'text-black'
+                                        : 'text-gray-400'
+                                      }`}>
                                         {item.status || '-'}
                                       </span>
                                     </td>
