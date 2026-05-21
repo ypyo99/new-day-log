@@ -4535,9 +4535,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                   {row.render.teacher && (
                                     <td className={`${tdClass} bg-blue-100 font-bold text-gray-900 text-[16px] landscape:text-[20px] md:text-[18px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`} rowSpan={row.rowspan.teacher} style={topBorderStyle}>
                                       {typeof row.teacher === 'string' ? (
-                                        row.teacher.trim().split(/\s+/).map((namePart, idx) => (
-                                          <div key={idx} className="leading-tight whitespace-nowrap">{namePart}</div>
-                                        ))
+                                        row.teacher.includes('/') ? (
+                                          row.teacher.split('/').map((namePart, idx, arr) => {
+                                            const displayName = idx < arr.length - 1 ? namePart.trim() + '/' : namePart.trim();
+                                            return (
+                                              <div key={idx} className="leading-tight whitespace-nowrap">{displayName}</div>
+                                            );
+                                          })
+                                        ) : (
+                                          row.teacher.trim().split(/\s+/).map((namePart, idx) => (
+                                            <div key={idx} className="leading-tight whitespace-nowrap">{namePart}</div>
+                                          ))
+                                        )
                                       ) : (
                                         <div className="leading-tight whitespace-nowrap">{row.teacher}</div>
                                       )}
