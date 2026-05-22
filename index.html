@@ -2186,7 +2186,7 @@
                 student: log.student || "",
                 // 취업팀의 경우 장소(싸인) 셀은 복제하지 않고 빈 값으로 설정함
                 location: selectedTeam === '취업팀' ? "" : (log.location || ""),
-                statusStr: "",
+                statusStr: original.status || "",
                 index: i
               });
             }
@@ -2270,18 +2270,19 @@
                   signature_url = null;
                 }
 
+                const upsertPayload = {
+                  team: selectedTeam,
+                  log_date: task.date,
+                  teacher: currentUser,
+                  shift: task.shift,
+                  student: task.student || "",
+                  location: signature_url ? "" : location || "",
+                  signature_url: signature_url
+                };
+
                 const { error: upsertError } = await window.supabaseClient
                   .from('daily_logs')
-                  .upsert({
-                    team: selectedTeam,
-                    log_date: task.date,
-                    teacher: currentUser,
-                    shift: task.shift,
-                    student: task.student || "",
-                    location: signature_url ? "" : location || "",
-                    status: task.statusStr || "",
-                    signature_url: signature_url
-                  }, { onConflict: 'team, log_date, teacher, shift' });
+                  .upsert(upsertPayload, { onConflict: 'team, log_date, teacher, shift' });
 
                 if (upsertError) throw new Error("Supabase 저장 실패: " + upsertError.message);
 
