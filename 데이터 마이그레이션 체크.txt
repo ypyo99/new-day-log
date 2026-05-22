@@ -1,4 +1,5 @@
-현재 supabase의 schedule db 내용을 모두 지우고 구글시트의 내용을 정확히 supabase로 마이그레이션 해줘.  100% 정확하도록 신중하게 검토해서 옮겨줘.
+현재 supabase의 schedule db 내용을 모두 지우고 구글시트의 내용을 정확히 supabase로 마이그레이션 해줘.
+100% 정확하도록 신중하게 검토해서 옮겨줘.
 
 
 node verify.js 'C:\Users\ypyo9\Downloads\디지털_서포터즈_일정표-2026-05-20 (7).xlsx' 

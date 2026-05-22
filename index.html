@@ -5254,6 +5254,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [notice, setNotice] = useState("");
       const [supabaseRecords, setSupabaseRecords] = useState([]);
       const [noDataMessage, setNoDataMessage] = useState("");
+      const [teamLeader, setTeamLeader] = useState(null);
 
       const weekDays = ['월', '화', '수', '목', '금'];
       const [timeSlots, setTimeSlots] = useState([]);
@@ -5360,16 +5361,24 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             const startStr = getLocalDateString(days[0]);
             const endStr = getLocalDateString(days[4]);
 
+            // 팀장(seq_num=1) 이름 가져오기
+            const { data: leaderData } = await window.supabaseClient
+              .from('teachers')
+              .select('name')
+              .eq('team', team)
+              .eq('seq_num', 1)
+              .limit(1);
+            if (leaderData && leaderData.length > 0) {
+              setTeamLeader(leaderData[0].name);
+            }
+
+            // 팀장 일정도 확인해야 하므로 teacher 필터 없이 팀 전체 스케줄 로드
             let query = window.supabaseClient
               .from('daily_logs')
               .select('*')
               .eq('team', team)
               .gte('log_date', startStr)
               .lte('log_date', endStr);
-
-            if (teacher !== "__ALL__") {
-              query = query.eq('teacher', teacher);
-            }
 
             const { data, error } = await query;
             if (error) throw error;
@@ -5386,13 +5395,38 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       useEffect(() => {
         if (!teacher || !currentWeekStart) return;
 
+        // 팀장의 스케줄을 확인하여 specialDays(공휴일/간담회/소양교육) 설정
+        const newSpecialDays = {};
+        if (teamLeader) {
+          const days = getCurrentWeekDays();
+          days.forEach(day => {
+            const dateStr = getLocalDateString(day);
+            const leaderRecords = supabaseRecords.filter(r => r.log_date === dateStr && r.teacher === teamLeader);
+            const specialRec = leaderRecords.find(r => {
+              const content = (r.student || "") + " " + (r.location || "");
+              return content.includes("공휴일") || content.includes("간담회") || content.includes("소양교육");
+            });
+            if (specialRec) {
+              newSpecialDays[dateStr] = {
+                student: specialRec.student || "",
+                location: specialRec.location || "",
+                memo: specialRec.status || ""
+              };
+            }
+          });
+        }
+        setSpecialDays(newSpecialDays);
+
         const defaultSlots = teacher && teacher !== "__ALL__"
           ? getTeacherShifts(team, teacher)
           : getTeamDefaultShifts(team);
 
         const extractedSlots = new Set();
         supabaseRecords.forEach(r => {
-          if (r.shift) extractedSlots.add(r.shift);
+          // 해당 선생님의 시간대만 추출
+          if (r.shift && (teacher === "__ALL__" || r.teacher === teacher)) {
+            extractedSlots.add(r.shift);
+          }
         });
 
         const finalSlots = extractedSlots.size > 0
@@ -5408,27 +5442,40 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         setTimeSlots(finalSlots);
 
         const parsedData = {};
-        finalSlots.forEach(slot => {
+        finalSlots.forEach((slot, slotIdx) => {
           parsedData[slot] = {};
           currentDays.forEach(day => {
             const dateStr = getLocalDateString(day);
-            const supRec = supabaseRecords.find(r => r.log_date === dateStr && r.shift === slot && (teacher === "__ALL__" || r.teacher === teacher));
-
-            if (supRec) {
+            const isSpecialDay = newSpecialDays[dateStr];
+            
+            // 첫 번째 슬롯에 팀장 일정 복사, 나머지는 빈칸 (특수한 날인 경우)
+            if (isSpecialDay && slotIdx === 0) {
               parsedData[slot][dateStr] = {
-                student: supRec.student || "",
-                location: supRec.signature_url || supRec.location || "",
-                status: supRec.status || "",
-                isSpecial: false
+                student: isSpecialDay.student,
+                location: isSpecialDay.location,
+                status: isSpecialDay.memo,
+                isSpecial: true
               };
+            } else if (isSpecialDay && slotIdx > 0) {
+              parsedData[slot][dateStr] = { student: "", location: "", status: "", isSpecial: true };
             } else {
-              parsedData[slot][dateStr] = { student: "", location: "", status: "", isSpecial: false };
+              const supRec = supabaseRecords.find(r => r.log_date === dateStr && r.shift === slot && (teacher === "__ALL__" || r.teacher === teacher));
+              if (supRec) {
+                parsedData[slot][dateStr] = {
+                  student: supRec.student || "",
+                  location: supRec.signature_url || supRec.location || "",
+                  status: supRec.status || "",
+                  isSpecial: false
+                };
+              } else {
+                parsedData[slot][dateStr] = { student: "", location: "", status: "", isSpecial: false };
+              }
             }
           });
         });
 
         setScheduleData(parsedData);
-      }, [teacher, currentWeekStart, supabaseRecords]);
+      }, [teacher, currentWeekStart, supabaseRecords, teamLeader]);
 
       const getStatusColorClass = (statusStr) => {
         if (!statusStr) return "text-gray-800";
@@ -5562,29 +5609,18 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             const dateStr = getLocalDateString(day);
                             const isToday = dateStr === getLocalDateString(new Date());
                             const specialDayInfo = specialDays && specialDays[dateStr];
-                            const hasRealSchedule = timeSlots.some(t => {
-                              const d = scheduleData?.[t]?.[dateStr];
-                              return d && d.student && d.student.trim() !== "" && d.student.trim() !== "간담회";
-                            });
-                            const isSpecialDayMerged = specialDayInfo && !hasRealSchedule;
-
-                            // 1. 특별한 날(간담회/공휴일) 병합 처리
-                            if (isSpecialDayMerged && idx > 0) return null;
 
                             const isLastSlot = idx === timeSlots.length - 1;
-                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${(isSpecialDayMerged || isLastSlot) ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
+                            const todayBorderClass = isToday ? `border-l-4 border-r-4 ${isLastSlot ? 'border-b-4' : ''} border-blue-600 z-10` : 'border-r-2 border-gray-300 last:border-0';
 
-                            const cellData = isSpecialDayMerged ? {
-                              student: specialDayInfo.student,
-                              location: specialDayInfo.location,
-                              status: specialDayInfo.memo,
-                              isSpecial: true
-                            } : scheduleData?.[time]?.[dateStr];
+                            const cellData = scheduleData?.[time]?.[dateStr];
 
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
-                                <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass}`}>
-                                  <div className="flex items-center justify-center h-full min-h-[110px] text-gray-300 font-bold text-[clamp(1rem,2vw,1.2rem)]">일정 없음</div>
+                                <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${specialDayInfo ? 'bg-red-200' : ''}`}>
+                                  <div className="flex items-center justify-center h-full min-h-[110px] text-gray-400 font-bold text-[clamp(1rem,2vw,1.2rem)]">
+                                    {specialDayInfo ? "" : "일정 없음"}
+                                  </div>
                                 </td>
                               );
                             }
@@ -5600,8 +5636,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             }
 
                             return (
-                              <td key={i} rowSpan={isSpecialDayMerged ? 3 : 1} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-1 ${isSpecialDayMerged ? 'p-4 justify-center' : 'p-3 justify-center'} items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
+                              <td key={i} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
+                                <div className={`flex flex-col gap-1 p-3 justify-center items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
@@ -5618,7 +5654,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       })}
                                     </div>
                                   )}
-                                  {cellData.student && <div className={`font-bold text-gray-900 text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
+                                  {cellData.student && <div className={`font-bold ${cellData.isSpecial ? 'text-red-700' : 'text-gray-900'} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
                                   {cellData.location && cellData.location !== "복지관" && team !== '취업팀' && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                   {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                 </div>

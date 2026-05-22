@@ -84,8 +84,8 @@ async function main() {
       continue;
     }
 
-    // Row 0 is the headers
-    const headers = sheetData[0];
+    // Row 1 is the headers (Row 0 is title)
+    const headers = sheetData[1];
     const dateColumns = []; // [{ colIndex, dateStr }]
 
     for (let c = 3; c < headers.length; c++) {
@@ -101,9 +101,9 @@ async function main() {
 
     console.log(`📅 검사할 날짜 열 개수: ${dateColumns.length}개 (${dateColumns[0]?.dateStr} ~ ${dateColumns[dateColumns.length - 1]?.dateStr})`);
 
-    // Parse rows in groups of 3 (Row 1 to End)
+    // Parse rows in groups of 3 (Row 2 to End)
     const numRows = sheetData.length;
-    let rIdx = 1;
+    let rIdx = 2;
 
     while (rIdx < numRows) {
       if (rIdx + 2 >= numRows) break;
