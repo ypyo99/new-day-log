@@ -5619,7 +5619,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                               return (
                                 <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${specialDayInfo ? 'bg-red-200' : ''}`}>
                                   <div className="flex items-center justify-center h-full min-h-[110px] text-gray-400 font-bold text-[clamp(1rem,2vw,1.2rem)]">
-                                    {specialDayInfo ? "" : "일정 없음"}
                                   </div>
                                 </td>
                               );
