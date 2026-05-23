@@ -6957,14 +6957,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [applying, setApplying] = useState(false);
       const [notice, setNotice] = useState("");
 
-      const [isAdmin, setIsAdmin] = useState(() => {
-        try {
-          return window.localStorage.getItem('sungdong_admin_logged_in') === 'true';
-        } catch (e) {
-          return false;
-        }
-      });
-      const [showPwdModal, setShowPwdModal] = useState(false);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [showPwdModal, setShowPwdModal] = useState(true);
       const [pwdInput, setPwdInput] = useState("");
       const [pwdError, setPwdError] = useState(false);
       const pwdInputRef = useRef(null);
@@ -6983,7 +6977,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         try {
           if (isAdmin) {
             setIsAdmin(false);
-            window.localStorage.removeItem('sungdong_admin_logged_in');
           } else {
             setShowPwdModal(true);
             setPwdInput("");
@@ -6998,7 +6991,6 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         try {
           if (pwdInput === "qqq") {
             setIsAdmin(true);
-            window.localStorage.setItem('sungdong_admin_logged_in', 'true');
             setShowPwdModal(false);
           } else {
             setPwdError(true);
