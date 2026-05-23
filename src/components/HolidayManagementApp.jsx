@@ -310,14 +310,14 @@ export default function HolidayManagementApp({ onNavigateBack }) {
             <div className="overflow-x-auto border border-gray-200 rounded-xl">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-100 text-gray-700 border-b border-gray-300 font-bold whitespace-nowrap">
-                    <th className="p-3 w-28 sm:w-32 border-r border-gray-200">날짜</th>
-                    <th className="p-3 w-32 sm:w-40 border-r border-gray-200">공휴일 이름</th>
+                  <tr className="bg-gray-200 text-gray-700 border-b border-gray-300 font-bold whitespace-nowrap">
+                    <th className="p-3 w-28 sm:w-32 border-r border-gray-300">날짜</th>
+                    <th className="p-3 w-32 sm:w-40 border-r border-gray-300">공휴일 이름</th>
                     <th className="p-3 min-w-[100px]">내용1</th>
                   </tr>
-                  <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-400 font-bold whitespace-nowrap">
-                    <th className="p-3 border-r border-gray-200"></th>
-                    <th className="p-3 border-r border-gray-200">내용2</th>
+                  <tr className="bg-gray-200 text-gray-700 border-b-2 border-gray-400 font-bold whitespace-nowrap">
+                    <th className="p-3 border-r border-gray-300"></th>
+                    <th className="p-3 border-r border-gray-300">내용2</th>
                     <th className="p-3 text-left">{isAdmin ? '관리' : ''}</th>
                   </tr>
                 </thead>
