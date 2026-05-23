@@ -1195,6 +1195,19 @@
         } catch (e) { return []; }
       });
 
+      const [holidaysDbList, setHolidaysDbList] = useState([]);
+      useEffect(() => {
+        const loadHolidays = async () => {
+          try {
+            const { data, error } = await supabase.from('holidays').select('holiday_date');
+            if (data && !error) {
+              setHolidaysDbList(data.map(d => d.holiday_date));
+            }
+          } catch(e) { console.error("holidays fetch error", e); }
+        };
+        loadHolidays();
+      }, []);
+
       useEffect(() => {
         const fetchDbTeachers = async () => {
           try {
@@ -2387,6 +2400,10 @@
       const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
       const isSkipDate = (d) => {
+        // 1. Supabase holidays DB 테이블에 등록된 날짜인지 체크
+        if (holidaysDbList.includes(d)) return true;
+
+        // 2. 간담회 등 아직 DB에 없을 수도 있는 기타 스킵 조건 방어 로직
         const targetData = allScheduleData[d] || {};
         const items = Object.values(targetData).filter(s => (s?.student || "").trim() !== "");
         if (items.length === 0) return false;
