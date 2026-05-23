@@ -415,7 +415,7 @@ export default function MainApp({
         let memoParts = [];
 
         const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-        const isKyungrodang = loadedStudent.includes("경로당") || loadedLocation.includes("경로당") || loadedLocation.includes("도선복지관") || loadedStudent.includes("도선복지관");
+        const isKyungrodang = loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
 
         let tagParts = [];
         let isMemoStarted = false;
@@ -599,7 +599,7 @@ export default function MainApp({
       orderedTagsStr = maxRows > 1 ? tagsStrings.join('/') : (tagsStrings[0] || "");
     }
 
-    const isKyungrodang = (log.student || "").includes("경로당") || (log.location || "").includes("경로당") || (log.location || "").includes("도선복지관") || (log.student || "").includes("도선복지관");
+    const isKyungrodang = (log.student || "").includes("경로당") || (log.location || "").includes("경로당");
     const isShowHeadcount = (log.student || "").includes("보조강사") || isKyungrodang;
 
     let result = [];
@@ -1348,7 +1348,7 @@ export default function MainApp({
 
     setLogs(prev => {
       const newLogs = { ...prev };
-      const log = newLogs[index];
+      const log = { ...newLogs[index] };
       const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
       const maxRows = Math.max(1, studentNames.length);
       let currentTagsArray = [...(log.selectedTags || [])];
@@ -1378,7 +1378,8 @@ export default function MainApp({
         currentTagsArray[sIdx] = newTags;
       }
 
-      newLogs[index].selectedTags = currentTagsArray;
+      log.selectedTags = currentTagsArray;
+      newLogs[index] = log;
       return newLogs;
     });
   };
@@ -1783,7 +1784,7 @@ export default function MainApp({
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-7">
                 {shifts.map((shift, index) => {
-                  const isInfoMissing = logs[index] ? (!logs[index].student?.trim() && !logs[index].location?.trim()) : true;
+                  const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || !logs[index].location || !logs[index].location.trim()) : true;
                   const locLen = logs[index] && logs[index].location ? logs[index].location.length : 0;
 
                   const locTextSize = locLen >= 9 ? "text-[15px] sm:text-[15px] md:text-[16px] landscape:text-[17px] md:landscape:text-[18px]" : locLen >= 8 ? "text-[16px] sm:text-[16px] md:text-[18px] landscape:text-[18px] md:landscape:text-[20px]" : locLen >= 7 ? "text-[17px] sm:text-[17px] md:text-[20px] landscape:text-[20px] md:landscape:text-[22px]" : locLen >= 6 ? "text-[18px] sm:text-[19px] md:text-[22px] landscape:text-[22px] md:landscape:text-[24px]" : "text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px]";
@@ -1794,7 +1795,7 @@ export default function MainApp({
                   const isMultipleStudents = studentNames.length >= 2;
 
                   const combinedText = logs[index] ? ((logs[index].student || "") + " " + (logs[index].location || "")) : "";
-                  const isKyungrodang = combinedText.includes("경로당") || combinedText.includes("도선복지관");
+                  const isKyungrodang = combinedText.includes("경로당");
                   const isShowHeadcount = logs[index] ? ((logs[index].student || "").includes("보조강사") || isKyungrodang) : false;
                   const isSpecialDay = logs[index] ? ((logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회")) : false;
                   const cardColorClass = isSpecialDay ? 'bg-red-200 border-red-400' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
