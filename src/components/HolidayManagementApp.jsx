@@ -217,7 +217,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
             </div>
             <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
             <p className="text-base opacity-95 flex items-center mt-1 font-bold">
-              <svg className="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일/휴무일 관리
+              <svg className="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일 관리
             </p>
           </div>
         </div>
@@ -264,26 +264,26 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               <button
                 onClick={handleAddOrUpdate}
                 disabled={saving || loading}
-                className="px-4 py-2 bg-gray-800 text-white text-sm font-bold rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap"
               >
                 추가/수정
               </button>
             </div>
             <div className="flex gap-1.5 sm:gap-2">
               <div className="w-[18%] min-w-0">
-                <label className="block text-[11px] sm:text-xs font-bold text-gray-600 mb-1 truncate">날짜 *</label>
+                <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">날짜 *</label>
                 <input type="text" name="date" value={formData.date} onChange={handleInputChange} placeholder="MM-DD" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
               <div className="w-[27%] min-w-0">
-                <label className="block text-[11px] sm:text-xs font-bold text-gray-600 mb-1 truncate">공휴일 이름 *</label>
+                <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">공휴일 이름 *</label>
                 <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="예: 삼일절" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
               <div className="w-[27%] min-w-0">
-                <label className="block text-[11px] sm:text-xs font-bold text-gray-600 mb-1 truncate">내용1</label>
+                <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">내용1</label>
                 <input type="text" name="content1" value={formData.content1} onChange={handleInputChange} placeholder="예: 복지관 휴관" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
               <div className="w-[28%] min-w-0">
-                <label className="block text-[11px] sm:text-xs font-bold text-gray-600 mb-1 truncate">내용2</label>
+                <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">내용2</label>
                 <input type="text" name="content2" value={formData.content2} onChange={handleInputChange} placeholder="예: 휴일 휴강" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
             </div>
@@ -291,11 +291,11 @@ export default function HolidayManagementApp({ onNavigateBack }) {
         )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-            <h2 className="text-base font-bold text-gray-800">공휴일/휴무일 목록</h2>
-            <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex flex-row justify-between items-center mb-4 gap-3">
+            <h2 className="text-base sm:text-lg font-bold text-gray-800">공휴일/휴무일 목록</h2>
+            <div className="flex gap-2 shrink-0">
               {isAdmin && (
-                <button onClick={handleApplyToSchedule} disabled={applying || loading || saving} className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap">
+                <button onClick={handleApplyToSchedule} disabled={applying || loading || saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap">
                   {applying ? '적용 중...' : '시간표에 적용'}
                 </button>
               )}
@@ -311,27 +311,37 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-100 text-gray-700 border-b border-gray-300 font-bold whitespace-nowrap">
-                    <th className="p-3 w-32 border-r border-gray-200">날짜</th>
-                    <th className="p-3 w-40 border-r border-gray-200">공휴일 이름</th>
-                    <th className="p-3 border-r border-gray-200 min-w-[100px]">내용1</th>
-                    <th className="p-3 border-r border-gray-200 min-w-[100px]">내용2</th>
-                    {isAdmin && <th className="p-3 w-28 text-center">관리</th>}
+                    <th className="p-3 w-28 sm:w-32 border-r border-gray-200">날짜</th>
+                    <th className="p-3 w-32 sm:w-40 border-r border-gray-200">공휴일 이름</th>
+                    <th className="p-3 min-w-[100px]">내용1</th>
+                  </tr>
+                  <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-400 font-bold whitespace-nowrap">
+                    <th className="p-3 border-r border-gray-200"></th>
+                    <th className="p-3 border-r border-gray-200">내용2</th>
+                    <th className="p-3 text-left">{isAdmin ? '관리' : ''}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {holidays.map((h, i) => (
-                    <tr key={i} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                      <td className="p-3 border-r border-gray-200 font-bold text-gray-800">{h.date}</td>
-                      <td className="p-3 border-r border-gray-200 text-gray-700 font-medium">{h.name}</td>
-                      <td className="p-3 border-r border-gray-200 text-gray-600">{h.content1}</td>
-                      <td className="p-3 border-r border-gray-200 text-gray-600">{h.content2}</td>
-                      {isAdmin && (
-                        <td className="p-3 text-center whitespace-nowrap">
-                          <button onClick={() => handleEdit(h)} disabled={saving || loading} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 mr-3 text-xs font-bold">수정</button>
-                          <button onClick={() => handleDelete(h.date)} disabled={saving || loading} className="text-red-500 hover:text-red-700 disabled:text-gray-400 text-xs font-bold">삭제</button>
+                    <React.Fragment key={i}>
+                      <tr className="hover:bg-gray-50 transition-colors">
+                        <td className="p-3 border-r border-gray-200 font-bold text-gray-800">{h.date}</td>
+                        <td className="p-3 border-r border-gray-200 text-gray-800 font-bold">{h.name}</td>
+                        <td className="p-3 text-gray-700 font-bold">{h.content1}</td>
+                      </tr>
+                      <tr className="border-b-2 border-gray-300 hover:bg-gray-50 transition-colors">
+                        <td className="p-3 border-r border-gray-200"></td>
+                        <td className="p-3 border-r border-gray-200 text-gray-900">{h.content2}</td>
+                        <td className="p-3 text-left whitespace-nowrap bg-gray-50/50">
+                          {isAdmin && (
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => handleEdit(h)} disabled={saving || loading} className="px-4 py-1.5 bg-blue-400 text-white border border-blue-500 hover:bg-blue-500 rounded-md disabled:opacity-50 text-xs font-bold transition-colors shadow-sm">수정</button>
+                              <button onClick={() => handleDelete(h.date)} disabled={saving || loading} className="px-4 py-1.5 bg-red-400 text-white border border-red-500 hover:bg-red-500 rounded-md disabled:opacity-50 text-xs font-bold transition-colors shadow-sm">삭제</button>
+                            </div>
+                          )}
                         </td>
-                      )}
-                    </tr>
+                      </tr>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

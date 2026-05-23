@@ -949,7 +949,11 @@ export default function MainApp({
     }, 50);
   };
 
-  const handleLogout = () => { setIsLoggedIn(false); setRecords([]); };
+  const handleLogout = () => { 
+    setIsLoggedIn(false); 
+    setRecords([]); 
+    window.localStorage.removeItem('sungdong_admin_logged_in');
+  };
   const handleSubmit = async (e) => { e.preventDefault(); await performAutoSave(); };
 
   const getTagClass = (index, sIdx, tag) => {
@@ -1589,19 +1593,19 @@ export default function MainApp({
               <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
             </div>
 
-            <button onClick={onNavigateToClassroom} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-purple-500 border-2 border-purple-600 hover:bg-purple-600 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-purple-500 border-2 border-purple-600 hover:bg-purple-600 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
             </button>
 
-            <button onClick={onNavigateToTeacherManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-400 border-2 border-indigo-500 hover:bg-indigo-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToTeacherManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-400 border-2 border-indigo-500 hover:bg-indigo-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
             </button>
 
-            <button onClick={onNavigateToAutoSchedule} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-400 border-2 border-rose-500 hover:bg-rose-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToAutoSchedule(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-400 border-2 border-rose-500 hover:bg-rose-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 작성
             </button>
 
-            <button onClick={onNavigateToHolidayManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-emerald-400 border-2 border-emerald-500 hover:bg-emerald-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToHolidayManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-emerald-400 border-2 border-emerald-500 hover:bg-emerald-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일/휴무일 관리
             </button>
           </div>
