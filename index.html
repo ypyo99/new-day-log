@@ -2386,6 +2386,17 @@
       const minDate = availableDates.length > 0 ? availableDates[0] : "";
       const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
+      const isSkipDate = (d) => {
+        const targetData = allScheduleData[d] || {};
+        const items = Object.values(targetData).filter(s => (s?.student || "").trim() !== "");
+        if (items.length === 0) return false;
+        
+        return items.every(s => {
+          const text = (s?.student || "") + " " + (s?.location || "");
+          return /공휴일|근로자의날|어린이날|명절|연휴|간담회|소양교육/.test(text) || text.includes("휴일");
+        });
+      };
+
       useEffect(() => {
         if (availableDates.length === 0) return;
 
@@ -2393,11 +2404,11 @@
         const todayStr = getInitialWeekday();
         if (date === todayStr) return;
 
-        if (!availableDates.includes(date)) {
-          const futureDates = availableDates.filter(d => d > date);
+        if (!availableDates.includes(date) || isSkipDate(date)) {
+          const futureDates = availableDates.filter(d => d > date && !isSkipDate(d));
           if (futureDates.length > 0) setDate(futureDates[0]);
           else {
-            const pastDates = availableDates.filter(d => d < date);
+            const pastDates = availableDates.filter(d => d < date && !isSkipDate(d));
             if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
           }
         }
@@ -2406,10 +2417,10 @@
       const handlePrevDay = async () => {
         if (isDataLoading) return;
         if (!(await performAutoSave())) return;
-        const pastDates = availableDates.filter(d => d < date);
+        const pastDates = availableDates.filter(d => d < date && !isSkipDate(d));
         if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
         else {
-          setErrorMessage("⚠️ 데이터의 시작 날짜입니다. 이전 기록이 없습니다.");
+          setErrorMessage("⚠️ 이전 근무 기록이 없습니다.");
           setTimeout(() => setErrorMessage(""), 2000);
         }
       };
@@ -2417,10 +2428,10 @@
       const handleNextDay = async () => {
         if (isDataLoading) return;
         if (!(await performAutoSave())) return;
-        const futureDates = availableDates.filter(d => d > date);
+        const futureDates = availableDates.filter(d => d > date && !isSkipDate(d));
         if (futureDates.length > 0) setDate(futureDates[0]);
         else {
-          setErrorMessage("⚠️ 데이터의 마지막 날짜입니다. 이후 기록이 없습니다.");
+          setErrorMessage("⚠️ 이후 근무 기록이 없습니다.");
           setTimeout(() => setErrorMessage(""), 2000);
         }
       };
