@@ -523,21 +523,29 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               else if (isFriday) rightBorder = { style: "medium", color: { argb: "FF2563EB" } };
             }
 
-            // 가로선(bottom) 테두리 분기 설정
+            // 가로선(bottom) 테두리 분기 설정 (선 시작 지점 컬럼 분기 반영)
             let bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } };
 
             if (!nextRowObj) {
-              // 3, 4. 제일 마지막 줄 (팀이 바뀌는 경계 포함) -> 제일 두꺼운 검정색 가로선
+              // 3, 4. 제일 마지막 줄 / 팀 변경 -> A열까지 (C >= 0) 제일 두꺼운 검정선
               bottomBorder = { style: "thick", color: { argb: "FF000000" } };
             } else if (rowObj.groupName !== nextRowObj.groupName) {
-              // 2. 조가 바뀌면 -> 중간정도 두꺼운 검정색 가로선
+              // 2. 조 변경 -> A열까지 (C >= 0) 중간 굵기 검정선
               bottomBorder = { style: "medium", color: { argb: "FF000000" } };
             } else if (rowObj.teacher !== nextRowObj.teacher) {
-              // 1. 선생님 이름이 바뀌면 -> 얇은 검정색 가로선
-              bottomBorder = { style: "thin", color: { argb: "FF000000" } };
+              // 1. 선생님 이름 변경 -> B열까지 (C >= 1) 얇은 검정선
+              if (C >= 1) {
+                bottomBorder = { style: "thin", color: { argb: "FF000000" } };
+              } else {
+                bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } }; // A열은 그리지 않고 기본선 유지
+              }
             } else if (rowObj.shift !== nextRowObj.shift) {
-              // 시간대(Shift) 경계 -> 기존과 같이 파란색 중간선
-              bottomBorder = { style: "medium", color: { argb: "FF2563EB" } };
+              // 시간대(Shift) 경계 -> C열까지 (C >= 2) 파란색 중간선 (A/B열 제외하여 병합셀 보호)
+              if (C >= 2) {
+                bottomBorder = { style: "medium", color: { argb: "FF2563EB" } };
+              } else {
+                bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } }; // A, B열은 그리지 않고 기본선 유지
+              }
             }
 
             const currentBorder = {
