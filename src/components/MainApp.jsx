@@ -1795,6 +1795,7 @@ export default function MainApp({
 
                   const combinedText = logs[index] ? ((logs[index].student || "") + " " + (logs[index].location || "")) : "";
                   const isKyungrodang = combinedText.includes("경로당") || combinedText.includes("도선복지관");
+                  const isShowHeadcount = logs[index] ? ((logs[index].student || "").includes("보조강사") || isKyungrodang) : false;
                   const isSpecialDay = logs[index] ? ((logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회")) : false;
                   const cardColorClass = isSpecialDay ? 'bg-red-200 border-red-400' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
 
