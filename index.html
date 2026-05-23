@@ -2401,8 +2401,9 @@
         if (availableDates.length === 0) return;
 
         // 오늘 날짜(또는 주말인 경우 다음 월요일)인 경우에는 데이터가 없더라도 자동으로 이동하지 않음
+        // 단, 오늘이 공휴일/간담회 등 스킵 대상인 경우에는 건너뜀
         const todayStr = getInitialWeekday();
-        if (date === todayStr) return;
+        if (date === todayStr && !isSkipDate(date)) return;
 
         if (!availableDates.includes(date) || isSkipDate(date)) {
           const futureDates = availableDates.filter(d => d > date && !isSkipDate(d));
