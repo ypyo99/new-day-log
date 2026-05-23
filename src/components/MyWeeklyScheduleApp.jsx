@@ -385,7 +385,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
 
                         if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                           return (
-                            <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${specialDayInfo ? 'bg-red-400' : ''}`}>
+                            <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${specialDayInfo ? 'bg-red-300' : ''}`}>
                               <div className="flex items-center justify-center h-full min-h-[110px] text-gray-400 font-bold text-[clamp(1rem,2vw,1.2rem)]">
                               </div>
                             </td>
@@ -402,12 +402,12 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
 
                         let cellBgClass = cardBgClass;
                         if (specialDayInfo) {
-                          cellBgClass = "bg-red-400";
+                          cellBgClass = "bg-red-300";
                         }
 
                         return (
                           <td key={i} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
-                            <div className={`flex flex-col gap-1 justify-center items-center h-full min-h-[110px] overflow-hidden w-full max-w-full ${isHoliday ? 'p-3 bg-red-400 text-white' : 'p-3'}`}>
+                            <div className={`flex flex-col gap-1 justify-center items-center h-full min-h-[110px] overflow-hidden w-full max-w-full ${isHoliday ? 'p-3 bg-red-300 text-white' : 'p-3'}`}>
                               {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                 <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                   {parsedStatus.tags.map((tag, tIdx) => {
@@ -424,9 +424,9 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                   })}
                                 </div>
                               )}
-                              {cellData.student && <div className={`font-bold ${isHoliday ? 'text-white w-full' : (cellData.isSpecial ? 'text-red-700 w-full' : 'text-gray-900 w-full')} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center flex-shrink-0`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
-                              {cellData.location && cellData.location !== "복지관" && team !== '취업팀' && <div className={`${isHoliday ? 'text-yellow-200' : 'text-gray-600'} text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
-                              {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${isHoliday ? 'text-white' : getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
+                              {cellData.student && <div className={`font-bold ${isHoliday ? 'text-red-900 w-full' : (cellData.isSpecial ? 'text-red-700 w-full' : 'text-gray-900 w-full')} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center flex-shrink-0`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
+                              {cellData.location && cellData.location !== "복지관" && team !== '취업팀' && <div className={`${isHoliday ? 'text-gray-600' : 'text-gray-600'} text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
+                              {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${isHoliday ? 'text-black' : getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                             </div>
                           </td>
                         );

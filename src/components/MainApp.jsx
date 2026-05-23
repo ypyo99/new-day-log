@@ -108,9 +108,9 @@ export default function MainApp({
   useEffect(() => {
     const loadHolidays = async () => {
       try {
-        const { data, error } = await supabaseClient.from('holidays').select('holiday_date');
+        const { data, error } = await supabaseClient.from('holidays').select('date');
         if (data && !error) {
-          setHolidaysDbList(data.map(d => d.holiday_date));
+          setHolidaysDbList(data.map(d => d.date));
         }
       } catch (e) { console.error("holidays fetch error", e); }
     };
@@ -1219,7 +1219,7 @@ export default function MainApp({
   const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
   const isSkipDate = (d) => {
-    if (holidaysDbList.includes(d)) return true;
+    if (holidaysDbList.includes(d) || holidaysDbList.includes(d.substring(5))) return true;
 
     const targetData = allScheduleData[d] || {};
     const items = Object.values(targetData).filter(s => (s?.student || "").trim() !== "");

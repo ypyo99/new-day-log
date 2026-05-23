@@ -7,7 +7,10 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  // 간단한 Fetch 이벤트 리스너 (PWA 설치 조건을 만족하기 위한 최소 요건)
-  // 여기서는 네트워크 요청을 그대로 통과시킵니다.
+  // Supabase 등 외부 API 요청은 Service Worker가 가로채면서 인증 헤더(apikey)가 누락될 수 있으므로 예외 처리
+  if (event.request.url.includes('supabase.co')) {
+    return;
+  }
+  
   event.respondWith(fetch(event.request));
 });

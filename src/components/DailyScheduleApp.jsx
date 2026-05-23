@@ -299,6 +299,41 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
   const [scheduleData, setScheduleData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState("");
+  const [holidaysDbList, setHolidaysDbList] = useState([]);
+
+  useEffect(() => {
+    const loadHolidays = async () => {
+      try {
+        const { data, error } = await supabaseClient.from('holidays').select('date');
+        if (!error && data) {
+          const list = data.map(d => d.date);
+          console.log("Loaded holidaysDbList:", list);
+          setHolidaysDbList(list);
+        }
+      } catch (e) { console.error("holidays fetch error", e); }
+    };
+    loadHolidays();
+  }, []);
+
+  useEffect(() => {
+    if (holidaysDbList.length > 0) {
+      setCurrentDisplayDate(prev => {
+        let temp = new Date(prev);
+        let changed = false;
+        while (
+          temp.getDay() === 0 || 
+          temp.getDay() === 6 || 
+          holidaysDbList.includes(getLocalDateString(temp)) || 
+          holidaysDbList.includes(getLocalDateString(temp).substring(5))
+        ) {
+          temp.setDate(temp.getDate() + 1);
+          changed = true;
+        }
+        return changed ? temp : prev;
+      });
+    }
+  }, [holidaysDbList]);
+
 
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const shifts = ["9:30~10:30", "10:30~11:30", "11:30~12:30", "13:00~14:00", "14:00~15:00", "15:00~16:00"];
@@ -527,20 +562,33 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
   }, [selectedTeam, currentDisplayDate, fetchTeamData]);
 
   const handleDateChange = (daysToAdd) => {
-    let tempDate = new Date(currentDisplayDate);
-    do {
-      tempDate.setDate(tempDate.getDate() + daysToAdd);
-    } while (tempDate.getDay() === 0 || tempDate.getDay() === 6);
-    tempDate.setHours(0, 0, 0, 0);
-    setCurrentDisplayDate(tempDate);
+    setCurrentDisplayDate(prevDate => {
+      let tempDate = new Date(prevDate);
+      do {
+        tempDate.setDate(tempDate.getDate() + daysToAdd);
+      } while (
+        tempDate.getDay() === 0 || 
+        tempDate.getDay() === 6 || 
+        holidaysDbList.includes(getLocalDateString(tempDate)) || 
+        holidaysDbList.includes(getLocalDateString(tempDate).substring(5))
+      );
+      tempDate.setHours(0, 0, 0, 0);
+      return tempDate;
+    });
     setNotice("");
   };
 
   const handleToday = () => {
     let d = new Date();
     d.setHours(0, 0, 0, 0);
-    if (d.getDay() === 6) d.setDate(d.getDate() + 2);
-    else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+    while (
+      d.getDay() === 0 || 
+      d.getDay() === 6 || 
+      holidaysDbList.includes(getLocalDateString(d)) || 
+      holidaysDbList.includes(getLocalDateString(d).substring(5))
+    ) {
+      d.setDate(d.getDate() + 1);
+    }
     setCurrentDisplayDate(d);
     setNotice("");
   };
