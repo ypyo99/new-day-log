@@ -6958,7 +6958,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       const [notice, setNotice] = useState("");
 
       const [isAdmin, setIsAdmin] = useState(false);
-      const [showPwdModal, setShowPwdModal] = useState(true);
+      const [showPwdModal, setShowPwdModal] = useState(false);
       const [pwdInput, setPwdInput] = useState("");
       const [pwdError, setPwdError] = useState(false);
       const pwdInputRef = useRef(null);
