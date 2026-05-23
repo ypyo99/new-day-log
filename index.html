@@ -13,6 +13,12 @@
   <meta name="theme-color" content="#2563EB">
 
   <script>
+    window.addEventListener('error', function (e) {
+      alert("⚠️ JS 오류 발생: " + e.message + "\n위치: " + e.filename + ":" + e.lineno);
+    });
+  </script>
+
+  <script>
     document.addEventListener("DOMContentLoaded", function () {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
