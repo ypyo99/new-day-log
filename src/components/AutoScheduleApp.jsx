@@ -92,6 +92,10 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [editCell, setEditCell] = useState(null); // { teacherName, dayNum, shift, student, location }
+  const [lastBackupId, setLastBackupId] = useState(() => getSavedItem('sungdong_auto_lastBackupId', null));
+  const [restoring, setRestoring] = useState(false);
+
+  useEffect(() => { setSavedItem('sungdong_auto_lastBackupId', lastBackupId); }, [lastBackupId]);
 
   useEffect(() => { setSavedItem('sungdong_auto_startDate', startDate); }, [startDate]);
   useEffect(() => { setSavedItem('sungdong_auto_endDate', endDate); }, [endDate]);
@@ -368,6 +372,46 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     setProgressMsg("시간표 저장을 준비 중입니다...");
 
     try {
+      const backupId = Date.now().toString();
+      setProgressMsg("기존 데이터 백업 중...");
+
+      const { data: existingData, error: fetchErr } = await supabaseClient
+        .from('daily_logs')
+        .select('*')
+        .eq('team', team)
+        .gte('log_date', startDate)
+        .lte('log_date', endDate);
+
+      if (fetchErr) throw fetchErr;
+
+      if (existingData && existingData.length > 0) {
+        const backupData = existingData.map(r => ({
+          backup_id: backupId,
+          original_id: r.id,
+          team: r.team,
+          log_date: r.log_date,
+          teacher: r.teacher,
+          shift: r.shift,
+          student: r.student,
+          location: r.location,
+          status: r.status,
+          signature_url: r.signature_url
+        }));
+
+        const bChunkSize = 500;
+        for (let i = 0; i < backupData.length; i += bChunkSize) {
+          const bChunk = backupData.slice(i, i + bChunkSize);
+          const { error: backupErr } = await supabaseClient
+            .from('daily_logs_backup')
+            .insert(bChunk);
+          if (backupErr) {
+            console.error("Backup Error:", backupErr);
+            throw new Error("기존 데이터 백업 중 오류가 발생했습니다. (daily_logs_backup 테이블이 존재하는지 확인해주세요)");
+          }
+        }
+      }
+      setLastBackupId(backupId);
+
       const chunkSize = 500;
       let saved = 0;
       for (let i = 0; i < draftRecords.length; i += chunkSize) {
@@ -395,6 +439,64 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       setSaving(false);
       setProgressMsg("");
       setNotice("⚠️ 시간표 저장 중 오류가 발생했습니다: " + err.message);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!lastBackupId) return;
+    if (!window.confirm("가장 최근에 저장한 시간표 작성을 취소하고 이전 상태로 되돌리시겠습니까?")) return;
+
+    setRestoring(true);
+    setProgressMsg("이전 상태로 복원 중입니다...");
+    try {
+      const { error: delErr } = await supabaseClient
+        .from('daily_logs')
+        .delete()
+        .eq('team', team)
+        .gte('log_date', startDate)
+        .lte('log_date', endDate);
+      if (delErr) throw delErr;
+
+      const { data: backupData, error: fetchErr } = await supabaseClient
+        .from('daily_logs_backup')
+        .select('*')
+        .eq('backup_id', lastBackupId);
+      if (fetchErr) throw fetchErr;
+
+      if (backupData && backupData.length > 0) {
+        const restoreData = backupData.map(r => ({
+          id: r.original_id,
+          team: r.team,
+          log_date: r.log_date,
+          teacher: r.teacher,
+          shift: r.shift,
+          student: r.student,
+          location: r.location,
+          status: r.status,
+          signature_url: r.signature_url
+        }));
+
+        const chunkSize = 500;
+        for (let i = 0; i < restoreData.length; i += chunkSize) {
+          const chunk = restoreData.slice(i, i + chunkSize);
+          const { error: insErr } = await supabaseClient
+            .from('daily_logs')
+            .upsert(chunk);
+          if (insErr) throw insErr;
+        }
+      }
+
+      await supabaseClient.from('daily_logs_backup').delete().eq('backup_id', lastBackupId);
+      setLastBackupId(null);
+      alert("이전 시간표 상태로 성공적으로 되돌렸습니다!");
+      setDraftRecords([]);
+      setScheduleTemplates({});
+    } catch (err) {
+      console.error(err);
+      alert("되돌리기 실패: " + err.message);
+    } finally {
+      setRestoring(false);
+      setProgressMsg("");
     }
   };
 
@@ -701,12 +803,21 @@ export default function AutoScheduleApp({ onNavigateBack }) {
             </div>
 
             <div className="flex justify-end gap-3 max-w-4xl mx-auto">
+              {lastBackupId && (
+                <button
+                  onClick={handleUndo}
+                  disabled={restoring || saving}
+                  className="px-6 py-3 bg-red-500 text-white font-extrabold rounded-xl shadow-md hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
+                >
+                  {restoring ? '복원 중...' : '↩️ 최근 작업 취소하기'}
+                </button>
+              )}
               <button
                 onClick={() => setShowConfirmModal(true)}
-                disabled={saving}
+                disabled={saving || restoring}
                 className="px-6 py-3 bg-indigo-600 text-white font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
               >
-                {saving ? '시간표 저장 중...' : '검토 완료 및 시간표 작성'}
+                {saving ? '시간표 저장 중...' : '이 스케줄로 시간표 작성'}
               </button>
             </div>
           </div>
