@@ -1155,7 +1155,7 @@
     // =====================================================================
     // 🖥️ 1. 메인 업무일지 프로그램
     // =====================================================================
-    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule, onNavigateToTeamSchedule, onNavigateToTeacherManagement, onNavigateToAutoSchedule }) {
+    function MainApp({ onNavigateToClassroom, onNavigateToDailySchedule, onNavigateToStudentSearch, onNavigateToMyWeeklySchedule, onNavigateToTeamSchedule, onNavigateToTeacherManagement, onNavigateToAutoSchedule, onNavigateToHolidayManagement }) {
       const [selectedTeam, setSelectedTeam] = useState(() => getSavedItem('sungdong_team', ""));
       const [currentUser, setCurrentUser] = useState(() => getSavedItem('sungdong_teacher', ""));
       const [date, setDate] = useState(() => getInitialWeekday());
@@ -2763,6 +2763,10 @@
                 <button onClick={onNavigateToAutoSchedule} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-rose-400 border-2 border-rose-500 hover:bg-rose-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
                   <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 작성
                 </button>
+                
+                <button onClick={onNavigateToHolidayManagement} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-emerald-400 border-2 border-emerald-500 hover:bg-emerald-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                  <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일/휴무일 관리
+                </button>
               </div>
 
               <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
@@ -3029,7 +3033,7 @@
                                   onChange={(e) => handleLogChange(index, 'student', e.target.value)}
                                   onBlur={handleInputBlur}
                                   disabled={isDataLoading}
-                                  className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent'}`}
+                                  className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                                 />
                                 {selectedTeam !== '취업팀' && (
                                   <input
@@ -3039,7 +3043,7 @@
                                     onChange={(e) => handleLogChange(index, 'location', e.target.value)}
                                     onBlur={handleInputBlur}
                                     disabled={isDataLoading}
-                                    className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent'}`}
+                                    className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                                   />
                                 )}
                               </div>
@@ -5447,7 +5451,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           currentDays.forEach(day => {
             const dateStr = getLocalDateString(day);
             const isSpecialDay = newSpecialDays[dateStr];
-            
+
             // 첫 번째 슬롯에 팀장 일정 복사, 나머지는 빈칸 (특수한 날인 경우)
             if (isSpecialDay && slotIdx === 0) {
               parsedData[slot][dateStr] = {
@@ -5617,7 +5621,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                             if (!cellData || (!cellData.student && !cellData.location && !cellData.status)) {
                               return (
-                                <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${specialDayInfo ? 'bg-red-200' : ''}`}>
+                                <td key={i} className={`p-0 align-top hover:bg-gray-50 transition-colors overflow-hidden ${todayBorderClass} ${specialDayInfo ? 'bg-red-400' : ''}`}>
                                   <div className="flex items-center justify-center h-full min-h-[110px] text-gray-400 font-bold text-[clamp(1rem,2vw,1.2rem)]">
                                   </div>
                                 </td>
@@ -5627,16 +5631,19 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             const parsedStatus = parseWeeklyStatus(cellData.status);
                             const isAssistant = cellData.student && cellData.student.includes("보조강사");
                             const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.student || "").includes("복지관") || (cellData.location || "").includes("경로당") || ((cellData.location || "").includes("복지관") && (cellData.location || "").trim() !== "복지관");
+                            const isHoliday = (cellData.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.student.replace(/\s/g, ''))) ||
+                                              (cellData.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.status.replace(/\s/g, ''))) ||
+                                              (cellData.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.location.replace(/\s/g, '')));
                             const cardBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "bg-white";
 
                             let cellBgClass = cardBgClass;
                             if (specialDayInfo) {
-                              cellBgClass = "bg-red-200";
+                              cellBgClass = "bg-red-400";
                             }
 
                             return (
                               <td key={i} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
-                                <div className={`flex flex-col gap-1 p-3 justify-center items-center h-full min-h-[110px] overflow-hidden w-full max-w-full`}>
+                                <div className={`flex flex-col gap-1 justify-center items-center h-full min-h-[110px] overflow-hidden w-full max-w-full ${isHoliday ? 'p-3 bg-red-400 text-white' : 'p-3'}`}>
                                   {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                     <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                       {parsedStatus.tags.map((tag, tIdx) => {
@@ -5653,9 +5660,9 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                       })}
                                     </div>
                                   )}
-                                  {cellData.student && <div className={`font-bold ${cellData.isSpecial ? 'text-red-700' : 'text-gray-900'} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center w-full`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
-                                  {cellData.location && cellData.location !== "복지관" && team !== '취업팀' && <div className={`text-gray-600 text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
-                                  {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
+                                  {cellData.student && <div className={`font-bold ${isHoliday ? 'text-white w-full' : (cellData.isSpecial ? 'text-red-700 w-full' : 'text-gray-900 w-full')} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center flex-shrink-0`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
+                                  {cellData.location && cellData.location !== "복지관" && team !== '취업팀' && <div className={`${isHoliday ? 'text-yellow-200' : 'text-gray-600'} text-[clamp(0.9rem,2.1vw,1.35rem)] font-bold break-all whitespace-pre-wrap text-center max-w-full leading-tight mt-1`}>{cellData.location.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
+                                  {parsedStatus.memo && <div className={`font-bold text-[clamp(0.9rem,2.1vw,1.35rem)] leading-snug break-words whitespace-pre-wrap text-center mt-1 w-full ${isHoliday ? 'text-white' : getStatusColorClass(cellData.status)}`}>{parsedStatus.memo.replace(/대체공휴일/g, '대체\n공휴일')}</div>}
                                 </div>
                               </td>
                             );
@@ -6153,20 +6160,29 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                       (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
 
                     if (rowObj.category === "장소") {
-                      fillRGB = "FFFFFF";
                       if (isHoliday) {
-                        fontColorRGB = "EF4444";
+                        fillRGB = "F87171";
+                        fontColorRGB = "FEF08A";
                         isBold = true;
-                      } else if (item.signature_url) {
-                        fontColorRGB = "2563EB";
-                        isBold = true;
-                      } else if (item.location) {
-                        fontColorRGB = "000000";
+                      } else {
+                        fillRGB = "FFFFFF";
+                        if (item.signature_url) {
+                          fontColorRGB = "2563EB";
+                          isBold = true;
+                        } else if (item.location) {
+                          fontColorRGB = "000000";
+                        }
                       }
                     } else if (isHoliday) {
-                      fillRGB = "FEE2E2";
-                      fontColorRGB = "EF4444";
-                      isBold = true;
+                      if (rowObj.category === "대상") {
+                        fillRGB = "F87171";
+                        fontColorRGB = "FFFFFF";
+                        isBold = true;
+                      } else {
+                        fillRGB = "F87171";
+                        fontColorRGB = "FFFFFF";
+                        isBold = true;
+                      }
                     } else {
                       if (rowObj.category === "대상") {
                         if (item.student?.includes('보조강사')) {
@@ -6437,6 +6453,28 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         const key = `${item.teacher}::${item.shift}::${item.log_date}`;
         dataLookup[key] = item;
       });
+      const isHolidayStr = (str) => {
+        if (!str) return false;
+        if (/공휴일|근로자의날|어린이날|공휴|명절|연휴/.test(str)) return true;
+        if (str.trim() === "휴일") return true;
+        return false;
+      };
+
+      const holidayDates = {};
+      filteredData.forEach(item => {
+        if (!holidayDates[item.log_date]) {
+          const isHol = isHolidayStr(item.student) || isHolidayStr(item.status) || isHolidayStr(item.location);
+          if (isHol && !item.status?.includes("결석") && !item.status?.includes("취소")) {
+            holidayDates[item.log_date] = item;
+          }
+        }
+      });
+      const firstShiftForTeacher = {};
+      gridRows.forEach(row => {
+        if (!firstShiftForTeacher[row.teacher]) {
+          firstShiftForTeacher[row.teacher] = row.shift;
+        }
+      });
 
       return (
         <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -6625,28 +6663,51 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                   ? "3px solid #4B5563"
                                   : (isFriday ? "2px solid #2563EB" : "1px solid #D1D5DB");
 
-                                if (item) {
-                                  const isHoliday = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
-                                    (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
-                                    (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
+                                const holidayItem = holidayDates[dateStr];
+                                const isHolidayDate = !!holidayItem;
+                                const isFirstShift = row.shift === firstShiftForTeacher[row.teacher];
+                                const isSpecialTeacher = row.teacher.includes('천은선') || row.teacher.includes('서승희');
 
-                                  if (isHoliday) {
+                                const isHolidayItem = item && (isHolidayStr(item.student) || isHolidayStr(item.status) || isHolidayStr(item.location)) && !item.status?.includes("결석") && !item.status?.includes("취소");
+
+                                if (isHolidayDate && isFirstShift && isSpecialTeacher && !item) {
                                     if (row.category === "대상") {
-                                      cellContent = item.student || '공휴일';
-                                      cellClass = "bg-red-700 text-white font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
+                                      cellContent = holidayItem.student || '공휴일';
+                                      cellClass = "bg-red-400 text-white font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                     } else if (row.category === "장소") {
-                                      cellContent = item.location || '공휴일';
-                                      cellClass = "!bg-white text-red-700 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      cellContent = holidayItem.location || '공휴일';
+                                      cellClass = "!bg-white text-red-500 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                     } else if (row.category === "진행") {
-                                      cellContent = item.status || '';
-                                      if (item.status?.includes('결석') || item.status?.includes('취소')) {
-                                        cellClass = "bg-red-700 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
-                                      } else if (item.status?.includes('휴가')) {
-                                        cellClass = "bg-gray-200 text-gray-700 font-bold text-[13px] sm:text-[14px] py-1 px-1";
-                                      } else if (item.status) {
-                                        cellClass = "bg-[#F0FDF4] text-black font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
-                                      } else {
-                                        cellClass = "bg-gray-50 text-gray-400 font-normal";
+                                      cellContent = holidayItem.status || '';
+                                      cellClass = "bg-[#F0FDF4] text-black font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                    }
+                                } else if (item) {
+                                  if (isHolidayItem) {
+                                    if (!isFirstShift) {
+                                      cellContent = '';
+                                      cellClass = "bg-white text-gray-400 font-normal";
+                                    } else {
+                                      if (row.category === "대상") {
+                                        cellContent = item.student || '공휴일';
+                                        if (item.student?.includes('보조강사')) {
+                                          cellClass = "bg-yellow-300 text-gray-950 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
+                                        } else {
+                                          cellClass = "bg-red-400 text-white font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
+                                        }
+                                      } else if (row.category === "장소") {
+                                        cellContent = item.location || '공휴일';
+                                        cellClass = "!bg-white text-red-500 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                      } else if (row.category === "진행") {
+                                        cellContent = item.status || '';
+                                        if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                                          cellClass = "bg-red-500 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                        } else if (item.status?.includes('휴가')) {
+                                          cellClass = "bg-gray-200 text-gray-700 font-bold text-[13px] sm:text-[14px] py-1 px-1";
+                                        } else if (item.status) {
+                                          cellClass = "bg-[#F0FDF4] text-black font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
+                                        } else {
+                                          cellClass = "bg-gray-50 text-gray-400 font-normal";
+                                        }
                                       }
                                     }
                                   } else {
@@ -6808,10 +6869,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                                     </td>
                                     <td className="border-b border-gray-200 align-middle py-2 px-1">
                                       <span className={`text-sm font-bold ${item.status?.includes('결석') || item.status?.includes('취소') ? 'text-red-500'
-                                          : item.status?.includes('선생님휴가') ? 'text-black'
-                                            : item.status?.includes('휴가') ? 'text-gray-400'
-                                              : item.status ? 'text-black'
-                                                : 'text-gray-400'
+                                        : item.status?.includes('선생님휴가') ? 'text-black'
+                                          : item.status?.includes('휴가') ? 'text-gray-400'
+                                            : item.status ? 'text-black'
+                                              : 'text-gray-400'
                                         }`}>
                                         {item.status || '-'}
                                       </span>
@@ -6856,6 +6917,251 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
     // =====================================================================
     // 📅 6. 시간표 자동 작성 컴포넌트 (신규)
     // =====================================================================
+    // =====================================================================
+    // 🖥️ 8. 공휴일/휴무일 관리 프로그램
+    // =====================================================================
+    function HolidayManagementApp({ onNavigateBack }) {
+      const [holidays, setHolidays] = useState([]);
+      const [formData, setFormData] = useState({ date: '', name: '', content1: '', content2: '' });
+      const [loading, setLoading] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [applying, setApplying] = useState(false);
+      const [notice, setNotice] = useState("");
+
+      useEffect(() => {
+        fetchHolidays();
+      }, []);
+
+      const fetchHolidays = async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('holidays')
+            .select('*')
+            .order('date', { ascending: true });
+          
+          if (error) throw error;
+          setHolidays(data || []);
+        } catch (err) {
+          console.error(err);
+          setNotice("데이터를 불러오는데 실패했습니다 (DB에 holidays 테이블이 없을 수 있습니다).");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+      };
+
+      const handleAddOrUpdate = () => {
+        if (!formData.date || !formData.name) {
+          alert("날짜와 공휴일 이름은 필수입니다.");
+          return;
+        }
+        
+        setHolidays(prev => {
+          const existingIndex = prev.findIndex(h => h.date === formData.date);
+          let updated;
+          if (existingIndex >= 0) {
+            updated = [...prev];
+            updated[existingIndex] = { ...updated[existingIndex], ...formData };
+          } else {
+            updated = [...prev, { ...formData }];
+          }
+          return updated.sort((a, b) => a.date.localeCompare(b.date));
+        });
+        
+        setFormData({ date: '', name: '', content1: '', content2: '' });
+      };
+
+      const handleDelete = (dateToDelete) => {
+        if (!confirm("해당 휴무일을 삭제하시겠습니까?")) return;
+        setHolidays(prev => prev.filter(h => h.date !== dateToDelete));
+      };
+
+      const handleEdit = (holiday) => {
+        setFormData({
+          date: holiday.date || '',
+          name: holiday.name || '',
+          content1: holiday.content1 || '',
+          content2: holiday.content2 || ''
+        });
+      };
+
+      const handleSave = async () => {
+        setSaving(true);
+        setNotice("");
+        try {
+          // DB에서 자동 관리되는 컬럼(id, created_at 등)을 제거하여 null 제약조건 오류 방지
+          const payload = holidays.map(({ id, created_at, updated_at, ...rest }) => rest);
+          
+          const { error } = await window.supabaseClient
+            .from('holidays')
+            .upsert(payload, { onConflict: 'date' });
+            
+          if (error) throw error;
+          setNotice("성공적으로 저장되었습니다.");
+          setTimeout(() => setNotice(""), 3000);
+        } catch (err) {
+          console.error(err);
+          setNotice("저장 중 오류가 발생했습니다: " + err.message);
+        } finally {
+          setSaving(false);
+        }
+      };
+
+      const handleApplyToSchedule = async () => {
+        const targetYear = new Date().getFullYear();
+
+        if (!confirm(`현재 연도(${targetYear}년) 시간표에 공휴일을 적용하시겠습니까? (해당 날짜의 모든 일정이 공휴일 데이터로 덮어쓰기됩니다)`)) return;
+        
+        setApplying(true);
+        setNotice("");
+        try {
+          let totalUpdated = 0;
+          for (const holiday of holidays) {
+            // "5/1" 또는 "05-01" 형태로 입력된 날짜를 "05-01" 포맷으로 표준화
+            let formattedMonthDay = holiday.date;
+            if (holiday.date.includes('/')) {
+              const [m, d] = holiday.date.split('/');
+              formattedMonthDay = `${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            } else if (holiday.date.includes('-')) {
+              const [m, d] = holiday.date.split('-');
+              formattedMonthDay = `${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+            
+            const fullDate = `${targetYear}-${formattedMonthDay}`;
+
+            const { data, error: fetchError } = await window.supabaseClient
+              .from('daily_logs')
+              .select('*')
+              .eq('log_date', fullDate);
+              
+            if (fetchError) throw fetchError;
+            
+            if (data && data.length > 0) {
+              const updatedLogs = data.map(log => ({
+                ...log,
+                student: holiday.name,
+                location: holiday.content1,
+                status: holiday.content2
+              }));
+              
+              const { error: upsertError } = await window.supabaseClient
+                .from('daily_logs')
+                .upsert(updatedLogs, { onConflict: 'team,log_date,teacher,shift' });
+                
+              if (upsertError) throw upsertError;
+              totalUpdated += data.length;
+            }
+          }
+          
+          setNotice(`성공적으로 시간표에 적용되었습니다! (총 ${totalUpdated}건 업데이트)`);
+        } catch (err) {
+          console.error(err);
+          setNotice("적용 중 오류가 발생했습니다: " + err.message);
+        } finally {
+          setApplying(false);
+        }
+      };
+
+      return (
+        <div className="min-h-[100dvh] bg-gray-50 font-sans pb-10">
+          <header className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 flex items-center pt-safe-4">
+            <button onClick={onNavigateBack} className="mr-3 p-1 rounded-full hover:bg-blue-700 active:bg-blue-800 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            </button>
+            <h1 className="text-lg font-black tracking-tight flex-1 flex items-center">
+              공휴일/휴무일 관리
+            </h1>
+          </header>
+
+          <main className="p-4 max-w-4xl mx-auto space-y-6 mt-4">
+            {notice && (
+              <div className={`p-4 rounded-xl font-bold shadow-sm animate-fadeIn ${notice.includes('실패') || notice.includes('오류') ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
+                {notice}
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-fadeIn">
+              <h2 className="text-base font-bold text-gray-800 mb-4">새 공휴일/휴무일 입력</h2>
+              <div className="flex flex-nowrap items-end gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                <div className="min-w-[100px] flex-1 shrink-0">
+                  <label className="block text-xs font-bold text-gray-600 mb-1">날짜 *</label>
+                  <input type="text" name="date" value={formData.date} onChange={handleInputChange} placeholder="MM-DD (예: 05-05)" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+                </div>
+                <div className="min-w-[150px] flex-1 shrink-0">
+                  <label className="block text-xs font-bold text-gray-600 mb-1">공휴일 이름 (학생 이름) *</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="예: 삼일절" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+                </div>
+                <div className="min-w-[150px] flex-1 shrink-0">
+                  <label className="block text-xs font-bold text-gray-600 mb-1">내용1 (장소)</label>
+                  <input type="text" name="content1" value={formData.content1} onChange={handleInputChange} placeholder="예: 복지관 휴관" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+                </div>
+                <div className="min-w-[150px] flex-1 shrink-0">
+                  <label className="block text-xs font-bold text-gray-600 mb-1">내용2 (출결/메모)</label>
+                  <input type="text" name="content2" value={formData.content2} onChange={handleInputChange} placeholder="예: 휴일 휴강" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+                </div>
+                <div className="min-w-[100px] shrink-0">
+                  <button onClick={handleAddOrUpdate} className="w-full px-4 py-2 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-700 transition-colors h-[38px] whitespace-nowrap">추가/수정</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                <h2 className="text-base font-bold text-gray-800">공휴일/휴무일 목록</h2>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <button onClick={handleSave} disabled={saving || loading} className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap">
+                    {saving ? '저장 중...' : '저장'}
+                  </button>
+                  <button onClick={handleApplyToSchedule} disabled={applying || loading} className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap">
+                    {applying ? '적용 중...' : '시간표에 적용'}
+                  </button>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-10"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+              ) : holidays.length === 0 ? (
+                <div className="text-center py-10 text-gray-500 text-sm font-medium bg-gray-50 rounded-xl border border-dashed border-gray-300">저장된 공휴일/휴무일이 없습니다.</div>
+              ) : (
+                <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-700 border-b border-gray-300 font-bold whitespace-nowrap">
+                        <th className="p-3 w-32 border-r border-gray-200">날짜</th>
+                        <th className="p-3 w-40 border-r border-gray-200">휴일명 (학생)</th>
+                        <th className="p-3 border-r border-gray-200 min-w-[100px]">내용1 (장소)</th>
+                        <th className="p-3 border-r border-gray-200 min-w-[100px]">내용2 (출결)</th>
+                        <th className="p-3 w-28 text-center">관리</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {holidays.map((h, i) => (
+                        <tr key={i} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                          <td className="p-3 border-r border-gray-200 font-bold text-gray-800">{h.date}</td>
+                          <td className="p-3 border-r border-gray-200 text-gray-700 font-medium">{h.name}</td>
+                          <td className="p-3 border-r border-gray-200 text-gray-600">{h.content1}</td>
+                          <td className="p-3 border-r border-gray-200 text-gray-600">{h.content2}</td>
+                          <td className="p-3 text-center whitespace-nowrap">
+                            <button onClick={() => handleEdit(h)} className="text-blue-600 hover:text-blue-800 mr-3 text-xs font-bold">수정</button>
+                            <button onClick={() => handleDelete(h.date)} className="text-red-500 hover:text-red-700 text-xs font-bold">삭제</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      );
+    }
+
     function AutoScheduleApp({ onNavigateBack }) {
       const [isAdmin, setIsAdmin] = useState(false);
       const [showPwdModal, setShowPwdModal] = useState(false);
@@ -7214,7 +7520,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
           const chunkSize = 500;
           let saved = 0;
           for (let i = 0; i < draftRecords.length; i += chunkSize) {
-            const chunk = draftRecords.slice(i, i + chunkSize);
+            const chunk = draftRecords.slice(i, i + chunkSize).map(record => {
+              if (!record.student || record.student.trim() === "") {
+                return { ...record, location: "" };
+              }
+              return record;
+            });
             saved = Math.min(i + chunkSize, draftRecords.length);
             setProgressMsg(`Supabase에 시간표 반영 중... (${saved} / ${draftRecords.length}건)`);
 
@@ -7306,7 +7617,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     disabled={analyzing || saving}
                     className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-blue-600 text-white font-extrabold rounded-md shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
                   >
-                    {analyzing ? '분석 중...' : '주간 시간표 미리보기'}
+                    {analyzing ? '분석 중...' : '주간 시간표 보기'}
                   </button>
                 </div>
 
@@ -7376,12 +7687,12 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-4 gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-gray-800">작성될 시간표 미리보기 ({team})</h2>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm text-blue-600 mt-0.5">
                       기준 주간: {baseWeekDates[0]} ~ {baseWeekDates[baseWeekDates.length - 1]} (월~금)
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm font-bold text-gray-700">선생님 필터:</label>
+                    <label className="text-sm font-bold text-gray-700">선생님 선택:</label>
                     <select
                       value={previewFilter}
                       onChange={(e) => setPreviewFilter(e.target.value)}
@@ -7534,9 +7845,9 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 max-w-4xl mx-auto">
-                  <p className="text-xs text-yellow-800 leading-relaxed font-bold">
+                  <p className="text-s text-yellow-900 leading-relaxed font-bold">
                     💡 <b>안내</b>: 실제 DB에 저장하기 전에 위의 스케줄이 올바른지 확인해 주세요.
-                    <br />수업 희망자가 없는 빈 시간대는 빈 공간으로 자동 준비되며, 저장 완료 시 기존 데이터베이스에 이전에 저장된 스케줄과 중복되더라도 자동으로 병합/덮어쓰기(upsert) 처리됩니다.
+                    <br />데이터베이스에 이전에 저장된 스케줄이 있으면 이 일정으로 대체됩니다.
                   </p>
                 </div>
 
@@ -7546,7 +7857,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                     disabled={saving}
                     className="px-6 py-3 bg-indigo-600 text-white font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
                   >
-                    {saving ? '시간표 저장 중...' : '검토 완료 및 시간표 반영'}
+                    {saving ? '시간표 저장 중...' : '검토 완료 및 시간표 작성'}
                   </button>
                 </div>
               </div>
@@ -7651,6 +7962,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
       if (currentView === 'autoSchedule') {
         return <AutoScheduleApp onNavigateBack={() => setCurrentView('main')} />;
       }
+      
+      if (currentView === 'holidayManagement') {
+        return <HolidayManagementApp onNavigateBack={() => setCurrentView('main')} />;
+      }
 
       return <MainApp
         onNavigateToClassroom={() => setCurrentView('classroom')}
@@ -7673,6 +7988,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
         }}
         onNavigateToTeacherManagement={() => setCurrentView('teacherManagement')}
         onNavigateToAutoSchedule={() => setCurrentView('autoSchedule')}
+        onNavigateToHolidayManagement={() => setCurrentView('holidayManagement')}
       />;
     }
 
