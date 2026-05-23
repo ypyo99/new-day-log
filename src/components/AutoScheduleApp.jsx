@@ -185,6 +185,42 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         return;
       }
 
+      // 공휴일/간담회 등 holidays DB 데이터 가져오기
+      setProgressMsg("공휴일 데이터 가져오는 중...");
+      const { data: holidaysList, error: hErr } = await supabaseClient
+        .from('holidays')
+        .select('*');
+
+      if (hErr) {
+        console.warn("Holidays table query error:", hErr);
+      }
+      const holidays = holidaysList || [];
+
+      // 공휴일 여부를 판별하는 안전한 도우미 함수
+      const isHoliday = (dateStr) => {
+        const [year, month, day] = dateStr.split('-');
+        const mmdd = `${month}-${day}`;
+        const m_d = `${parseInt(month)}/${parseInt(day)}`;
+        const m_d_dash = `${parseInt(month)}-${parseInt(day)}`;
+
+        return holidays.some(h => {
+          const hDate = (h.date || "").trim();
+          return hDate === dateStr || hDate === mmdd || hDate === m_d || hDate === m_d_dash;
+        });
+      };
+
+      const getHolidayObj = (dateStr) => {
+        const [year, month, day] = dateStr.split('-');
+        const mmdd = `${month}-${day}`;
+        const m_d = `${parseInt(month)}/${parseInt(day)}`;
+        const m_d_dash = `${parseInt(month)}-${parseInt(day)}`;
+
+        return holidays.find(h => {
+          const hDate = (h.date || "").trim();
+          return hDate === dateStr || hDate === mmdd || hDate === m_d || hDate === m_d_dash;
+        });
+      };
+
       const teacherNames = teacherList.map(t => t.name.trim());
       const baseDates = getPrevMonthLastWeek(startDate);
       setBaseWeekDates(baseDates);
@@ -286,25 +322,86 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         }
       }
 
+      // 교사별 정상 근무 요일 판단 (실 수업 데이터 기준)
+      const workingDaysOfWeek = {};
+      teacherNames.forEach(name => {
+        workingDaysOfWeek[name] = new Set();
+        const teacherObj = teacherList.find(t => t.name.trim() === name);
+        const shifts = [teacherObj.shift1, teacherObj.shift2, teacherObj.shift3].map(s => (s || "").trim()).filter(Boolean);
+
+        for (let day = 1; day <= 5; day++) {
+          const hasClass = shifts.some(shift => {
+            const temp = templates[name][day]?.[shift];
+            const student = temp ? (temp.student || "").trim() : "";
+            return student && !EXCLUDE_KEYWORDS.some(kw => student.includes(kw));
+          });
+          if (hasClass) {
+            workingDaysOfWeek[name].add(day);
+          }
+        }
+      });
+
       setProgressMsg("대상 기간 시간표 드래프트 작성 중...");
       const targetDates = getWeekdaysInRange(startDate, endDate);
       const drafts = [];
 
+      // 교사별 근무일수 카운트 초기화
+      const teacherWorkDaysCount = {};
+      teacherNames.forEach(name => {
+        teacherWorkDaysCount[name] = 0;
+      });
+
       targetDates.forEach(dateStr => {
         const d = new Date(dateStr);
         const dayOfWeek = d.getDay();
+        const isHol = isHoliday(dateStr);
+        const holidayObj = getHolidayObj(dateStr);
 
         teacherList.forEach(t => {
           const teacherName = t.name.trim();
           const shifts = [t.shift1, t.shift2, t.shift3].map(s => (s || "").trim()).filter(Boolean);
 
-          shifts.forEach(shift => {
-            const temp = templates[teacherName][dayOfWeek]?.[shift];
-            const student = temp ? temp.student : "";
-            const location = temp ? temp.location : "";
+          // 이 교사가 원래 이 요일에 근무하는 교사인가?
+          const isMyWorkingDay = workingDaysOfWeek[teacherName]?.has(dayOfWeek);
 
-            const isUrl = location.startsWith("http");
-            const finalLocation = isUrl ? "" : (location.trim() || "복지관");
+          if (isMyWorkingDay) {
+            // 주말은 이미 제외되었으므로, 근무 요일이면 근무일수 증가 (공휴일 포함)
+            teacherWorkDaysCount[teacherName] += 1;
+          }
+
+          const isOver20 = teacherWorkDaysCount[teacherName] > 20;
+
+          shifts.forEach(shift => {
+            let student = "";
+            let location = "";
+            let status = "";
+
+            if (isMyWorkingDay) {
+              if (isOver20) {
+                // 20일 초과: 학생이름, 장소, 메모(status)를 흰색 바탕에 블랭크 데이터로 채움
+                student = "";
+                location = "";
+                status = "";
+              } else if (isHol) {
+                // 20일 이내이면서 공휴일/간담회: 공휴일 정보 입력
+                student = holidayObj ? holidayObj.name : "공휴일";
+                location = holidayObj ? holidayObj.content1 : "";
+                status = holidayObj ? holidayObj.content2 : "";
+              } else {
+                // 20일 이내이면서 정상 수업일: 기존 수업 데이터
+                const temp = templates[teacherName][dayOfWeek]?.[shift];
+                student = temp ? temp.student : "";
+                const loc = temp ? temp.location : "";
+                const isUrl = loc.startsWith("http");
+                location = isUrl ? "" : (loc.trim() || "복지관");
+                status = "";
+              }
+            } else {
+              // 원래 근무 요일이 아닌 경우: 블랭크 데이터
+              student = "";
+              location = "";
+              status = "";
+            }
 
             drafts.push({
               team: team,
@@ -312,8 +409,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
               teacher: teacherName,
               shift: shift,
               student: student,
-              location: finalLocation,
-              status: "",
+              location: location,
+              status: status,
               signature_url: null
             });
           });
@@ -375,14 +472,34 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const backupId = Date.now().toString();
       setProgressMsg("기존 데이터 백업 중...");
 
-      const { data: existingData, error: fetchErr } = await supabaseClient
-        .from('daily_logs')
-        .select('*')
-        .eq('team', team)
-        .gte('log_date', startDate)
-        .lte('log_date', endDate);
+      // Supabase 1000개 제한을 우회하기 위해 pagination 적용
+      let existingData = [];
+      let start = 0;
+      const limit = 1000;
+      let hasMore = true;
 
-      if (fetchErr) throw fetchErr;
+      while (hasMore) {
+        const { data: chunk, error: fetchErr } = await supabaseClient
+          .from('daily_logs')
+          .select('*')
+          .eq('team', team)
+          .gte('log_date', startDate)
+          .lte('log_date', endDate)
+          .range(start, start + limit - 1);
+
+        if (fetchErr) throw fetchErr;
+
+        if (chunk && chunk.length > 0) {
+          existingData = existingData.concat(chunk);
+          if (chunk.length < limit) {
+            hasMore = false;
+          } else {
+            start += limit;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
 
       if (existingData && existingData.length > 0) {
         const backupData = existingData.map(r => ({
@@ -457,11 +574,32 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         .lte('log_date', endDate);
       if (delErr) throw delErr;
 
-      const { data: backupData, error: fetchErr } = await supabaseClient
-        .from('daily_logs_backup')
-        .select('*')
-        .eq('backup_id', lastBackupId);
-      if (fetchErr) throw fetchErr;
+      // 백업 데이터 pagination 조회
+      let backupData = [];
+      let start = 0;
+      const limit = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: chunk, error: fetchErr } = await supabaseClient
+          .from('daily_logs_backup')
+          .select('*')
+          .eq('backup_id', lastBackupId)
+          .range(start, start + limit - 1);
+
+        if (fetchErr) throw fetchErr;
+
+        if (chunk && chunk.length > 0) {
+          backupData = backupData.concat(chunk);
+          if (chunk.length < limit) {
+            hasMore = false;
+          } else {
+            start += limit;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
 
       if (backupData && backupData.length > 0) {
         const restoreData = backupData.map(r => ({

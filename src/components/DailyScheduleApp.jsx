@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabaseClient } from '../utils/supabase';
-import { 
-  getSavedItem, 
-  getLocalDateString, 
-  getInitialWeekday, 
-  getTeacherGroup, 
-  getTeacherSortWeight, 
-  getGroupWeight, 
-  getShiftWeight, 
-  getDirectImageUrl 
+import {
+  getSavedItem,
+  getLocalDateString,
+  getInitialWeekday,
+  getTeacherGroup,
+  getTeacherSortWeight,
+  getGroupWeight,
+  getShiftWeight,
+  getDirectImageUrl
 } from '../utils/helpers';
 import { Home, LucideCalendar, Clock, BookOpen, Sparkles } from './Icons';
 
@@ -321,9 +321,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         let temp = new Date(prev);
         let changed = false;
         while (
-          temp.getDay() === 0 || 
-          temp.getDay() === 6 || 
-          holidaysDbList.includes(getLocalDateString(temp)) || 
+          temp.getDay() === 0 ||
+          temp.getDay() === 6 ||
+          holidaysDbList.includes(getLocalDateString(temp)) ||
           holidaysDbList.includes(getLocalDateString(temp).substring(5))
         ) {
           temp.setDate(temp.getDate() + 1);
@@ -377,7 +377,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
   const fetchTeamData = useCallback(async (teamName, displayDate) => {
     if (!teamName) return;
-    
+
     const fetchId = Date.now().toString() + Math.random().toString();
     latestFetchRef.current = fetchId;
 
@@ -577,9 +577,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       do {
         tempDate.setDate(tempDate.getDate() + daysToAdd);
       } while (
-        tempDate.getDay() === 0 || 
-        tempDate.getDay() === 6 || 
-        holidaysDbList.includes(getLocalDateString(tempDate)) || 
+        tempDate.getDay() === 0 ||
+        tempDate.getDay() === 6 ||
+        holidaysDbList.includes(getLocalDateString(tempDate)) ||
         holidaysDbList.includes(getLocalDateString(tempDate).substring(5))
       );
       tempDate.setHours(0, 0, 0, 0);
@@ -592,9 +592,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
     let d = new Date();
     d.setHours(0, 0, 0, 0);
     while (
-      d.getDay() === 0 || 
-      d.getDay() === 6 || 
-      holidaysDbList.includes(getLocalDateString(d)) || 
+      d.getDay() === 0 ||
+      d.getDay() === 6 ||
+      holidaysDbList.includes(getLocalDateString(d)) ||
       holidaysDbList.includes(getLocalDateString(d).substring(5))
     ) {
       d.setDate(d.getDate() + 1);
