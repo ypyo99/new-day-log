@@ -340,6 +340,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const latestFetchRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.style.overscrollBehaviorY = 'auto';
@@ -376,6 +377,10 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
   const fetchTeamData = useCallback(async (teamName, displayDate) => {
     if (!teamName) return;
+    
+    const fetchId = Date.now().toString() + Math.random().toString();
+    latestFetchRef.current = fetchId;
+
     setIsLoading(true);
     setScheduleData([]);
     setNotice("");
@@ -393,6 +398,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       const records = supabaseRecords || [];
 
       if (records.length === 0) {
+        if (latestFetchRef.current !== fetchId) return;
         setScheduleData([]);
         setNotice(`⚠️ 해당 날짜(${dateStr})의 일지 데이터가 없습니다.`);
         setIsLoading(false);
@@ -547,13 +553,17 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         }
       }
 
+      if (latestFetchRef.current !== fetchId) return;
       setScheduleData(parsedData);
     } catch (error) {
+      if (latestFetchRef.current !== fetchId) return;
       console.error("데이터 로드 에러:", error);
       setNotice("⚠️ 데이터를 가져오지 못했습니다.");
     } finally {
-      setIsLoading(false);
-      setIsInitialLoad(false);
+      if (latestFetchRef.current === fetchId) {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      }
     }
   }, []);
 

@@ -1562,10 +1562,10 @@ export default function MainApp({
 
             {selectedTeam ? (
               <>
-                <button onClick={() => onNavigateToDailySchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToDailySchedule(selectedTeam); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
                   <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀별 오늘 일정 보기
                 </button>
-                <button onClick={() => onNavigateToTeamSchedule(selectedTeam)} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToTeamSchedule(selectedTeam); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
                   <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
                 </button>
               </>
