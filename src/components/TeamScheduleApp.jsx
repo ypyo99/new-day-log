@@ -400,7 +400,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               if (row.category === "대상") {
                 val = item.student || "";
               } else if (row.category === "장소") {
-                val = item.location || "";
+                val = item.signature_url ? "서명 이미지 확인" : (item.location || "");
               } else if (row.category === "진행") {
                 val = item.status === "1" ? "1" : (item.status || "");
               }
@@ -537,11 +537,22 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               }
 
               cell.s = {
-                font: { name: fontName, sz: 10, bold: isBold, color: { rgb: fontColorRGB } },
+                font: { 
+                  name: fontName, 
+                  sz: 10, 
+                  bold: isBold, 
+                  color: { rgb: fontColorRGB },
+                  underline: (rowObj.category === "장소" && item && item.signature_url) ? true : false
+                },
                 fill: { fgColor: { rgb: fillRGB } },
                 alignment: { vertical: "center", horizontal: "center", wrapText: true },
                 border: borderThin
               };
+
+              // 서명이 있는 경우 하이퍼링크 추가
+              if (rowObj.category === "장소" && item && item.signature_url) {
+                cell.l = { Target: item.signature_url, Tooltip: "클릭하여 서명 이미지 보기" };
+              }
             }
 
             if (R > 1 && rowObj) {
@@ -559,7 +570,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                   if (rowObj.category === "대상") {
                     origVal = item.student || "";
                   } else if (rowObj.category === "장소") {
-                    origVal = item.location || "";
+                    origVal = item.signature_url ? "서명 이미지 확인" : (item.location || "");
                   } else if (rowObj.category === "진행") {
                     origVal = item.status === "1" ? "1" : (item.status || "");
                   }
@@ -1039,7 +1050,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 } else if (row.category === "장소") {
                                   if (item.signature_url) {
                                     cellContent = (
-                                      <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-[12px] sm:text-[13px] md:text-sm lg:text-base font-extrabold hover:text-blue-800">서명 보기</a>
+                                      <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5 sm:py-1">
+                                        <img src={item.signature_url} alt="서명" className="h-6 sm:h-8 md:h-10 object-contain" />
+                                      </a>
                                     );
                                     cellClass = "!bg-white";
                                   } else {
@@ -1180,7 +1193,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 </td>
                                 <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1">
                                   {item.signature_url ? (
-                                    <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline text-xs font-bold hover:text-blue-700">서명 보기</a>
+                                    <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5">
+                                      <img src={item.signature_url} alt="서명" className="h-5 sm:h-7 object-contain" />
+                                    </a>
                                   ) : (
                                     <span className="truncate block max-w-[120px] mx-auto" title={item.location}>{item.location || '-'}</span>
                                   )}
