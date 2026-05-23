@@ -509,8 +509,6 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
             
             const nextRowObj = rIdx < gridRows.length - 1 ? gridRows[rIdx + 1] : null;
-            const isTeacherBoundary = (!nextRowObj || rowObj.teacher !== nextRowObj.teacher);
-            const isShiftBoundary = (nextRowObj && rowObj.shift !== nextRowObj.shift);
             let rightBorder = { style: "thin", color: { argb: "FFD1D5DB" } };
             
             if (C === 2) {
@@ -525,11 +523,26 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               else if (isFriday) rightBorder = { style: "medium", color: { argb: "FF2563EB" } };
             }
 
+            // 가로선(bottom) 테두리 분기 설정
+            let bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } };
+
+            if (!nextRowObj) {
+              // 3, 4. 제일 마지막 줄 (팀이 바뀌는 경계 포함) -> 제일 두꺼운 검정색 가로선
+              bottomBorder = { style: "thick", color: { argb: "FF000000" } };
+            } else if (rowObj.groupName !== nextRowObj.groupName) {
+              // 2. 조가 바뀌면 -> 중간정도 두꺼운 검정색 가로선
+              bottomBorder = { style: "medium", color: { argb: "FF000000" } };
+            } else if (rowObj.teacher !== nextRowObj.teacher) {
+              // 1. 선생님 이름이 바뀌면 -> 얇은 검정색 가로선
+              bottomBorder = { style: "thin", color: { argb: "FF000000" } };
+            } else if (rowObj.shift !== nextRowObj.shift) {
+              // 시간대(Shift) 경계 -> 기존과 같이 파란색 중간선
+              bottomBorder = { style: "medium", color: { argb: "FF2563EB" } };
+            }
+
             const currentBorder = {
               top: { style: "thin", color: { argb: "FFD1D5DB" } },
-              bottom: isShiftBoundary
-                ? { style: "medium", color: { argb: "FF2563EB" } }
-                : (isTeacherBoundary ? { style: "medium", color: { argb: "FF6B7280" } } : { style: "thin", color: { argb: "FFD1D5DB" } }),
+              bottom: bottomBorder,
               left: { style: "thin", color: { argb: "FFD1D5DB" } },
               right: rightBorder
             };
