@@ -21,6 +21,7 @@ import {
 import {
   User,
   MainCalendarIcon,
+  CalendarIcon,
   Clock,
   Home,
   SaveIcon,
