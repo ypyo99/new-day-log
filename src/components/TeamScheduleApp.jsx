@@ -415,7 +415,8 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               } else {
                   if (rowObj.category === "대상") val = item.student || "";
                   else if (rowObj.category === "장소") {
-                    if (item.signature_url) val = ""; // Will overlay image
+                    const isSignatureUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")));
+                    if (isSignatureUrl) val = ""; // Will overlay image
                     else val = item.location || "";
                   }
                   else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
@@ -494,19 +495,26 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 } else {
                   if (rowObj.category === "장소") {
                     fillRGB = "FFFFFFFF";
-                    if (item.signature_url) {
-                      const promise = fetch(item.signature_url)
+                    const sigUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null);
+                    if (sigUrl) {
+                      const promise = fetch(sigUrl)
                         .then(res => res.arrayBuffer())
                         .then(buffer => {
                           const imageId = wb.addImage({
                             buffer: buffer,
                             extension: 'png'
                           });
-                          ws.addImage(imageId, {
-                            tl: { col: C + 0.2, row: excelRowIdx - 1 + 0.15 },
-                            ext: { width: 70, height: 35 },
-                            editAs: 'oneCell'
-                          });
+                           const isEmpTeam = tName === "취업팀";
+                           const imgWidth = isEmpTeam ? 90 : 70;
+                           const imgHeight = isEmpTeam ? 35 : 35;
+                           const colOffset = isEmpTeam ? 0.24 : 0.2;
+                           const rowOffset = isEmpTeam ? 0.15 : 0.15;
+
+                           ws.addImage(imageId, {
+                             tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
+                             ext: { width: imgWidth, height: imgHeight },
+                             editAs: 'oneCell'
+                           });
                         }).catch(err => console.error("Error downloading image", err));
                       imagePromises.push(promise);
                     } else if (item.location) {
@@ -1062,10 +1070,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                     cellClass = "text-gray-955 font-bold bg-sky-100";
                                   }
                                 } else if (row.category === "장소") {
-                                  if (item.signature_url) {
+                                  const sigUrl = item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null);
+                                  if (sigUrl) {
                                     cellContent = (
-                                      <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5 sm:py-1">
-                                        <img src={item.signature_url} alt="서명" className="h-6 sm:h-8 md:h-10 object-contain" />
+                                      <a href={sigUrl} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5 sm:py-1">
+                                        <img src={sigUrl} alt="서명" className="h-6 sm:h-8 md:h-10 object-contain" />
                                       </a>
                                     );
                                     cellClass = "!bg-white";
@@ -1258,10 +1267,15 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   <span className={`text-sm font-bold ${studentTextClass}`}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : (item.student || '-')}</span>
                                 </td>
                                 <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1" style={targetStyle}>
-                                  {item.signature_url && !(isHoliday && !item.render.teacher) ? (
-                                    <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5">
-                                      <img src={item.signature_url} alt="서명" className="h-5 sm:h-7 object-contain" />
-                                    </a>
+                                  {(item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")))) && !(isHoliday && !item.render.teacher) ? (
+                                    (() => {
+                                      const sigUrl = item.signature_url || item.location;
+                                      return (
+                                        <a href={sigUrl} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5">
+                                          <img src={sigUrl} alt="서명" className="h-5 sm:h-7 object-contain" />
+                                        </a>
+                                      );
+                                    })()
                                   ) : (
                                     <span className={`truncate block max-w-[120px] mx-auto ${locationTextClass}`} title={item.location}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : (item.location || '-')}</span>
                                   )}
