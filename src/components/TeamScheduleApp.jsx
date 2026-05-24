@@ -531,14 +531,13 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           const excelRowIdx = excelRowStart + rIdx;
           const dataRow = ws.getRow(excelRowIdx);
           const totalCols = dateList.length + 3;
-          const nextRowObj = rIdx < gridRows.length - 1 ? gridRows[rIdx + 1] : null;
 
           for (let colNumber = 1; colNumber <= totalCols; colNumber++) {
             const cell = dataRow.getCell(colNumber);
             const C = colNumber - 1; // 0-based
 
+            // 1. 우측 테두리(rightBorder) 계산
             let rightBorder = { style: "thin", color: { argb: "FFD1D5DB" } };
-            
             if (C === 2) {
               rightBorder = { style: "thick", color: { argb: "FF4B5563" } };
             } else if (C >= 3) {
@@ -551,28 +550,75 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               else if (isFriday) rightBorder = { style: "medium", color: { argb: "FF2563EB" } };
             }
 
-            // 가로선(bottom) 테두리 분기 설정 (선 시작 지점 컬럼 분기 반영)
+            // 2. 가로선(bottom) 테두리 분기 설정 (선 시작 지점 컬럼 분기 반영)
             let bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } };
 
-            if (!nextRowObj) {
-              // 3, 4. 제일 마지막 줄 / 팀 변경 -> A열까지 (C >= 0) 제일 두꺼운 검정선
-              bottomBorder = { style: "thick", color: { argb: "FF000000" } };
-            } else if (rowObj.groupName !== nextRowObj.groupName) {
-              // 2. 조 변경 -> A열까지 (C >= 0) 중간 굵기 검정선
-              bottomBorder = { style: "medium", color: { argb: "FF000000" } };
-            } else if (rowObj.teacher !== nextRowObj.teacher) {
-              // 1. 선생님 이름 변경 -> B열까지 (C >= 1) 얇은 검정선
-              if (C >= 1) {
-                bottomBorder = { style: "thin", color: { argb: "FF000000" } };
-              } else {
-                bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } }; // A열은 그리지 않고 기본선 유지
+            if (C === 0) {
+              // A열: 조 병합 영역
+              let startG = rIdx;
+              while (startG > 0 && !gridRows[startG].renderGroup) {
+                startG--;
               }
-            } else if (rowObj.shift !== nextRowObj.shift) {
-              // 시간대(Shift) 경계 -> C열까지 (C >= 2) 파란색 중간선 (A/B열 제외하여 병합셀 보호)
-              if (C >= 2) {
+              const endG = startG + gridRows[startG].rowspanGroup - 1;
+              
+              // 현재 셀이 병합 영역의 상단(대표 셀) 또는 하단(마지막 셀)일 때 테두리 적용
+              if (rIdx === startG || rIdx === endG) {
+                const nextRowObj = endG < gridRows.length - 1 ? gridRows[endG + 1] : null;
+                if (!nextRowObj) {
+                  bottomBorder = { style: "thick", color: { argb: "FF000000" } };
+                } else if (gridRows[endG].groupName !== nextRowObj.groupName) {
+                  bottomBorder = { style: "medium", color: { argb: "FF000000" } };
+                }
+              }
+            } else if (C === 1) {
+              // B열: 선생님 병합 영역
+              let startT = rIdx;
+              while (startT > 0 && !gridRows[startT].renderTeacher) {
+                startT--;
+              }
+              const endT = startT + gridRows[startT].rowspanTeacher - 1;
+
+              if (rIdx === startT || rIdx === endT) {
+                const nextRowObj = endT < gridRows.length - 1 ? gridRows[endT + 1] : null;
+                if (!nextRowObj) {
+                  bottomBorder = { style: "thick", color: { argb: "FF000000" } };
+                } else if (gridRows[endT].groupName !== nextRowObj.groupName) {
+                  bottomBorder = { style: "medium", color: { argb: "FF000000" } };
+                } else if (gridRows[endT].teacher !== nextRowObj.teacher) {
+                  bottomBorder = { style: "thin", color: { argb: "FF000000" } };
+                }
+              }
+            } else if (C === 2) {
+              // C열: 시간대 병합 영역
+              let startS = rIdx;
+              while (startS > 0 && !gridRows[startS].renderShift) {
+                startS--;
+              }
+              const endS = startS + gridRows[startS].rowspanShift - 1;
+
+              if (rIdx === startS || rIdx === endS) {
+                const nextRowObj = endS < gridRows.length - 1 ? gridRows[endS + 1] : null;
+                if (!nextRowObj) {
+                  bottomBorder = { style: "thick", color: { argb: "FF000000" } };
+                } else if (gridRows[endS].groupName !== nextRowObj.groupName) {
+                  bottomBorder = { style: "medium", color: { argb: "FF000000" } };
+                } else if (gridRows[endS].teacher !== nextRowObj.teacher) {
+                  bottomBorder = { style: "thin", color: { argb: "FF000000" } };
+                } else if (gridRows[endS].shift !== nextRowObj.shift) {
+                  bottomBorder = { style: "medium", color: { argb: "FF2563EB" } };
+                }
+              }
+            } else {
+              // D열 ~ 끝열: 개별 날짜 셀
+              const nextRowObj = rIdx < gridRows.length - 1 ? gridRows[rIdx + 1] : null;
+              if (!nextRowObj) {
+                bottomBorder = { style: "thick", color: { argb: "FF000000" } };
+              } else if (rowObj.groupName !== nextRowObj.groupName) {
+                bottomBorder = { style: "medium", color: { argb: "FF000000" } };
+              } else if (rowObj.teacher !== nextRowObj.teacher) {
+                bottomBorder = { style: "thin", color: { argb: "FF000000" } };
+              } else if (rowObj.shift !== nextRowObj.shift) {
                 bottomBorder = { style: "medium", color: { argb: "FF2563EB" } };
-              } else {
-                bottomBorder = { style: "thin", color: { argb: "FFD1D5DB" } }; // A, B열은 그리지 않고 기본선 유지
               }
             }
 
