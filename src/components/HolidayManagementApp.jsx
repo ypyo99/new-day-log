@@ -9,6 +9,8 @@ export default function HolidayManagementApp({ onNavigateBack }) {
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState("");
+  const [editingCell, setEditingCell] = useState(null);
+  const [editValue, setEditValue] = useState("");
 
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
@@ -88,7 +90,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddOrUpdate = async () => {
+  const handleAdd = async () => {
     if (!formData.date || !formData.name) {
       alert("날짜와 공휴일 이름은 필수입니다.");
       return;
@@ -97,22 +99,41 @@ export default function HolidayManagementApp({ onNavigateBack }) {
     setSaving(true);
     setNotice("");
     try {
+      const trimmedDate = formData.date.trim();
+
+      // 중복 날짜 체크
+      const { data: existing, error: checkError } = await supabaseClient
+        .from('holidays')
+        .select('date')
+        .eq('date', trimmedDate);
+
+      if (checkError) throw checkError;
+      if (existing && existing.length > 0) {
+        alert("이미 등록된 날짜입니다.");
+        setSaving(false);
+        return;
+      }
+
       const { id, created_at, updated_at, ...payload } = formData;
+      payload.date = trimmedDate;
+      payload.name = payload.name.trim();
+      payload.content1 = payload.content1 ? payload.content1.trim() : '';
+      payload.content2 = payload.content2 ? payload.content2.trim() : '';
 
       const { error } = await supabaseClient
         .from('holidays')
-        .upsert(payload, { onConflict: 'date' });
+        .insert(payload);
 
       if (error) throw error;
 
-      setNotice("성공적으로 저장되었습니다.");
+      setNotice("성공적으로 추가되었습니다.");
       setTimeout(() => setNotice(""), 3000);
 
       setFormData({ date: '', name: '', content1: '', content2: '' });
       await fetchHolidays();
     } catch (err) {
       console.error(err);
-      setNotice("저장 중 오류가 발생했습니다: " + err.message);
+      setNotice("추가 중 오류가 발생했습니다: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -143,13 +164,82 @@ export default function HolidayManagementApp({ onNavigateBack }) {
     }
   };
 
-  const handleEdit = (holiday) => {
-    setFormData({
-      date: holiday.date || '',
-      name: holiday.name || '',
-      content1: holiday.content1 || '',
-      content2: holiday.content2 || ''
-    });
+  const handleSaveCell = async (date, field) => {
+    if (!editingCell) return;
+    setEditingCell(null);
+
+    const original = holidays.find(h => h.date === date);
+    if (!original) return;
+
+    const trimmedValue = editValue.trim();
+    if (original[field] === trimmedValue) return;
+
+    setSaving(true);
+    setNotice("");
+    try {
+      const { error } = await supabaseClient
+        .from('holidays')
+        .update({ [field]: trimmedValue })
+        .eq('date', date);
+
+      if (error) throw error;
+
+      setNotice("수정사항이 저장되었습니다.");
+      setTimeout(() => setNotice(""), 3000);
+      await fetchHolidays();
+    } catch (err) {
+      console.error(err);
+      alert("수정 중 오류가 발생했습니다: " + err.message);
+      await fetchHolidays();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderCell = (holiday, field, className) => {
+    const isEditing = editingCell && editingCell.date === holiday.date && editingCell.field === field;
+    const value = holiday[field] || '';
+
+    if (isAdmin) {
+      if (isEditing) {
+        return (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => handleSaveCell(holiday.date, field)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSaveCell(holiday.date, field);
+              } else if (e.key === 'Escape') {
+                setEditingCell(null);
+              }
+            }}
+            className="w-full p-1 border border-indigo-500 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm font-medium text-black bg-white"
+            autoFocus
+          />
+        );
+      } else {
+        return (
+          <div
+            onClick={() => {
+              setEditingCell({ date: holiday.date, field });
+              setEditValue(value);
+            }}
+            className={`${className} cursor-pointer hover:bg-yellow-50 hover:underline px-1 py-0.5 rounded transition-all min-h-[24px] flex items-center`}
+            title="클릭하여 바로 수정"
+          >
+            {value || <span className="text-gray-400 italic text-xs font-normal">(비어 있음)</span>}
+          </div>
+        );
+      }
+    } else {
+      return (
+        <span className={`${className} px-1 py-0.5 block min-h-[24px] flex items-center`}>
+          {value || <span className="text-gray-300 italic text-xs font-normal">-</span>}
+        </span>
+      );
+    }
   };
 
   const handleApplyToSchedule = async () => {
@@ -262,11 +352,11 @@ export default function HolidayManagementApp({ onNavigateBack }) {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-base font-bold text-gray-800">새 공휴일/휴무일 입력</h2>
               <button
-                onClick={handleAddOrUpdate}
+                onClick={handleAdd}
                 disabled={saving || loading}
                 className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap"
               >
-                추가/수정
+                추가
               </button>
             </div>
             <div className="flex gap-1.5 sm:gap-2">
@@ -326,16 +416,21 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                     <React.Fragment key={i}>
                       <tr className="hover:bg-gray-50 transition-colors">
                         <td className="p-3 border-r border-gray-200 font-bold text-gray-800">{h.date}</td>
-                        <td className="p-3 border-r border-gray-200 text-gray-800 font-bold">{h.name}</td>
-                        <td className="p-3 text-gray-700 font-bold">{h.content1}</td>
+                        <td className="p-3 border-r border-gray-200">
+                          {renderCell(h, 'name', 'text-gray-800 font-bold')}
+                        </td>
+                        <td className="p-3">
+                          {renderCell(h, 'content1', 'text-gray-700 font-bold')}
+                        </td>
                       </tr>
                       <tr className="border-b-2 border-gray-300 hover:bg-gray-50 transition-colors">
                         <td className="p-3 border-r border-gray-200"></td>
-                        <td className="p-3 border-r border-gray-200 text-gray-900">{h.content2}</td>
+                        <td className="p-3 border-r border-gray-200">
+                          {renderCell(h, 'content2', 'text-gray-900')}
+                        </td>
                         <td className="p-3 text-left whitespace-nowrap bg-gray-50/50">
                           {isAdmin && (
                             <div className="flex items-center gap-2">
-                              <button onClick={() => handleEdit(h)} disabled={saving || loading} className="px-4 py-1.5 bg-blue-400 text-white border border-blue-500 hover:bg-blue-500 rounded-md disabled:opacity-50 text-xs font-bold transition-colors shadow-sm">수정</button>
                               <button onClick={() => handleDelete(h.date)} disabled={saving || loading} className="px-4 py-1.5 bg-red-400 text-white border border-red-500 hover:bg-red-500 rounded-md disabled:opacity-50 text-xs font-bold transition-colors shadow-sm">삭제</button>
                             </div>
                           )}
