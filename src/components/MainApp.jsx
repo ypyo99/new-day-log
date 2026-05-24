@@ -1788,7 +1788,7 @@ export default function MainApp({
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-7">
                 {shifts.map((shift, index) => {
-                  const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || !logs[index].location || !logs[index].location.trim()) : true;
+                  const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || (selectedTeam !== '취업팀' && (!logs[index].location || !logs[index].location.trim()))) : true;
                   const locLen = logs[index] && logs[index].location ? logs[index].location.length : 0;
 
                   const locTextSize = locLen >= 9 ? "text-[15px] sm:text-[15px] md:text-[16px] landscape:text-[17px] md:landscape:text-[18px]" : locLen >= 8 ? "text-[16px] sm:text-[16px] md:text-[18px] landscape:text-[18px] md:landscape:text-[20px]" : locLen >= 7 ? "text-[17px] sm:text-[17px] md:text-[20px] landscape:text-[20px] md:landscape:text-[22px]" : locLen >= 6 ? "text-[18px] sm:text-[19px] md:text-[22px] landscape:text-[22px] md:landscape:text-[24px]" : "text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px]";
