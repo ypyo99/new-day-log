@@ -415,7 +415,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           const dataRow = ws.addRow(rowArr);
           dataRow.height = 40; // 높이를 기존 26에서 40으로 증가시켜 이미지가 잘리지 않게 조정
 
-          dataRow.eachCell((cell, colNumber) => {
+          const totalCols = dateList.length + 3;
+          for (let colNumber = 1; colNumber <= totalCols; colNumber++) {
+            const cell = dataRow.getCell(colNumber);
             const C = colNumber - 1; // 0-based
             
             if (C === 0) {
@@ -507,8 +509,34 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             }
             
             cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            
-            const nextRowObj = rIdx < gridRows.length - 1 ? gridRows[rIdx + 1] : null;
+          }
+        });
+
+        // Merge cells
+        gridRows.forEach((row, rIdx) => {
+          const excelRowIdx = excelRowStart + rIdx;
+          if (row.renderGroup && row.rowspanGroup > 1) {
+            ws.mergeCells(excelRowIdx, 1, excelRowIdx + row.rowspanGroup - 1, 1);
+          }
+          if (row.renderTeacher && row.rowspanTeacher > 1) {
+            ws.mergeCells(excelRowIdx, 2, excelRowIdx + row.rowspanTeacher - 1, 2);
+          }
+          if (row.renderShift && row.rowspanShift > 1) {
+            ws.mergeCells(excelRowIdx, 3, excelRowIdx + row.rowspanShift - 1, 3);
+          }
+        });
+
+        // 엑셀 병합 완료 후 테두리 서식 일괄 재적용 루프
+        gridRows.forEach((rowObj, rIdx) => {
+          const excelRowIdx = excelRowStart + rIdx;
+          const dataRow = ws.getRow(excelRowIdx);
+          const totalCols = dateList.length + 3;
+          const nextRowObj = rIdx < gridRows.length - 1 ? gridRows[rIdx + 1] : null;
+
+          for (let colNumber = 1; colNumber <= totalCols; colNumber++) {
+            const cell = dataRow.getCell(colNumber);
+            const C = colNumber - 1; // 0-based
+
             let rightBorder = { style: "thin", color: { argb: "FFD1D5DB" } };
             
             if (C === 2) {
@@ -548,28 +576,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               }
             }
 
-            const currentBorder = {
+            cell.border = {
               top: { style: "thin", color: { argb: "FFD1D5DB" } },
               bottom: bottomBorder,
               left: { style: "thin", color: { argb: "FFD1D5DB" } },
               right: rightBorder
             };
-
-            cell.border = currentBorder;
-          });
-        });
-
-        // Merge cells
-        gridRows.forEach((row, rIdx) => {
-          const excelRowIdx = excelRowStart + rIdx;
-          if (row.renderGroup && row.rowspanGroup > 1) {
-            ws.mergeCells(excelRowIdx, 1, excelRowIdx + row.rowspanGroup - 1, 1);
-          }
-          if (row.renderTeacher && row.rowspanTeacher > 1) {
-            ws.mergeCells(excelRowIdx, 2, excelRowIdx + row.rowspanTeacher - 1, 2);
-          }
-          if (row.renderShift && row.rowspanShift > 1) {
-            ws.mergeCells(excelRowIdx, 3, excelRowIdx + row.rowspanShift - 1, 3);
           }
         });
 
