@@ -401,12 +401,11 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-200 text-gray-700 border-b border-gray-300 font-bold whitespace-nowrap">
-                    <th className="p-3 w-28 sm:w-32 border-r border-gray-300">날짜</th>
+                    <th rowSpan={2} className="p-3 w-28 sm:w-32 border-r border-gray-300 align-middle text-center">날짜</th>
                     <th className="p-3 w-32 sm:w-40 border-r border-gray-300">공휴일 이름</th>
                     <th className="p-3 min-w-[100px]">내용1</th>
                   </tr>
                   <tr className="bg-gray-200 text-gray-700 border-b-2 border-gray-400 font-bold whitespace-nowrap">
-                    <th className="p-3 border-r border-gray-300"></th>
                     <th className="p-3 border-r border-gray-300">내용2</th>
                     <th className="p-3 text-left">{isAdmin ? '관리' : ''}</th>
                   </tr>
@@ -415,20 +414,19 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                   {holidays.map((h, i) => (
                     <React.Fragment key={i}>
                       <tr className="hover:bg-gray-50 transition-colors">
-                        <td className="p-3 border-r border-gray-200 font-bold text-gray-800">{h.date}</td>
-                        <td className="p-3 border-r border-gray-200">
+                        <td rowSpan={2} className="pt-2.5 pb-2.5 px-3 border-r border-gray-200 font-bold text-gray-800 align-middle text-center">{h.date}</td>
+                        <td className="pt-2 pb-0.5 px-3 border-r border-gray-200">
                           {renderCell(h, 'name', 'text-gray-800 font-bold')}
                         </td>
-                        <td className="p-3">
+                        <td className="pt-2 pb-0.5 px-3">
                           {renderCell(h, 'content1', 'text-gray-700 font-bold')}
                         </td>
                       </tr>
                       <tr className="border-b-2 border-gray-300 hover:bg-gray-50 transition-colors">
-                        <td className="p-3 border-r border-gray-200"></td>
-                        <td className="p-3 border-r border-gray-200">
+                        <td className="pt-0.5 pb-2 px-3 border-r border-gray-200">
                           {renderCell(h, 'content2', 'text-gray-900')}
                         </td>
-                        <td className="p-3 text-left whitespace-nowrap bg-gray-50/50">
+                        <td className="pt-0.5 pb-2 px-3 text-left whitespace-nowrap bg-gray-50/50 align-middle">
                           {isAdmin && (
                             <div className="flex items-center gap-2">
                               <button onClick={() => handleDelete(h.date)} disabled={saving || loading} className="px-4 py-1.5 bg-red-400 text-white border border-red-500 hover:bg-red-500 rounded-md disabled:opacity-50 text-xs font-bold transition-colors shadow-sm">삭제</button>
