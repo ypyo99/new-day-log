@@ -426,7 +426,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           });
 
           const dataRow = ws.addRow(rowArr);
-          dataRow.height = 40; // 높이를 기존 26에서 40으로 증가시켜 이미지가 잘리지 않게 조정
+          if (tName === "취업팀" && rowObj.category === "장소") {
+            dataRow.height = 54; // 취업팀 장소(싸인) 행의 높이를 54로 설정
+          } else {
+            dataRow.height = 40; // 높이를 기존 26에서 40으로 증가시켜 이미지가 잘리지 않게 조정
+          }
 
           const totalCols = dateList.length + 3;
           for (let colNumber = 1; colNumber <= totalCols; colNumber++) {
@@ -508,7 +512,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                            const imgWidth = isEmpTeam ? 90 : 70;
                            const imgHeight = isEmpTeam ? 35 : 35;
                            const colOffset = isEmpTeam ? 0.24 : 0.2;
-                           const rowOffset = 0.15;
+                           const rowOffset = isEmpTeam ? 0.175 : 0.15;
 
                            ws.addImage(imageId, {
                              tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
@@ -982,10 +986,8 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                         ? { borderTop: '2.5px solid #334155' }
                         : (isNewTeacher ? { borderTop: '2px solid #64748b' } : (isNewShift ? { borderTop: '2px solid #2563EB' } : {}));
 
-                      const rowHeight = (currentTeam === "취업팀" && row.category === "장소") ? "50px" : "36px";
-
                       return (
-                        <tr key={idx} className="hover:bg-blue-50/40 bg-gray-50" style={{ ...borderStyle, height: rowHeight }}>
+                        <tr key={idx} className="hover:bg-blue-50/40 bg-gray-50" style={{ ...borderStyle, height: '36px' }}>
                           {row.renderGroup && (
                             <td className="border border-gray-300 font-extrabold text-gray-800 bg-gray-50/80 align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanGroup}>
                               {row.groupName}
@@ -1103,7 +1105,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               }
                             }
 
-                            let cellStyle = { height: rowHeight, borderRight: rightBorderStyle };
+                            let cellStyle = { height: '36px', borderRight: rightBorderStyle };
                             const isMeeting = item && item.student && item.student.includes("간담회");
                             const isHoliday = isHolidayItem || (isHolidayDate && isSpecialTeacher && !item);
                             if (isHoliday) {
