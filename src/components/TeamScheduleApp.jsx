@@ -1007,23 +1007,25 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 cellClass = "bg-[#F0FDF4] text-black font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                               }
                             } else if (item) {
+                              const isMeeting = item.student && item.student.includes("간담회");
+
                               if (isHolidayItem) {
                                 if (!isFirstShift) {
                                   cellContent = '';
                                   cellClass = "bg-white text-gray-400 font-normal";
                                 } else {
                                   if (row.category === "대상") {
-                                    cellContent = item.student || '공휴일';
+                                    cellContent = holidayItem.student || '공휴일';
                                     if (item.student?.includes('보조강사')) {
                                       cellClass = "bg-yellow-300 text-gray-950 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                     } else {
                                       cellClass = "bg-red-400 text-white font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                     }
                                   } else if (row.category === "장소") {
-                                    cellContent = item.location || '공휴일';
+                                    cellContent = holidayItem.location || '공휴일';
                                     cellClass = "!bg-white text-red-500 font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                   } else if (row.category === "진행") {
-                                    cellContent = item.status || '';
+                                    cellContent = holidayItem.status || '';
                                     if (item.status?.includes('결석') || item.status?.includes('취소')) {
                                       cellClass = "bg-red-500 text-white font-extrabold text-[13px] sm:text-[14px] py-1 px-1";
                                     } else if (item.status?.includes('휴가')) {
@@ -1034,6 +1036,17 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                       cellClass = "bg-gray-50 text-gray-400 font-normal";
                                     }
                                   }
+                                }
+                              } else if (isMeeting) {
+                                if (row.category === "대상") {
+                                  cellContent = item.student || '간담회';
+                                  cellClass = "font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1 text-white";
+                                } else if (row.category === "장소") {
+                                  cellContent = item.location || '';
+                                  cellClass = "font-extrabold text-[13px] sm:text-[14px] py-1 px-1 text-yellow-300";
+                                } else if (row.category === "진행") {
+                                  cellContent = item.status || '';
+                                  cellClass = "font-extrabold text-[13px] sm:text-[14px] py-1 px-1 text-white";
                                 }
                               } else {
                                 if (row.category === "대상") {
@@ -1074,8 +1087,15 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               }
                             }
 
+                            let cellStyle = { height: '36px', borderRight: rightBorderStyle };
+                            if (item && item.student && item.student.includes("간담회")) {
+                              cellStyle.backgroundColor = "#86efac";
+                            } else if (row.category === "장소") {
+                              cellStyle.backgroundColor = "#ffffff";
+                            }
+
                             return (
-                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] ${cellClass}`} style={{ height: '36px', borderRight: rightBorderStyle, ...(row.category === "장소" ? { backgroundColor: "#ffffff" } : {}) }}>{cellContent || '\u00A0'}
+                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] ${cellClass}`} style={cellStyle}>{cellContent || '\u00A0'}
                               </td>
                             );
                           })}
@@ -1171,6 +1191,8 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               ? { borderTop: '2px solid #cbd5e1' }
                               : (isNewTeacher ? { borderTop: '1px solid #e2e8f0' } : {});
 
+                            const isMeeting = item.student && item.student.includes("간담회");
+
                             return (
                               <tr key={idx} className="hover:bg-blue-50/40 bg-white" style={rowStyle}>
                                 {item.render.group && (
@@ -1184,16 +1206,16 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   </td>
                                 )}
                                 <td className="border-r border-b border-gray-200 text-blue-700 font-bold align-middle py-2 px-1">{item.shift}</td>
-                                <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1">
-                                  <span className="text-sm font-bold text-gray-800">{item.student || '-'}</span>
+                                <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1" style={isMeeting ? { backgroundColor: "#86efac" } : {}}>
+                                  <span className={`text-sm font-bold ${isMeeting ? 'text-white' : 'text-gray-800'}`}>{item.student || '-'}</span>
                                 </td>
-                                <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1">
+                                <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1" style={isMeeting ? { backgroundColor: "#86efac" } : {}}>
                                   {item.signature_url ? (
                                     <a href={item.signature_url} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5">
                                       <img src={item.signature_url} alt="서명" className="h-5 sm:h-7 object-contain" />
                                     </a>
                                   ) : (
-                                    <span className="truncate block max-w-[120px] mx-auto" title={item.location}>{item.location || '-'}</span>
+                                    <span className={`truncate block max-w-[120px] mx-auto ${isMeeting ? 'text-yellow-300 font-bold' : ''}`} title={item.location}>{item.location || '-'}</span>
                                   )}
                                 </td>
                                 <td className="border-b border-gray-200 align-middle py-2 px-1">
