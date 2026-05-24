@@ -427,7 +427,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
           const dataRow = ws.addRow(rowArr);
           if (tName === "취업팀" && rowObj.category === "장소") {
-            dataRow.height = 48; // 취업팀 장소(싸인) 행의 높이를 48로 설정
+            dataRow.height = 54; // 취업팀 장소(싸인) 행의 높이를 54로 설정
           } else {
             dataRow.height = 40; // 높이를 기존 26에서 40으로 증가시켜 이미지가 잘리지 않게 조정
           }
@@ -512,7 +512,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                            const imgWidth = isEmpTeam ? 90 : 70;
                            const imgHeight = isEmpTeam ? 35 : 35;
                            const colOffset = isEmpTeam ? 0.24 : 0.2;
-                           const rowOffset = isEmpTeam ? 0.13 : 0.15;
+                           const rowOffset = isEmpTeam ? 0.175 : 0.15;
 
                            ws.addImage(imageId, {
                              tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
