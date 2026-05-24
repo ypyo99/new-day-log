@@ -455,8 +455,20 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                     }
                 }
 
+                const isMeeting = item.student && item.student.includes("간담회");
+
                 if (isHolidayRaw && !isFirstHolidayShift) {
                   // Keep white background and blank
+                } else if (isMeeting) {
+                  fillRGB = "FF86EFAC"; // 초록색-300
+                  isBold = true;
+                  if (rowObj.category === "대상") {
+                    fontColorRGB = "FFFFFFFF"; // 하얀색
+                  } else if (rowObj.category === "장소") {
+                    fontColorRGB = "FFFFFF00"; // 노란색
+                  } else if (rowObj.category === "진행") {
+                    fontColorRGB = "FFFFFFFF"; // 하얀색
+                  }
                 } else {
                   if (rowObj.category === "장소") {
                     if (isHolidayRaw) {
