@@ -306,8 +306,17 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
           shifts.forEach(shift => {
             const match = targetRecords.find(r => r.shift.trim() === shift);
-            const student = match ? (match.student || "") : "";
-            const location = match ? (match.signature_url || match.location || "") : "";
+            let student = match ? (match.student || "") : "";
+            let location = match ? (match.signature_url || match.location || "") : "";
+            const status = match ? (match.status || "") : "";
+
+            // 추가: 공휴일, 간담회 등은 정규 주간 시간표(템플릿) 데이터가 아니므로 빈칸으로 처리
+            const combinedText = student + location + status;
+            const isExclude = EXCLUDE_KEYWORDS.some(kw => combinedText.includes(kw));
+            if (isExclude) {
+              student = "";
+              location = "";
+            }
 
             templates[teacherName][dayOfWeek][shift] = {
               student: student,

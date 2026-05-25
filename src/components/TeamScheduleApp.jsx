@@ -121,7 +121,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
     }
   };
 
-  
+
   const handleExportExcel = async () => {
     if (exporting) return;
     try {
@@ -312,7 +312,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
         });
 
         const ws = wb.addWorksheet(tName);
-        
+
         // Columns setup
         const cols = [
           { width: 10 }, // A
@@ -360,7 +360,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             excelFirstShiftForTeacher[row.teacher] = row.shift;
           }
         });
-        
+
         const isHolidayStr = (str) => /공휴일|근로자의날|어린이날|휴일|공휴/.test(str || "");
         const holidayDates = {};
         teamData.forEach(item => {
@@ -376,11 +376,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
         gridRows.forEach((rowObj, rIdx) => {
           const excelRowIdx = excelRowStart + rIdx;
           const rowArr = [];
-          
+
           rowArr.push(rowObj.groupName);
           rowArr.push(rowObj.teacher);
           rowArr.push(rowObj.shift);
-          
+
           dateList.forEach(d => {
             let item = dataLookup[`${rowObj.teacher}::${rowObj.shift}::${d.dateStr}`];
             const holidayItem = holidayDates[d.dateStr];
@@ -391,35 +391,35 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             let val = "";
             if (item) {
               const isHolidayRaw = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
-                  (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
-                  (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
-              
+                (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
+                (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
+
               let isFirstHolidayShift = false;
               if (isHolidayRaw) {
-                  const hKey = `${rowObj.teacher}::${d.dateStr}`;
-                  if (!holidayTracker[hKey]) {
-                      holidayTracker[hKey] = rowObj.shift;
-                  }
-                  if (holidayTracker[hKey] === rowObj.shift) {
-                      isFirstHolidayShift = true;
-                  }
+                const hKey = `${rowObj.teacher}::${d.dateStr}`;
+                if (!holidayTracker[hKey]) {
+                  holidayTracker[hKey] = rowObj.shift;
+                }
+                if (holidayTracker[hKey] === rowObj.shift) {
+                  isFirstHolidayShift = true;
+                }
               }
 
               const isMeeting = item.student && item.student.includes("간담회");
               const isFirstShift = rowObj.shift === excelFirstShiftForTeacher[rowObj.teacher];
 
               if (isHolidayRaw && !isFirstHolidayShift) {
-                  val = "";
+                val = "";
               } else if (isMeeting && !isFirstShift) {
-                  val = "";
+                val = "";
               } else {
-                  if (rowObj.category === "대상") val = item.student || "";
-                  else if (rowObj.category === "장소") {
-                    const isSignatureUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")));
-                    if (isSignatureUrl) val = ""; // Will overlay image
-                    else val = item.location || "";
-                  }
-                  else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
+                if (rowObj.category === "대상") val = item.student || "";
+                else if (rowObj.category === "장소") {
+                  const isSignatureUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")));
+                  if (isSignatureUrl) val = ""; // Will overlay image
+                  else val = item.location || "";
+                }
+                else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
               }
             }
             rowArr.push(val);
@@ -436,7 +436,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           for (let colNumber = 1; colNumber <= totalCols; colNumber++) {
             const cell = dataRow.getCell(colNumber);
             const C = colNumber - 1; // 0-based
-            
+
             if (C === 0) {
               cell.font = { name: "Malgun Gothic", size: 9, bold: true, color: { argb: "FF64748B" } };
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF8FAFC" } };
@@ -454,22 +454,22 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               if (holidayItem && isSpecialTeacher && !item) {
                 item = holidayItem;
               }
-              
+
               let fillRGB = "FFFFFFFF";
               let fontColorRGB = "FF475569";
               let isBold = false;
-              
+
               if (item) {
                 const isHolidayRaw = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
                   (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
                   (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
-                
+
                 let isFirstHolidayShift = false;
                 if (isHolidayRaw) {
-                    const hKey = `${rowObj.teacher}::${dateObj.dateStr}`;
-                    if (holidayTracker[hKey] === rowObj.shift) {
-                        isFirstHolidayShift = true;
-                    }
+                  const hKey = `${rowObj.teacher}::${dateObj.dateStr}`;
+                  if (holidayTracker[hKey] === rowObj.shift) {
+                    isFirstHolidayShift = true;
+                  }
                 }
 
                 const isMeeting = item.student && item.student.includes("간담회");
@@ -508,17 +508,17 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             buffer: buffer,
                             extension: 'png'
                           });
-                           const isEmpTeam = tName === "취업팀";
-                           const imgWidth = isEmpTeam ? 90 : 70;
-                           const imgHeight = isEmpTeam ? 35 : 35;
-                           const colOffset = isEmpTeam ? 0.24 : 0.2;
-                           const rowOffset = isEmpTeam ? 0.175 : 0.15;
+                          const isEmpTeam = tName === "취업팀";
+                          const imgWidth = isEmpTeam ? 90 : 70;
+                          const imgHeight = isEmpTeam ? 35 : 35;
+                          const colOffset = isEmpTeam ? 0.24 : 0.2;
+                          const rowOffset = isEmpTeam ? 0.175 : 0.15;
 
-                           ws.addImage(imageId, {
-                             tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
-                             ext: { width: imgWidth, height: imgHeight },
-                             editAs: 'oneCell'
-                           });
+                          ws.addImage(imageId, {
+                            tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
+                            ext: { width: imgWidth, height: imgHeight },
+                            editAs: 'oneCell'
+                          });
                         }).catch(err => console.error("Error downloading image", err));
                       imagePromises.push(promise);
                     } else if (item.location) {
@@ -547,7 +547,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               cell.font = { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: fontColorRGB } };
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillRGB } };
             }
-            
+
             cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
           }
         });
@@ -600,7 +600,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 startG--;
               }
               const endG = startG + gridRows[startG].rowspanGroup - 1;
-              
+
               // 현재 셀이 병합 영역의 상단(대표 셀) 또는 하단(마지막 셀)일 때 테두리 적용
               if (rIdx === startG || rIdx === endG) {
                 const nextRowObj = endG < gridRows.length - 1 ? gridRows[endG + 1] : null;
@@ -1036,20 +1036,20 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               const isMeeting = item.student && item.student.includes("간담회");
 
                               if (isHolidayItem) {
-                                 if (!isFirstShift) {
-                                   cellContent = '';
-                                   cellClass = "bg-white text-gray-400 font-normal";
-                                 } else {
-                                   if (row.category === "대상") {
-                                     cellContent = holidayItem.student || '공휴일';
-                                   } else if (row.category === "장소") {
-                                     cellContent = holidayItem.location || '공휴일';
-                                   } else if (row.category === "진행") {
-                                     cellContent = holidayItem.status || '';
-                                   }
-                                   cellClass = "text-gray-700 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
-                                 }
-                               } else if (isMeeting) {
+                                if (!isFirstShift) {
+                                  cellContent = '';
+                                  cellClass = "bg-white text-gray-400 font-normal";
+                                } else {
+                                  if (row.category === "대상") {
+                                    cellContent = holidayItem.student || '공휴일';
+                                  } else if (row.category === "장소") {
+                                    cellContent = holidayItem.location || '공휴일';
+                                  } else if (row.category === "진행") {
+                                    cellContent = holidayItem.status || '';
+                                  }
+                                  cellClass = "text-gray-700 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
+                                }
+                              } else if (isMeeting) {
                                 if (isFirstShift) {
                                   if (row.category === "대상") {
                                     cellContent = item.student || '간담회';
@@ -1091,12 +1091,18 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                     cellClass = "!bg-white";
                                   }
                                 } else if (row.category === "진행") {
-                                  cellContent = item.status || '';
-                                  if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                                  const rawStatus = item.status || '';
+                                  cellContent = rawStatus ? (
+                                    <div className="w-full break-all whitespace-normal overflow-hidden line-clamp-3 px-0.5 leading-snug" title={rawStatus}>
+                                      {rawStatus}
+                                    </div>
+                                  ) : '';
+
+                                  if (rawStatus.includes('결석') || rawStatus.includes('취소')) {
                                     cellClass = "text-red-600 font-extrabold bg-red-50";
-                                  } else if (item.status?.includes('휴가')) {
+                                  } else if (rawStatus.includes('휴가')) {
                                     cellClass = "text-gray-500 font-bold bg-gray-100";
-                                  } else if (item.status) {
+                                  } else if (rawStatus) {
                                     cellClass = "text-black font-bold bg-[#F0FDF4]";
                                   } else {
                                     cellClass = "text-gray-400 font-normal bg-white";
@@ -1236,10 +1242,10 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             let studentTextClass = "text-gray-800";
                             let locationTextClass = "text-black";
                             let statusTextClass = item.status?.includes('결석') || item.status?.includes('취소') ? 'text-red-500'
-                                      : item.status?.includes('선생님휴가') ? 'text-black'
-                                        : item.status?.includes('휴가') ? 'text-gray-400'
-                                          : item.status ? 'text-black'
-                                            : 'text-gray-400';
+                              : item.status?.includes('선생님휴가') ? 'text-black'
+                                : item.status?.includes('휴가') ? 'text-gray-400'
+                                  : item.status ? 'text-black'
+                                    : 'text-gray-400';
 
                             if (isHoliday) {
                               if (item.render.teacher) {
@@ -1285,7 +1291,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   )}
                                 </td>
                                 <td className="border-b border-gray-200 align-middle py-2 px-1" style={targetStyle}>
-                                  <span className={`text-sm font-bold ${statusTextClass}`}>
+                                  <span className={`text-sm font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={(!isHoliday || item.render.teacher) ? (item.status || '') : ''}>
                                     {(isHoliday && !item.render.teacher) ? '' : (item.status || '-')}
                                   </span>
                                 </td>
