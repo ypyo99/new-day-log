@@ -128,17 +128,18 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
       setExporting(true);
 
       const today = new Date();
-      const currentYear = today.getFullYear();
-      let nextMonth = today.getMonth() + 2;
-      let nextYear = currentYear;
+      let nextYear = today.getFullYear();
+      let nextMonth = today.getMonth() + 3; // 현재 달력상 달에 2개월 후를 지정 (getMonth()는 0부터 시작하므로 +1(현재달) +2(두달후) = +3)
+
       if (nextMonth > 12) {
-        nextMonth = 1;
+        nextMonth -= 12;
         nextYear++;
       }
+
       const nextMonthLastDay = new Date(nextYear, nextMonth, 0).getDate();
       const endDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextMonthLastDay).padStart(2, '0')}`;
 
-      const yearStr = currentYear.toString();
+      const yearStr = today.getFullYear().toString();
       let firstWorkDateStr = `${yearStr}-01-01`;
       const { data: firstRec, error: firstRecErr } = await supabaseClient
         .from('daily_logs')
