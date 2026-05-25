@@ -707,16 +707,18 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
   const teacherShiftsMap = {};
 
-  getGlobalTeachersList().filter(t => t.team === currentTeam).forEach(rec => {
-    const g = getTeacherGroup(currentTeam, rec.name);
-    const defaultShift = getTeacherDefaultShift(currentTeam, rec.name, g);
-    const key = `${rec.name}::${defaultShift}`;
-    teacherShiftsMap[key] = {
-      teacher: rec.name,
-      shift: defaultShift,
-      groupName: g
-    };
-  });
+  getGlobalTeachersList()
+    .filter(t => t.team === currentTeam && (teacherFilter === "전체" || t.name === teacherFilter))
+    .forEach(rec => {
+      const g = getTeacherGroup(currentTeam, rec.name);
+      const defaultShift = getTeacherDefaultShift(currentTeam, rec.name, g);
+      const key = `${rec.name}::${defaultShift}`;
+      teacherShiftsMap[key] = {
+        teacher: rec.name,
+        shift: defaultShift,
+        groupName: g
+      };
+    });
 
   filteredData.forEach(item => {
     if (currentTeam === "취업팀" && !isOfficialTeamTeacher("취업팀", item.teacher)) {
