@@ -1,3 +1,5 @@
+//공휴일/휴무일 관리
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { Home } from './Icons';
@@ -382,7 +384,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
           <div className="flex flex-row justify-between items-center mb-4 gap-3">
-            <h2 className="text-base sm:text-lg font-bold text-gray-800">공휴일/휴무일 목록</h2>
+            <h2 className="text-base sm:text-lg font-bold text-gray-800"></h2>
             <div className="flex gap-2 shrink-0">
               {isAdmin && (
                 <button onClick={handleApplyToSchedule} disabled={applying || loading || saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap">

@@ -1,3 +1,5 @@
+// 취업 팀 싸인 패드 관리
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getDirectImageUrl } from '../utils/helpers';
 import { RotateCcw } from './Icons';

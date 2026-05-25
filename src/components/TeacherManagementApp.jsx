@@ -1,3 +1,5 @@
+// 선생님 명단 관리
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { getSavedItem, setGlobalTeachersList, formatTeacherRow } from '../utils/helpers';
@@ -252,7 +254,7 @@ export default function TeacherManagementApp({ onNavigateBack }) {
 
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50">
-            <h2 className="text-lg font-bold text-gray-800">등록된 선생님 목록</h2>
+            <h2 className="text-lg font-bold text-gray-800"></h2>
           </div>
           <div className="p-0 overflow-x-auto">
             <table className="w-full text-center border-collapse min-w-[600px]">

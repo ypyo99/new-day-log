@@ -10,8 +10,3 @@ node verify.js 'C:\Users\ypyo9\Downloads\디지털_서포터즈_일정표-2026-0
 
 
 
-supabase daily_logs DB에서 6월 데이터만 모두 지워줘
-
-
-
-

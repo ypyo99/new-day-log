@@ -1,3 +1,5 @@
+// 나의 주간 일정 보기
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import {

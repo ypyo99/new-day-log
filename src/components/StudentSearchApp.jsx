@@ -1,3 +1,5 @@
+// 대상자 검색하기
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import {
@@ -422,7 +424,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
                                   const updated = [newName, ...filtered].slice(0, 10);
                                   localStorage.setItem('sungdong_recent_searches', JSON.stringify(updated));
                                   return updated;
-                                  });
+                                });
                               }
                             }}
                             className={`px-0.5 py-0.5 rounded-lg ${fontSizeClass} font-bold transition-all active:scale-95 touch-manipulation border flex items-center justify-center text-center break-keep leading-tight min-h-[34px] ${selectedName === name ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-gray-200 text-gray-800 border-gray-400 hover:bg-teal-50 hover:border-teal-400 shadow-sm'}`}

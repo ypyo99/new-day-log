@@ -1,3 +1,5 @@
+// 메인메뉴, 일지 작성 프로그램
+
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import {
@@ -949,9 +951,9 @@ export default function MainApp({
     }, 50);
   };
 
-  const handleLogout = () => { 
-    setIsLoggedIn(false); 
-    setRecords([]); 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setRecords([]);
     window.localStorage.removeItem('sungdong_admin_logged_in');
   };
   const handleSubmit = async (e) => { e.preventDefault(); await performAutoSave(); };

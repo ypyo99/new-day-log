@@ -1,3 +1,5 @@
+// 시간표 작성
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import {
@@ -306,17 +308,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
           shifts.forEach(shift => {
             const match = targetRecords.find(r => r.shift.trim() === shift);
-            let student = match ? (match.student || "") : "";
-            let location = match ? (match.signature_url || match.location || "") : "";
-            const status = match ? (match.status || "") : "";
-
-            // 추가: 공휴일, 간담회 등은 정규 주간 시간표(템플릿) 데이터가 아니므로 빈칸으로 처리
-            const combinedText = student + location + status;
-            const isExclude = EXCLUDE_KEYWORDS.some(kw => combinedText.includes(kw));
-            if (isExclude) {
-              student = "";
-              location = "";
-            }
+            const student = match ? (match.student || "") : "";
+            const location = match ? (match.signature_url || match.location || "") : "";
 
             templates[teacherName][dayOfWeek][shift] = {
               student: student,
@@ -354,10 +347,10 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const targetDates = getWeekdaysInRange(startDate, endDate);
       const drafts = [];
 
-      // 교사별 근무일수 카운트 초기화
+      // 교사별 '월별' 근무일수 카운트 초기화 (월을 키값으로 사용)
       const teacherWorkDaysCount = {};
       teacherNames.forEach(name => {
-        teacherWorkDaysCount[name] = 0;
+        teacherWorkDaysCount[name] = {};
       });
 
       targetDates.forEach(dateStr => {
@@ -365,20 +358,27 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         const dayOfWeek = d.getDay();
         const isHol = isHoliday(dateStr);
         const holidayObj = getHolidayObj(dateStr);
+        const monthKey = dateStr.substring(0, 7); // 예: "2026-06"
 
         teacherList.forEach(t => {
           const teacherName = t.name.trim();
           const shifts = [t.shift1, t.shift2, t.shift3].map(s => (s || "").trim()).filter(Boolean);
+
+          // 해당 교사의 해당 월 카운트가 아직 없으면 0으로 초기화
+          if (teacherWorkDaysCount[teacherName][monthKey] === undefined) {
+            teacherWorkDaysCount[teacherName][monthKey] = 0;
+          }
 
           // 이 교사가 원래 이 요일에 근무하는 교사인가?
           const isMyWorkingDay = workingDaysOfWeek[teacherName]?.has(dayOfWeek);
 
           if (isMyWorkingDay) {
             // 주말은 이미 제외되었으므로, 근무 요일이면 근무일수 증가 (공휴일 포함)
-            teacherWorkDaysCount[teacherName] += 1;
+            teacherWorkDaysCount[teacherName][monthKey] += 1;
           }
 
-          const isOver20 = teacherWorkDaysCount[teacherName] > 20;
+          // 전체 기간이 아닌 '해당 월'의 누적 근무일수로 20일 초과 여부 확인
+          const isOver20 = teacherWorkDaysCount[teacherName][monthKey] > 20;
 
           shifts.forEach(shift => {
             let student = "";
@@ -387,7 +387,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
             if (isMyWorkingDay) {
               if (isOver20) {
-                // 20일 초과: 학생이름, 장소, 메모(status)를 흰색 바탕에 블랭크 데이터로 채움
+                // 해당 월 20일 초과: 학생이름, 장소, 메모(status)를 흰색 바탕에 블랭크 데이터로 채움
                 student = "";
                 location = "";
                 status = "";

@@ -1,3 +1,5 @@
+// 지하1층 평생교육실2 사용 보기
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { getSavedItem, getLocalDateString } from '../utils/helpers';

@@ -5,8 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
 
-const SUPABASE_URL = 'https://oudrcfxkneopgtcfbwhd.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91ZHJjZnhrbmVvcGd0Y2Zid2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNzk0MTYsImV4cCI6MjA5NDY1NTQxNn0.ovAp6X3VogCeyKa74pC3x2f4lKR6m3gkE0kEEhJbGpQ';
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtz2B3wl9Bk3AgoPEO9Jz3PkPRAJEq11N28YW8fZC4x3oVo0ls1p9rkUxMEnL7_ak5Hg/exec";
 
 // Helper to delay
@@ -48,21 +46,7 @@ async function main() {
   }
   console.log(`📅 대상 기준년월: ${year}년 ${fileMonth}월`);
 
-  // Load teachers list from Supabase
-  console.log("👥 Supabase에서 선생님 명단 로드 중...");
-  const teachersRes = await fetch(`${SUPABASE_URL}/rest/v1/teachers?select=*`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`
-    }
-  });
-
-  if (!teachersRes.ok) {
-     console.error("❌ 선생님 명단 로드 실패:", await teachersRes.text());
-     return;
-  }
-  const teachers = await teachersRes.json();
-  console.log(`교사 수: 총 ${teachers.length}명`);
+  // [수정] 2번 요건: 불필요하게 시간을 잡아먹던 Supabase 선생님 명단 로드 부분 삭제 완료
 
   const teams = ["1팀", "2팀", "3팀", "취업팀"];
   let totalChecked = 0;
@@ -105,64 +89,93 @@ async function main() {
     console.log(`📅 검사할 날짜 열 개수: ${dateColumns.length}개 (${dateColumns[0]?.dateStr} ~ ${dateColumns[dateColumns.length - 1]?.dateStr})`);
 
     // Parse rows in groups of 3 (Row 2 to End)
+    // 엑셀 구조: 한 선생님이 여러 시간대를 가질 경우, 첫 시간대만 B열(이름)이 채워지고
+    // 이후 시간대는 B열이 비어있고 C열(시간대)만 채워짐 → carry-forward 방식 필요
     const numRows = sheetData.length;
     let rIdx = 2;
+    let currentTeacherForCarry = ""; // 교사명 carry-forward용
+    let googleSchedule = {}; // 캐시용
+    let isTeacherFailed = false; // [수정] 1번 요건: API 호출 실패 여부 저장용 캐시
 
     while (rIdx < numRows) {
+      // 마지막 3행 세트가 완전하지 않으면 중단
       if (rIdx + 2 >= numRows) break;
 
       const rowA = sheetData[rIdx];     // 대상 (Student)
       const rowB = sheetData[rIdx + 1]; // 장소 (Location)
       const rowC = sheetData[rIdx + 2]; // 진행 (Status)
 
-      const teacherName = String(rowA[1] || "").trim();
+      // B열(이름): 값이 있으면 carry-forward 갱신
+      const rowTeacherRaw = String(rowA[1] || "").trim();
+      if (rowTeacherRaw) {
+        currentTeacherForCarry = rowTeacherRaw;
+        // 새로운 선생님이면 캐시 초기화
+        googleSchedule = {};
+        isTeacherFailed = false; // [수정] 1번 요건: 선생님이 바뀌면 실패 상태도 초기화
+      }
+
+      const teacherName = currentTeacherForCarry;
       const shiftName = String(rowA[2] || "").trim();
 
-      if (!teacherName || !shiftName) {
-        // Not a valid teacher block, skip this row and increment by 1
+      // 유효한 시간대가 없으면 다음 행으로
+      if (!shiftName || !teacherName) {
         rIdx += 1;
+        continue;
+      }
+
+      // [수정] 1번 요건: 이미 실패한 선생님인 경우 다음 시간대는 더 시도하지 않고 빠르게 건너뜀
+      if (isTeacherFailed) {
+        rIdx += 3;
         continue;
       }
 
       console.log(`  - 검증 중: ${teacherName} 선생님 (${shiftName})`);
 
-      // Google Sheets에서 원본 일정 가져오기 (재시도 및 타임아웃, 줄바꿈 보정 적용)
-      const queryTeacherName = teacherName.replace(/\r?\n|\r/g, "/");
-      let googleSchedule = {};
-      let fetchSuccess = false;
-      for (let attempt = 1; attempt <= 5; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 타임아웃
+      // 구글 시트에서 원본 일정 가져오기 (API 호출을 최소화하기 위해 캐시 확인)
+      if (Object.keys(googleSchedule).length === 0) {
+        const queryTeacherName = teacherName.replace(/\r?\n|\r/g, "/");
+        let fetchSuccess = false;
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 타임아웃
 
-          const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${encodeURIComponent(team)}&teacher=${encodeURIComponent(queryTeacherName)}`, {
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getScheduleAll&team=${encodeURIComponent(team)}&teacher=${encodeURIComponent(queryTeacherName)}`, {
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
 
-          if (res.ok) {
-            googleSchedule = await res.json();
-            fetchSuccess = true;
-            break;
-          } else {
-            console.warn(`    [시도 ${attempt}] 구글시트 API 응답 에러 (Status: ${res.status})`);
+            if (res.ok) {
+              googleSchedule = await res.json();
+              fetchSuccess = true;
+              break;
+            } else {
+              console.warn(`    [시도 ${attempt}] 구글시트 API 응답 에러 (Status: ${res.status})`);
+            }
+          } catch (err) {
+            console.error(`    [시도 ${attempt}] 구글시트 로드 에러:`, err.message);
           }
-        } catch (err) {
-          console.error(`    [시도 ${attempt}] 구글시트 로드 에러:`, err.message);
+          if (attempt < 5) await sleep(1000);
         }
-        if (attempt < 5) await sleep(1000);
-      }
 
-      if (!fetchSuccess) {
-        console.error(`  ❌ [오류] ${teacherName} 선생님의 구글 시트 원본 데이터를 가져오지 못했습니다. 이 선생님은 건너뜁니다.`);
-        rIdx += 3;
-        continue;
+        if (!fetchSuccess) {
+          console.error(`  ❌ [오류] ${teacherName} 선생님의 구글 시트 원본 데이터를 가져오지 못했습니다. 이 선생님은 건너뜁니다.`);
+          isTeacherFailed = true; // [수정] 1번 요건: 실패 상태 저장
+          rIdx += 3;
+          continue;
+        }
+
+        // [수정] 3번 요건: 구글 API를 실제로 성공적으로 호출했을 때만, 과부하를 막기 위해 잠시 대기합니다.
+        await sleep(100);
       }
 
       // Check dates
       dateColumns.forEach(dateCol => {
         const dateStr = dateCol.dateStr;
         const colIdx = dateCol.colIndex;
+
+        // [추가] 띄어쓰기, 줄바꿈(엔터), 탭 등 모든 공백을 싹 지워주는 함수
+        const removeSpaces = (str) => str.replace(/\s+/g, '');
 
         // Excel values
         const excelStudent = String(rowA[colIdx] || "").trim();
@@ -173,7 +186,7 @@ async function main() {
         const gDayData = (googleSchedule[dateStr] && googleSchedule[dateStr][shiftName]) || {};
         const gStudent = String(gDayData.student || "").trim();
         const gStatus = String(gDayData.status || "").trim();
-        
+
         let gLocation = String(gDayData.location || "").trim();
         // Handle employment team signature URL mapping
         if (team === "취업팀" && gLocation.startsWith("http")) {
@@ -182,7 +195,8 @@ async function main() {
 
         // Compare Student
         totalChecked++;
-        if (excelStudent !== gStudent) {
+        // 원본 글자에서 공백을 뺀(removeSpaces) 상태끼리만 비교합니다
+        if (removeSpaces(excelStudent) !== removeSpaces(gStudent)) {
           console.error(`  ❌ [불일치] ${dateStr} [${shiftName}] 학생 정보 불일치!`);
           console.error(`    - 구글시트: "${gStudent}" vs 엑셀파일: "${excelStudent}"`);
           totalMismatches++;
@@ -192,7 +206,7 @@ async function main() {
 
         // Compare Location
         totalChecked++;
-        if (excelLocation !== gLocation) {
+        if (removeSpaces(excelLocation) !== removeSpaces(gLocation)) {
           console.error(`  ❌ [불일치] ${dateStr} [${shiftName}] 장소 정보 불일치!`);
           console.error(`    - 구글시트: "${gLocation}" vs 엑셀파일: "${excelLocation}"`);
           totalMismatches++;
@@ -203,7 +217,7 @@ async function main() {
         // Compare Status
         totalChecked++;
         const cleanGStatus = gStatus === "1" ? "1" : gStatus;
-        if (excelStatus !== cleanGStatus) {
+        if (removeSpaces(excelStatus) !== removeSpaces(cleanGStatus)) {
           console.error(`  ❌ [불일치] ${dateStr} [${shiftName}] 진행/상태 정보 불일치!`);
           console.error(`    - 구글시트: "${cleanGStatus}" vs 엑셀파일: "${excelStatus}"`);
           totalMismatches++;
@@ -213,7 +227,7 @@ async function main() {
       });
 
       rIdx += 3; // Move to next teacher block
-      await sleep(100); // Prevent hitting API limits too fast
+      // [수정] 3번 요건: 모든 시간대마다 무조건 쉬게 만들었던 await sleep(100); 부분을 삭제 완료
     }
   }
 
