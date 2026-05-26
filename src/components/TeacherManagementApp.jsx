@@ -43,7 +43,7 @@ export default function TeacherManagementApp({ onNavigateBack }) {
   };
 
   const checkPassword = () => {
-    if (pwdInput === "qqq") {
+    if (pwdInput === import.meta.env.VITE_ADMIN_PASSWORD) {
       setIsAdmin(true);
       setShowPwdModal(false);
     } else {
@@ -312,7 +312,7 @@ export default function TeacherManagementApp({ onNavigateBack }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
           <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full">
             <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">담당자 암호</h3>
-            <input ref={pwdInputRef} autoFocus type="password" value={pwdInput} onChange={(e) => { const val = e.target.value; setPwdInput(val); if (val === 'qqq') { setIsAdmin(true); window.localStorage.setItem('sungdong_admin_logged_in', 'true'); setShowPwdModal(false); } }} onKeyDown={(e) => e.key === 'Enter' && checkPassword()} className="w-full border-2 p-3 rounded-lg mb-4 text-center text-2xl tracking-widest outline-none focus:border-blue-500 text-black" placeholder="••••" />
+            <input ref={pwdInputRef} autoFocus type="password" value={pwdInput} onChange={(e) => { const val = e.target.value; setPwdInput(val); if (val === import.meta.env.VITE_ADMIN_PASSWORD) { setIsAdmin(true); window.localStorage.setItem('sungdong_admin_logged_in', 'true'); setShowPwdModal(false); } }} onKeyDown={(e) => e.key === 'Enter' && checkPassword()} className="w-full border-2 p-3 rounded-lg mb-4 text-center text-2xl tracking-widest outline-none focus:border-blue-500 text-black" placeholder="••••" />
             {pwdError && <p className="text-red-500 text-xs text-center mb-4">비밀번호가 틀렸습니다.</p>}
             <div className="flex gap-2 text-black">
               <button onClick={() => setShowPwdModal(false)} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold touch-manipulation">취소</button>

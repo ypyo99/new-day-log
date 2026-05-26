@@ -53,7 +53,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
 
   const checkPassword = () => {
     try {
-      if (pwdInput === "qqq") {
+      if (pwdInput === import.meta.env.VITE_ADMIN_PASSWORD) {
         setIsAdmin(true);
         window.localStorage.setItem('sungdong_admin_logged_in', 'true');
         setShowPwdModal(false);
@@ -457,7 +457,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               onChange={(e) => {
                 const val = e.target.value;
                 setPwdInput(val);
-                if (val === 'qqq') {
+                if (val === import.meta.env.VITE_ADMIN_PASSWORD) {
                   setIsAdmin(true);
                   window.localStorage.setItem('sungdong_admin_logged_in', 'true');
                   setShowPwdModal(false);
