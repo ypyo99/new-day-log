@@ -263,8 +263,8 @@ export default function StudentSearchApp({ onNavigateBack }) {
     if (filteredRecords.length === 0) return null;
     const attended = filteredRecords.filter(r => r.attendanceTag.includes("출석")).length;
     const absent = filteredRecords.filter(r => r.attendanceTag.includes("결석")).length;
-    const canceled = filteredRecords.filter(r => r.attendanceTag.includes("취소")).length;
-    return { total: filteredRecords.length, attended, absent, canceled };
+    const other = filteredRecords.length - attended - absent;
+    return { total: filteredRecords.length, attended, absent, other };
   }, [filteredRecords]);
 
   return (
@@ -457,8 +457,8 @@ export default function StudentSearchApp({ onNavigateBack }) {
                     <div className="text-2xl md:text-3xl font-black text-red-900">{stats.absent}</div>
                   </div>
                   <div className="bg-gray-200 rounded-xl p-2.5 md:p-3 text-center border border-gray-300">
-                    <div className="text-[13px] md:text-[15px] text-gray-800 font-bold">취소</div>
-                    <div className="text-2xl md:text-3xl font-black text-gray-900">{stats.canceled}</div>
+                    <div className="text-[13px] md:text-[15px] text-gray-800 font-bold">기타</div>
+                    <div className="text-2xl md:text-3xl font-black text-gray-900">{stats.other}</div>
                   </div>
                 </div>
               </div>
@@ -488,9 +488,13 @@ export default function StudentSearchApp({ onNavigateBack }) {
                               <span className="text-[14px] md:text-[16px] text-gray-500 font-medium whitespace-nowrap">📍 {rec.location}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              {rec.attendanceTag && (
-                                <span className={`text-[14px] md:text-[16px] font-bold px-2.5 py-0.5 rounded-full ${isAbsent ? 'bg-red-100 text-red-700 border border-red-300' : isCanceled ? 'bg-gray-200 text-gray-600 border border-gray-300' : 'bg-blue-100 text-blue-700 border border-blue-300'}`}>
+                              {rec.attendanceTag ? (
+                                <span className={`text-[14px] md:text-[16px] font-bold px-2.5 py-0.5 rounded-full ${rec.attendanceTag.includes('선생님휴가') ? 'bg-gray-400 text-white border border-gray-500' : isAbsent ? 'bg-red-100 text-red-700 border border-red-300' : isCanceled ? 'bg-orange-300 text-white border border-orange-400' : 'bg-blue-100 text-blue-700 border border-blue-300'}`}>
                                   {rec.attendanceTag}
+                                </span>
+                              ) : (
+                                <span className="text-[14px] md:text-[16px] font-bold px-2.5 py-0.5 rounded-full bg-gray-600 text-white border border-gray-700">
+                                  미확인
                                 </span>
                               )}
                               {rec.memo && (
