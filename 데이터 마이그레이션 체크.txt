@@ -9,8 +9,13 @@
 
 다른 DB는 절대로 건드리지말아줘
 
-node verify.js 'C:\Users\ypyo9\Downloads\디지털_서포터즈_일정표-2026-05-20 (7).xlsx' 
+1. 구글 시트 원본 ↔ 엑셀 파일 대조하기
+node verify.js "C:\Users\ypyo9\Downloads\디지털_서포터즈_일정표-2026-05-26 (2).xlsx"
 
+
+
+2. 구글 시트 원본 ↔ Supabase DB 대조하기
+node target_verify.js
 
 
 
