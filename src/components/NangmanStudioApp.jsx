@@ -419,16 +419,16 @@ export default function NangmanStudioApp({ onNavigateBack }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-transparent font-sans text-gray-800">
-      <div className="shrink-0 bg-pink-600 text-white px-4 pt-4 pb-7 shadow-md z-20 relative flex items-start justify-center min-h-[96px]">
+      <div className="shrink-0 bg-blue-600 text-white px-4 pt-4 pb-7 shadow-md z-20 relative flex items-start justify-center min-h-[96px]">
         <h1 className="text-lg md:text-xl font-bold flex items-center gap-2 mt-1">
           <LucideCalendar className="w-6 h-6 md:w-8 md:h-8" /> 낭만 스튜디오 사용 현황
         </h1>
         <div className="absolute left-1/2 bottom-1.5 transform -translate-x-1/2 z-50">
-          <button onClick={handleManagerClick} className={`px-6 py-1.5 md:px-10 md:py-2 rounded-lg border border-pink-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation ${isManagerMode ? 'bg-white text-pink-800 shadow' : 'bg-pink-800 text-white hover:bg-pink-900 shadow-md'}`}>
+          <button onClick={handleManagerClick} className={`px-6 py-1.5 md:px-10 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-90 text-sm md:text-base touch-manipulation ${isManagerMode ? 'bg-white text-blue-800 shadow' : 'bg-blue-800 text-white hover:bg-blue-900 shadow-md'}`}>
             {isManagerMode ? '저장/담당자 모드 종료' : '담당자 로그인'}
           </button>
         </div>
-        <button onClick={onNavigateBack} className="absolute right-4 top-3 text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-pink-800 text-white opacity-90 active:scale-95">
+        <button onClick={onNavigateBack} className="absolute right-4 top-3 text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
           <Home className="w-5 h-5 mb-1" /> 처음으로
         </button>
       </div>
