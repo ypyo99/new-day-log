@@ -523,7 +523,7 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                         <div className="mt-1 flex justify-center">
                           <button
                             onClick={copyPreviousWeek}
-                            className="bg-pink-500 hover:bg-pink-600 text-white text-[14px] sm:text-[16px] px-3 py-1 rounded shadow-sm transition-colors active:scale-95"
+                            className="bg-pink-500 hover:bg-pink-600 text-white text-[14px] sm:text-[16px] px-3 py-1 rounded shadow-sm transition-colors active:scale-95 whitespace-nowrap"
                           >
                             복제
                           </button>
