@@ -189,17 +189,7 @@ export default function NangmanStudioApp({ onNavigateBack }) {
     return `${dateStr}_${timeSlot.replace(/\s+/g, '').replace(/~/g, '-').replace(/:/g, '')}`;
   };
 
-  const handleCellClick = (dateStr, timeSlot, isSystemHoliday) => {
-    if (!isManagerMode || isSystemHoliday) return;
-    const key = getScheduleKey(dateStr, timeSlot);
-    if (editingCell === key) return;
-
-    const currentValue = schedule[key];
-    const currentText = typeof currentValue === 'string' && currentValue !== 'nangman' && currentValue !== 'pending' ? currentValue.replace('holiday:', '').replace('disabled:', '') : "";
-    
-    setEditingCell(key);
-    setEditValue(currentText);
-  };
+  // handleCellClick removed, using invisible select instead
 
   const handleSelectChange = async (key, val) => {
     let finalValue = false;
@@ -255,6 +245,24 @@ export default function NangmanStudioApp({ onNavigateBack }) {
         // 3. If it was completely blank visually, save it explicitly as 'false' (blank).
         // Otherwise, save the exact state.
         changes[`data.${currentKey}`] = state === undefined ? false : state;
+      });
+    });
+    
+    await saveBulkChanges(changes);
+  };
+
+  const deleteCurrentWeek = async (e) => {
+    e.stopPropagation();
+    if (!isManagerMode) return;
+    if (!window.confirm("현재 주의 일정을 모두 삭제(빈칸)하시겠습니까?")) return;
+
+    const currentDays = getCurrentWeekDays();
+    const changes = {};
+    timeSlots.forEach(time => {
+      currentDays.forEach(day => {
+        const currentDateStr = formatDateString(day);
+        const currentKey = getScheduleKey(currentDateStr, time);
+        changes[`data.${currentKey}`] = false;
       });
     });
     
@@ -520,12 +528,18 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                     >
                       <span>팀명</span><br /><span>요일</span>
                       {isManagerMode && (
-                        <div className="mt-1 flex justify-center">
+                        <div className="mt-1 flex flex-col gap-1 items-center justify-center">
                           <button
                             onClick={copyPreviousWeek}
-                            className="bg-pink-500 hover:bg-pink-600 text-white text-[14px] sm:text-[16px] px-3 py-1 rounded shadow-sm transition-colors active:scale-95 whitespace-nowrap"
+                            className="bg-blue-500 hover:bg-blue-600 text-white text-[14px] sm:text-[16px] px-3 py-1 rounded shadow-sm transition-colors active:scale-95 whitespace-nowrap"
                           >
                             복제
+                          </button>
+                          <button
+                            onClick={deleteCurrentWeek}
+                            className="bg-red-500 hover:bg-red-600 text-white text-[14px] sm:text-[16px] px-3 py-1 rounded shadow-sm transition-colors active:scale-95 whitespace-nowrap"
+                          >
+                            삭제
                           </button>
                         </div>
                       )}
@@ -591,37 +605,31 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                           const parts = state.split('\\n');
                           cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter text-[13px] sm:text-[16px] landscape:text-[22px] md:text-[26px] font-black leading-tight drop-shadow-sm">{parts.map((p, idx) => <React.Fragment key={idx}>{p}<br/></React.Fragment>)}</span>;
                         }
-                        if (editingCell === key) {
-                          cellContent = (
-                              <select
-                                autoFocus
-                                value={editValue || "false"}
-                                onChange={(e) => handleSelectChange(key, e.target.value)}
-                                onBlur={() => setEditingCell(null)}
-                                className="w-full h-full text-center bg-white border border-pink-400 rounded-md py-1 text-[13px] md:text-[16px] font-bold text-pink-900 outline-none shadow-sm cursor-pointer appearance-none"
-                                style={{ textAlignLast: 'center' }}
-                              >
-                                {(!editValue || editValue === "false") && (
-                                  <option value="false" disabled hidden></option>
-                                )}
-                                <option value="disabled">사용불가</option>
-                                <option value="1조">1조</option>
-                              <option value="2조">2조</option>
-                              <option value="3조">3조</option>
-                              <option value="4조">4조</option>
-                              {!["false", "1조", "2조", "3조", "4조"].includes(editValue || "false") && (
-                                <option value={editValue}>{editValue}</option>
-                              )}
-                            </select>
-                          );
-                        }
-
                         return (
-                          <td key={di} onClick={() => handleCellClick(dateStr, time, isSystemHoliday)}
-                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${(isManagerMode && !isSystemHoliday) ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-pink-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-pink-500 relative z-10') : 'border-r border-gray-400'}`}>
-                            <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol}`}>
+                          <td key={di}
+                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${(isManagerMode && !isSystemHoliday) ? 'hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-pink-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-pink-500 relative z-10') : 'border-r border-gray-400 relative'}`}>
+                            <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol} relative z-0 pointer-events-none`}>
                               {cellContent}
                             </span>
+                            {isManagerMode && !isSystemHoliday && (
+                                <select
+                                  value={typeof state === 'string' && state !== 'nangman' && state !== 'pending' ? state.replace('holiday:', '').replace('disabled:', '') : "false"}
+                                  onChange={(e) => handleSelectChange(key, e.target.value)}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                >
+                                  <option value="false" hidden></option>
+                                  <option value="1조">1조</option>
+                                  <option value="2조">2조</option>
+                                  <option value="3조">3조</option>
+                                  <option value="4조">4조</option>
+                                  <option value="disabled">사용불가</option>
+                                  {isCustomStr && !["1조", "2조", "3조", "4조", "disabled"].includes(state.replace('holiday:', '').replace('disabled:', '')) && (
+                                    <option value={state.replace('holiday:', '').replace('disabled:', '')} hidden>
+                                      {state.replace('holiday:', '').replace('disabled:', '')}
+                                    </option>
+                                  )}
+                                </select>
+                            )}
                           </td>
                         );
                       })}
