@@ -225,7 +225,6 @@ export default function NangmanStudioApp({ onNavigateBack }) {
   const copyPreviousWeek = async (e) => {
     e.stopPropagation();
     if (!isManagerMode) return;
-    if (!window.confirm("바로 앞 주의 일정을 그대로 복제하시겠습니까? (기존 데이터는 덮어쓰기 됩니다)")) return;
 
     const currentDays = getCurrentWeekDays();
     const changes = {};
