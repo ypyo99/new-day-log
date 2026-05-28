@@ -249,7 +249,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
   const handleApplyToSchedule = async () => {
     const targetYear = new Date().getFullYear();
 
-    if (!confirm(`현재 연도(${targetYear}년) 시간표에 공휴일을 적용하시겠습니까? (해당 날짜의 모든 일정이 공휴일 데이터로 덮어쓰기됩니다)`)) return;
+    if (!confirm('공휴일 데이터를 수업스케줄에 적용하겠습니까?')) return;
 
     setApplying(true);
     setNotice("");
