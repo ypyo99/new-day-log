@@ -254,7 +254,6 @@ export default function NangmanStudioApp({ onNavigateBack }) {
   const deleteCurrentWeek = async (e) => {
     e.stopPropagation();
     if (!isManagerMode) return;
-    if (!window.confirm("현재 주의 일정을 모두 삭제(빈칸)하시겠습니까?")) return;
 
     const currentDays = getCurrentWeekDays();
     const changes = {};
