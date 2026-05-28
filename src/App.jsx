@@ -7,6 +7,7 @@ import StudentSearchApp from './components/StudentSearchApp';
 import TeacherManagementApp from './components/TeacherManagementApp';
 import AutoScheduleApp from './components/AutoScheduleApp';
 import HolidayManagementApp from './components/HolidayManagementApp';
+import NangmanStudioApp from './components/NangmanStudioApp';
 import MainApp from './components/MainApp';
 import {
   getSessionItem,
@@ -81,6 +82,10 @@ export default function App() {
     return <HolidayManagementApp onNavigateBack={() => setCurrentView('main')} />;
   }
 
+  if (currentView === 'nangmanStudio') {
+    return <NangmanStudioApp onNavigateBack={() => setCurrentView('main')} />;
+  }
+
   return (
     <MainApp
       onNavigateToClassroom={() => setCurrentView('classroom')}
@@ -106,6 +111,7 @@ export default function App() {
       onNavigateToTeacherManagement={() => setCurrentView('teacherManagement')}
       onNavigateToAutoSchedule={() => setCurrentView('autoSchedule')}
       onNavigateToHolidayManagement={() => setCurrentView('holidayManagement')}
+      onNavigateToNangmanStudio={() => setCurrentView('nangmanStudio')}
     />
   );
 }

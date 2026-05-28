@@ -65,7 +65,8 @@ export default function MainApp({
   onNavigateToTeamSchedule,
   onNavigateToTeacherManagement,
   onNavigateToAutoSchedule,
-  onNavigateToHolidayManagement
+  onNavigateToHolidayManagement,
+  onNavigateToNangmanStudio
 }) {
   const [selectedTeam, setSelectedTeam] = useState(() => getSavedItem('sungdong_team', ""));
   const [currentUser, setCurrentUser] = useState(() => getSavedItem('sungdong_teacher', ""));
@@ -1597,6 +1598,10 @@ export default function MainApp({
 
             <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-purple-500 border-2 border-purple-600 hover:bg-purple-600 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 평생교육실2 사용 보기
+            </button>
+
+            <button onClick={() => { handleLogout(); onNavigateToNangmanStudio(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-pink-500 border-2 border-pink-600 hover:bg-pink-600 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 낭만스튜디오 사용 보기
             </button>
 
             <button onClick={() => { handleLogout(); onNavigateToTeacherManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-white bg-indigo-400 border-2 border-indigo-500 hover:bg-indigo-500 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
