@@ -13,6 +13,8 @@ export default function HolidayManagementApp({ onNavigateBack }) {
   const [notice, setNotice] = useState("");
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [showApplyPopup, setShowApplyPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
 
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
@@ -289,7 +291,12 @@ export default function HolidayManagementApp({ onNavigateBack }) {
         }
       }
 
-      setNotice(`성공적으로 시간표에 적용되었습니다! (총 ${totalUpdated}건 업데이트)`);
+      setPopupMessage(`성공적으로 시간표에 적용되었습니다!\n(총 ${totalUpdated}건 업데이트)`);
+      setShowApplyPopup(true);
+      setTimeout(() => {
+        setShowApplyPopup(false);
+        setPopupMessage("");
+      }, 2000);
     } catch (err) {
       console.error(err);
       setNotice("적용 중 오류가 발생했습니다: " + err.message);
@@ -472,6 +479,21 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               <button onClick={() => setShowPwdModal(false)} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold touch-manipulation">취소</button>
               <button onClick={checkPassword} className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold touch-manipulation">확인</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showApplyPopup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] px-4 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-100 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-gray-800 font-extrabold text-base whitespace-pre-line leading-relaxed">
+              {popupMessage}
+            </p>
           </div>
         </div>
       )}
