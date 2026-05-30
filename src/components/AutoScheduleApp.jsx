@@ -93,6 +93,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   const [previewFilter, setPreviewFilter] = useState("ALL");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [editCell, setEditCell] = useState(null); // { teacherName, dayNum, shift, student, location }
   const [lastBackupId, setLastBackupId] = useState(() => getSavedItem('sungdong_auto_lastBackupId', null));
   const [restoring, setRestoring] = useState(false);
@@ -557,8 +558,73 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         if (error) throw error;
       }
 
+      // 공휴일 데이터를 시간표에 적용하기 과정 자동 수행
+      setProgressMsg("공휴일 데이터 적용 중...");
+      const { data: holidaysList, error: hErr } = await supabaseClient
+        .from('holidays')
+        .select('*');
+
+      if (hErr) {
+        console.warn("Holidays fetch error on save:", hErr);
+      }
+
+      let totalHolidayUpdated = 0;
+      if (holidaysList && holidaysList.length > 0) {
+        const targetDates = getWeekdaysInRange(startDate, endDate);
+        
+        for (const holiday of holidaysList) {
+          let formattedMonthDay = holiday.date;
+          if (holiday.date.includes('/')) {
+            const [m, d] = holiday.date.split('/');
+            formattedMonthDay = `${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+          } else if (holiday.date.includes('-')) {
+            const parts = holiday.date.split('-');
+            if (parts.length === 3) {
+              formattedMonthDay = `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            } else {
+              formattedMonthDay = `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+            }
+          }
+
+          // 대상 기간 내에서 해당 공휴일의 날짜 매칭
+          const matched = targetDates.filter(dStr => dStr.endsWith(`-${formattedMonthDay}`));
+
+          for (const fullDate of matched) {
+            // 현재 저장한 팀의 해당 날짜의 daily_logs 조회
+            const { data: logsData, error: fetchError } = await supabaseClient
+              .from('daily_logs')
+              .select('*')
+              .eq('team', team)
+              .eq('log_date', fullDate);
+
+            if (fetchError) throw fetchError;
+
+            if (logsData && logsData.length > 0) {
+              const updatedLogs = logsData.map(log => ({
+                ...log,
+                student: holiday.name,
+                location: holiday.content1,
+                status: holiday.content2
+              }));
+
+              const { error: upsertError } = await supabaseClient
+                .from('daily_logs')
+                .upsert(updatedLogs, { onConflict: 'team,log_date,teacher,shift' });
+
+              if (upsertError) throw upsertError;
+              totalHolidayUpdated += logsData.length;
+            }
+          }
+        }
+      }
+
       setProgressMsg("저장 완료!");
       setSaving(false);
+      setSuccessMessage(
+        totalHolidayUpdated > 0
+          ? `${team}의 시간표가 성공적으로 저장되었습니다.\n\n[공휴일 자동 적용]\n- 적용 일자 내 총 ${totalHolidayUpdated}건의 공휴일 일정이 적용되었습니다.`
+          : `${team}의 시간표가 성공적으로 저장되었습니다.`
+      );
       setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
@@ -1002,8 +1068,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
               <div className="text-center mb-6">
                 <div className="text-5xl mb-3">✅</div>
                 <h3 className="text-lg font-black text-gray-800 mb-2">완료!</h3>
-                <p className="text-sm text-gray-700 font-bold">시간표 작성이 완료되었습니다!</p>
-                <p className="text-xs text-gray-400 mt-2">{team}의 시간표가 성공적으로 저장되었습니다.</p>
+                <p className="text-sm text-gray-700 font-bold mb-2">시간표 작성이 완료되었습니다!</p>
+                <p className="text-xs text-gray-500 mt-2 whitespace-pre-line leading-relaxed font-semibold">{successMessage}</p>
               </div>
               <button
                 onClick={() => { setShowSuccessModal(false); }}

@@ -110,7 +110,6 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
         setTimeout(() => {
           setErrorMessage("");
         }, 2000);
-        return;
       }
 
       setSelectedMonth(targetMonth);
