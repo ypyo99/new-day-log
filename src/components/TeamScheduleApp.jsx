@@ -219,16 +219,17 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           const teacher = rec.name;
           const group = getTeacherGroup(tName, teacher);
           if (isExcludedTeacherForExport(teacher)) return;
-          const tLogs = teamData.filter(r => r.teacher === teacher);
-          if (tLogs.length > 0) {
-            tLogs.forEach(r => {
-              const key = `${teacher}::${r.shift}`;
-              teamTeacherShiftsMap[key] = { teacher, shift: r.shift, groupName: group };
-            });
-          } else {
+
+          const shifts = [rec.shift1, rec.shift2, rec.shift3].map(s => (s || "").trim()).filter(Boolean);
+          if (shifts.length === 0) {
             const defaultShift = getTeacherDefaultShift(tName, teacher, group);
             const key = `${teacher}::${defaultShift}`;
             teamTeacherShiftsMap[key] = { teacher, shift: defaultShift, groupName: group };
+          } else {
+            shifts.forEach(shift => {
+              const key = `${teacher}::${shift}`;
+              teamTeacherShiftsMap[key] = { teacher, shift, groupName: group };
+            });
           }
         });
 
@@ -712,13 +713,25 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
     .filter(t => t.team === currentTeam && (teacherFilter === "전체" || t.name === teacherFilter))
     .forEach(rec => {
       const g = getTeacherGroup(currentTeam, rec.name);
-      const defaultShift = getTeacherDefaultShift(currentTeam, rec.name, g);
-      const key = `${rec.name}::${defaultShift}`;
-      teacherShiftsMap[key] = {
-        teacher: rec.name,
-        shift: defaultShift,
-        groupName: g
-      };
+      const shifts = [rec.shift1, rec.shift2, rec.shift3].map(s => (s || "").trim()).filter(Boolean);
+      if (shifts.length === 0) {
+        const defaultShift = getTeacherDefaultShift(currentTeam, rec.name, g);
+        const key = `${rec.name}::${defaultShift}`;
+        teacherShiftsMap[key] = {
+          teacher: rec.name,
+          shift: defaultShift,
+          groupName: g
+        };
+      } else {
+        shifts.forEach(shift => {
+          const key = `${rec.name}::${shift}`;
+          teacherShiftsMap[key] = {
+            teacher: rec.name,
+            shift: shift,
+            groupName: g
+          };
+        });
+      }
     });
 
   filteredData.forEach(item => {
