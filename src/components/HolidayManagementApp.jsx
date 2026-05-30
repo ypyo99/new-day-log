@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { Home } from './Icons';
+import { getShiftWeight } from '../utils/helpers';
 
 export default function HolidayManagementApp({ onNavigateBack }) {
   const [holidays, setHolidays] = useState([]);
@@ -254,6 +255,13 @@ export default function HolidayManagementApp({ onNavigateBack }) {
     setApplying(true);
     setNotice("");
     try {
+      // 모든 선생님 목록 조회
+      const { data: allTeachers, error: tErr } = await supabaseClient
+        .from('teachers')
+        .select('*');
+
+      if (tErr) throw tErr;
+
       let totalUpdated = 0;
       for (const holiday of holidays) {
         let formattedMonthDay = holiday.date;
@@ -267,27 +275,72 @@ export default function HolidayManagementApp({ onNavigateBack }) {
 
         const fullDate = `${targetYear}-${formattedMonthDay}`;
 
-        const { data, error: fetchError } = await supabaseClient
+        // 해당 날짜의 기존 daily_logs 조회
+        const { data: logsData, error: fetchError } = await supabaseClient
           .from('daily_logs')
           .select('*')
           .eq('log_date', fullDate);
 
         if (fetchError) throw fetchError;
 
-        if (data && data.length > 0) {
-          const updatedLogs = data.map(log => ({
-            ...log,
-            student: holiday.name,
-            location: holiday.content1,
-            status: holiday.content2
-          }));
+        const updatedLogs = [];
 
+        allTeachers.forEach(teacher => {
+          const teacherName = teacher.name.trim();
+          const shifts = [teacher.shift1, teacher.shift2, teacher.shift3]
+            .map(s => (s || "").trim())
+            .filter(Boolean);
+
+          if (shifts.length === 0) return;
+
+          // 첫 번째 교시 판단 (가장 이른 시간)
+          const sortedShifts = [...shifts].sort((a, b) => getShiftWeight(a) - getShiftWeight(b));
+          const firstShift = sortedShifts[0];
+
+          shifts.forEach(shift => {
+            const existingLog = logsData ? logsData.find(l => l.teacher.trim() === teacherName && l.shift.trim() === shift) : null;
+
+            if (existingLog) {
+              if (shift === firstShift) {
+                updatedLogs.push({
+                  ...existingLog,
+                  student: holiday.name,
+                  location: holiday.content1,
+                  status: holiday.content2
+                });
+              } else {
+                updatedLogs.push({
+                  ...existingLog,
+                  student: "",
+                  location: "",
+                  status: ""
+                });
+              }
+            } else {
+              // 기존 로그가 없더라도 첫 번째 교시에 대해서는 공휴일 레코드 생성
+              if (shift === firstShift) {
+                updatedLogs.push({
+                  team: teacher.team,
+                  log_date: fullDate,
+                  teacher: teacherName,
+                  shift: shift,
+                  student: holiday.name,
+                  location: holiday.content1,
+                  status: holiday.content2,
+                  signature_url: null
+                });
+              }
+            }
+          });
+        });
+
+        if (updatedLogs.length > 0) {
           const { error: upsertError } = await supabaseClient
             .from('daily_logs')
             .upsert(updatedLogs, { onConflict: 'team,log_date,teacher,shift' });
 
           if (upsertError) throw upsertError;
-          totalUpdated += data.length;
+          totalUpdated += updatedLogs.length;
         }
       }
 
