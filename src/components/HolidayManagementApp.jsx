@@ -250,6 +250,16 @@ export default function HolidayManagementApp({ onNavigateBack }) {
   const handleApplyToSchedule = async () => {
     const targetYear = new Date().getFullYear();
 
+    const generateUUID = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+
     if (!confirm('공휴일 데이터를 수업스케줄에 적용하시겠습니까?')) return;
 
     setApplying(true);
@@ -320,6 +330,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               // 기존 로그가 없더라도 첫 번째 교시에 대해서는 공휴일 레코드 생성
               if (shift === firstShift) {
                 updatedLogs.push({
+                  id: generateUUID(),
                   team: teacher.team,
                   log_date: fullDate,
                   teacher: teacherName,
