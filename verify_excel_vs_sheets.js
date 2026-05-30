@@ -4,6 +4,31 @@ const require = createRequire(import.meta.url);
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
+import { createClient } from '@supabase/supabase-js';
+
+// .env 파일 파싱하여 supabaseClient 직접 초기화 (import.meta.env 오류 방지)
+let supabaseClient;
+try {
+  let url = 'https://oudrcfxkneopgtcfbwhd.supabase.co';
+  let key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91ZHJjZnhrbmVvcGd0Y2Zid2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNzk0MTYsImV4cCI6MjA5NDY1NTQxNn0.ovAp6X3VogCeyKa74pC3x2f4lKR6m3gkE0kEEhJbGpQ';
+  
+  if (fs.existsSync('.env')) {
+    const envContent = fs.readFileSync('.env', 'utf-8');
+    const envLines = envContent.split('\n');
+    envLines.forEach(line => {
+      const parts = line.split('=');
+      if (parts.length >= 2) {
+        const k = parts[0].trim();
+        const v = parts.slice(1).join('=').trim();
+        if (k === 'VITE_SUPABASE_URL') url = v;
+        if (k === 'VITE_SUPABASE_ANON_KEY') key = v;
+      }
+    });
+  }
+  supabaseClient = createClient(url, key);
+} catch (e) {
+  console.error("Supabase 초기화 에러:", e);
+}
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtz2B3wl9Bk3AgoPEO9Jz3PkPRAJEq11N28YW8fZC4x3oVo0ls1p9rkUxMEnL7_ak5Hg/exec";
 
@@ -35,6 +60,34 @@ async function main() {
 
   console.log(`📖 엑셀 파일 로드 중: ${excelFilePath}`);
   const workbook = XLSX.readFile(excelFilePath);
+
+  // Supabase holidays 조회
+  const holidayDates = new Set();
+  try {
+    const { data: holidaysList, error: hErr } = await supabaseClient
+      .from('holidays')
+      .select('date');
+
+    if (!hErr && holidaysList) {
+      holidaysList.forEach(h => {
+        let formattedMonthDay = h.date.trim();
+        if (formattedMonthDay.includes('/')) {
+          const [m, d] = formattedMonthDay.split('/');
+          formattedMonthDay = `${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        } else if (formattedMonthDay.includes('-')) {
+          const parts = formattedMonthDay.split('-');
+          if (parts.length === 3) {
+            formattedMonthDay = `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+          } else {
+            formattedMonthDay = `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+          }
+        }
+        holidayDates.add(formattedMonthDay);
+      });
+    }
+  } catch (err) {
+    console.warn("⚠️ 공휴일 정보 로딩 실패:", err.message);
+  }
 
   let year = new Date().getFullYear();
   let fileMonth = new Date().getMonth() + 1;
@@ -158,6 +211,10 @@ async function main() {
       for (const dateStr in googleSchedule) {
         // 엑셀의 날짜 범위(dateColumns)에 포함되는 날짜만 검사
         if (!dateColumns.find(d => d.dateStr === dateStr)) continue;
+
+        // 공휴일인 경우 검사 제외
+        const md = dateStr.substring(5); // "MM-DD"
+        if (holidayDates.has(md)) continue;
         
         for (const shiftName in googleSchedule[dateStr]) {
           if (!verifiedShifts.has(shiftName)) {
