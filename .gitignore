@@ -32,6 +32,8 @@ dist-ssr
 
 # Backups
 index.html.backup
+daily_logs_backup_*.json
+scratch/
 
 
 # Local Netlify folder
