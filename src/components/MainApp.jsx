@@ -479,7 +479,6 @@ export default function MainApp({
         }
 
         const loadedMemo = memoParts.join(', ');
-
         let finalMemo = loadedMemo;
         if (!finalMemo) {
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
@@ -500,6 +499,16 @@ export default function MainApp({
     });
   }, [date, allScheduleData, selectedTeam, currentUser, shifts]);
 
+  const [debouncedStudentsKey, setDebouncedStudentsKey] = useState("");
+
+  useEffect(() => {
+    const studentsKey = shifts.map((_, i) => logs[i]?.student || "").join('|');
+    const timer = setTimeout(() => {
+      setDebouncedStudentsKey(studentsKey);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [logs, shifts]);
+
   useEffect(() => {
     if (!selectedTeam || !isLoggedIn) {
       setStudentCounts({});
@@ -511,31 +520,38 @@ export default function MainApp({
 
     const calcCounts = async () => {
       try {
+        const names = [];
+        shifts.forEach((_, index) => {
+          const log = logs[index];
+          if (!log || !log.student) return;
+          const parsedNames = log.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+          parsedNames.forEach(name => {
+            if (excludeKeywords.some(kw => name.includes(kw))) return;
+            if (!names.includes(name)) names.push(name);
+          });
+        });
+
+        if (names.length === 0) {
+          if (isMounted) setStudentCounts({});
+          return;
+        }
+
         let allTeamRecords = [];
-        let histFrom = 0;
-        const histStep = 1000;
-        let histHasMore = true;
+        const orConditions = names.map(name => `student.ilike.%${name}%`).join(',');
 
-        while (histHasMore) {
-          const histTo = histFrom + histStep - 1;
-          const { data: histData, error: histError } = await supabaseClient
-            .from('daily_logs')
-            .select('log_date, student, status')
-            .eq('team', selectedTeam)
-            .neq('student', '')
-            .not('student', 'is', null)
-            .lte('log_date', date)
-            .order('log_date', { ascending: true })
-            .range(histFrom, histTo);
+        const { data: histData, error: histError } = await supabaseClient
+          .from('daily_logs')
+          .select('log_date, student, status')
+          .eq('team', selectedTeam)
+          .neq('student', '')
+          .not('student', 'is', null)
+          .lte('log_date', date)
+          .or(orConditions)
+          .order('log_date', { ascending: true });
 
-          if (histError) throw histError;
-          if (histData && histData.length > 0) {
-            allTeamRecords = allTeamRecords.concat(histData);
-            histHasMore = histData.length >= histStep;
-            histFrom += histStep;
-          } else {
-            histHasMore = false;
-          }
+        if (histError) throw histError;
+        if (histData) {
+          allTeamRecords = histData;
         }
 
         if (!isMounted) return;
@@ -543,9 +559,11 @@ export default function MainApp({
         const studentDatesMap = {};
         allTeamRecords.forEach(hRow => {
           if (!hRow.student) return;
-          const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-          names.forEach((name, nameIdx) => {
+          const parsedNames = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+          parsedNames.forEach((name, nameIdx) => {
             if (excludeKeywords.some(kw => name.includes(kw))) return;
+            if (!names.includes(name)) return;
+
             let personalStatus = hRow.status || "";
             if (personalStatus.includes('/')) {
               const segments = personalStatus.split('/');
@@ -566,9 +584,9 @@ export default function MainApp({
         shifts.forEach((shift, index) => {
           const log = logs[index];
           if (!log || !log.student) return;
-          const names = log.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+          const parsedNames = log.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
           const countsForSlot = [];
-          names.forEach(name => {
+          parsedNames.forEach(name => {
             if (excludeKeywords.some(kw => name.includes(kw))) return;
             const dates = studentDatesMap[name] || [];
             countsForSlot.push({ name, count: dates.length, dates });
