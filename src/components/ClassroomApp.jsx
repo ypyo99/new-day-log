@@ -10,6 +10,7 @@ const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'defaul
 export default function ClassroomApp({ onNavigateBack }) {
   const [saveErrorMsg, setSaveErrorMsg] = useState("");
   const [supabaseTableMissing, setSupabaseTableMissing] = useState(false);
+  const [holidayDates, setHolidayDates] = useState(new Map());
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const d = new Date();
@@ -101,6 +102,21 @@ export default function ClassroomApp({ onNavigateBack }) {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        const { data: hData } = await supabaseClient.from('holidays').select('date, name, content1, content2');
+        if (hData) {
+          const hMap = new Map();
+          hData.forEach(h => {
+            if (h.date) {
+              hMap.set(h.date, {
+                name: h.name || '공휴일',
+                content1: h.content1 || '',
+                content2: h.content2 || ''
+              });
+            }
+          });
+          setHolidayDates(hMap);
+        }
+
         const { data, error } = await supabaseClient
           .from('classroom_schedules')
           .select('data, memo')
@@ -187,6 +203,8 @@ export default function ClassroomApp({ onNavigateBack }) {
     const allKeys = [];
     currentDays.forEach(day => {
       const ds = formatDateString(day);
+      const mmdd = ds.substring(5);
+      if (holidayDates.has(mmdd)) return; // 공휴일은 건너뜀
       timeSlots.forEach(slot => allKeys.push(getScheduleKey(ds, slot)));
     });
 
@@ -207,6 +225,9 @@ export default function ClassroomApp({ onNavigateBack }) {
 
   const toggleWholeDay = (dateStr) => {
     if (!isManagerMode) return;
+    const mmdd = dateStr.substring(5);
+    if (holidayDates.has(mmdd)) return; // 공휴일 일괄 토글 차단
+
     const dayKeys = timeSlots.map(slot => getScheduleKey(dateStr, slot));
     const allEdu = dayKeys.every(k => schedule[k] === '평생교육실');
     const allNangman = dayKeys.every(k => schedule[k] === '낭만스튜디오');
@@ -226,7 +247,15 @@ export default function ClassroomApp({ onNavigateBack }) {
   const toggleWholeWeek = (timeSlot) => {
     if (!isManagerMode) return;
     const currentDays = getCurrentWeekDays();
-    const weekKeys = currentDays.map(day => getScheduleKey(formatDateString(day), timeSlot));
+    const weekKeys = [];
+    currentDays.forEach(day => {
+      const ds = formatDateString(day);
+      const mmdd = ds.substring(5);
+      if (!holidayDates.has(mmdd)) {
+        weekKeys.push(getScheduleKey(ds, timeSlot));
+      }
+    });
+
     const allEdu = weekKeys.every(k => schedule[k] === '평생교육실');
     const allNangman = weekKeys.every(k => schedule[k] === '낭만스튜디오');
     const allBoth = weekKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
@@ -464,12 +493,28 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         const isToday = dateStr === adjustedTodayStr;
                         const isLastRow = ti === timeSlots.length - 1;
 
-                        const cellBg = state === '평생교육실' ? 'bg-green-200' : state === '낭만스튜디오' ? 'bg-blue-600' : state === '평생교육실/낭만스튜디오' ? 'bg-purple-200' : 'bg-white';
-                        const textCol = state === '평생교육실' ? 'text-green-900' : state === '낭만스튜디오' ? 'text-white' : state === '평생교육실/낭만스튜디오' ? 'text-purple-900' : 'text-gray-500';
-                        const cellPadding = state === '평생교육실/낭만스튜디오' ? 'p-0 sm:p-0.5' : (state === '낭만스튜디오' ? 'px-0 py-1' : 'p-0.5 sm:p-2');
+                        const mmdd = dateStr.substring(5);
+                        const isSystemHoliday = holidayDates.has(mmdd);
+
+                        const cellBg = isSystemHoliday ? 'bg-red-50' : (state === '평생교육실' ? 'bg-green-200' : state === '낭만스튜디오' ? 'bg-blue-600' : state === '평생교육실/낭만스튜디오' ? 'bg-purple-200' : 'bg-white');
+                        const textCol = isSystemHoliday ? 'text-red-700' : (state === '평생교육실' ? 'text-green-900' : state === '낭만스튜디오' ? 'text-white' : state === '평생교육실/낭만스튜디오' ? 'text-purple-900' : 'text-gray-500');
+                        const cellPadding = isSystemHoliday ? 'p-0.5 sm:p-2' : (state === '평생교육실/낭만스튜디오' ? 'p-0 sm:p-0.5' : (state === '낭만스튜디오' ? 'px-0 py-1' : 'p-0.5 sm:p-2'));
 
                         let cellContent = null;
-                        if (state === '평생교육실') {
+                        if (isSystemHoliday) {
+                          if (ti === 0) {
+                            const hInfo = holidayDates.get(mmdd);
+                            cellContent = (
+                              <div className="flex flex-col items-center justify-center leading-tight">
+                                <span className="font-extrabold text-red-600 text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] whitespace-nowrap">{hInfo.name}</span>
+                                {hInfo.content1 && <span className="text-red-500/80 font-bold text-[9px] min-[360px]:text-[10px] landscape:text-[16px] md:text-[17px] mt-0.5 whitespace-nowrap">{hInfo.content1}</span>}
+                                {hInfo.content2 && <span className="text-red-500/80 font-bold text-[9px] min-[360px]:text-[10px] landscape:text-[16px] md:text-[17px] mt-0.5 whitespace-nowrap">{hInfo.content2}</span>}
+                              </div>
+                            );
+                          } else {
+                            cellContent = null;
+                          }
+                        } else if (state === '평생교육실') {
                           cellContent = <>평생<br />교육실</>;
                         } else if (state === '낭만스튜디오') {
                           cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span>;
@@ -480,8 +525,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         }
 
                         return (
-                          <td key={di} onClick={() => toggleAvailability(dateStr, time)}
-                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${isManagerMode ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-red-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-red-500 relative z-10') : 'border-r border-gray-400'}`}>
+                          <td key={di} onClick={() => { if (isSystemHoliday) return; toggleAvailability(dateStr, time); }}
+                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${(isManagerMode && !isSystemHoliday) ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-red-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-red-500 relative z-10') : 'border-r border-gray-400'}`}>
                             <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol}`}>
                               {cellContent}
                             </span>
