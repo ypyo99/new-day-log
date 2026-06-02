@@ -167,7 +167,7 @@ export default function ClassroomApp({ onNavigateBack }) {
     const currentValue = schedule[key];
 
     let newValue;
-    if (!currentValue || currentValue === '   ') {
+    if (currentValue !== '평생교육실' && currentValue !== '낭만스튜디오' && currentValue !== '평생교육실/낭만스튜디오') {
       newValue = '평생교육실';
     } else if (currentValue === '평생교육실') {
       newValue = '낭만스튜디오';
@@ -409,7 +409,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </button>
               </div>
               <p className="text-[14px] landscape:text-xl md:text-2xl text-gray-600 text-center mt-2 font-medium">
-                각 셀을 클릭하면 <span className="bg-green-200 text-green-900 font-semibold px-2 py-0.5 rounded-md">평생교육실</span> ➡️ <span className="bg-blue-600 text-white font-semibold px-2 py-0.5 rounded-md">낭만스튜디오</span> ➡️ <span className="bg-purple-200 text-purple-900 font-semibold px-2 py-0.5 rounded-md">평생교육실/낭만스튜디오</span> ➡️ <span className="bg-white border border-gray-300 text-gray-500 font-semibold px-2 py-0.5 rounded-md">빈 칸</span> 순서로 토글됩니다.
+                각 셀을 클릭하면 사용 가능한 장소를 변경가능합니다.
               </p>
             </div>
           </div>
@@ -467,7 +467,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         const cellBg = state === '평생교육실' ? 'bg-green-200' : state === '낭만스튜디오' ? 'bg-blue-600' : state === '평생교육실/낭만스튜디오' ? 'bg-purple-200' : 'bg-white';
                         const textCol = state === '평생교육실' ? 'text-green-900' : state === '낭만스튜디오' ? 'text-white' : state === '평생교육실/낭만스튜디오' ? 'text-purple-900' : 'text-gray-500';
                         const cellPadding = (state === '낭만스튜디오' || state === '평생교육실/낭만스튜디오') ? 'px-0 py-1' : 'p-0.5 sm:p-2';
-                        
+
                         let cellContent = null;
                         if (state === '평생교육실') {
                           cellContent = <>평생<br />교육실</>;
