@@ -1045,6 +1045,10 @@ export default function MainApp({
     let allTasks = [];
 
     repeatTargetDates.forEach((targetDate) => {
+      if (holidaysDbList.includes(targetDate) || holidaysDbList.includes(targetDate.substring(5))) {
+        console.log(`Skipping repeat replication for holiday target date: ${targetDate}`);
+        return;
+      }
       const todaysOriginalData = allScheduleData[targetDate] || {};
       shifts.forEach((shiftTime, i) => {
         const log = logs[i];
