@@ -36,6 +36,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [downloadTextToggle, setDownloadTextToggle] = useState(false);
+  const [holidaysList, setHolidaysList] = useState([]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -51,6 +52,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
       const firstDay = `${month}-01`;
       const lastDay = new Date(parseInt(year), parseInt(monthStr), 0).getDate();
       const cleanLastDayStr = `${month}-${String(lastDay).padStart(2, '0')}`;
+
+      const { data: hData, error: hError } = await supabaseClient
+        .from('holidays')
+        .select('date, name, content1, content2');
+      if (hError) throw hError;
+      setHolidaysList(hData || []);
 
       const { data: records, error } = await supabaseClient
         .from('daily_logs')
@@ -127,6 +134,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
     if (exporting) return;
     try {
       setExporting(true);
+
+      const { data: hData, error: hError } = await supabaseClient
+        .from('holidays')
+        .select('date, name, content1, content2');
+      if (hError) throw hError;
+      const holidays = hData || [];
 
       const today = new Date();
       let nextYear = today.getFullYear();
@@ -364,14 +377,23 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           }
         });
 
-        const isHolidayStr = (str) => /공휴일|근로자의날|어린이날|휴일|공휴/.test(str || "");
+        const getHolidayInfo = (dateStr) => {
+          if (!dateStr) return null;
+          const parts = dateStr.split('-');
+          if (parts.length < 3) return null;
+          const m = parts[1];
+          const d = parts[2];
+          const mmdd1 = `${m}-${d}`;
+          const mmdd2 = `${parseInt(m)}-${parseInt(d)}`;
+          const mmdd3 = `${parseInt(m)}/${parseInt(d)}`;
+          return holidays.find(h => h.date === mmdd1 || h.date === mmdd2 || h.date === mmdd3) || null;
+        };
+
         const holidayDates = {};
-        teamData.forEach(item => {
-          if (!holidayDates[item.log_date]) {
-            const isHol = isHolidayStr(item.student) || isHolidayStr(item.status) || isHolidayStr(item.location);
-            if (isHol && !item.status?.includes("결석") && !item.status?.includes("취소")) {
-              holidayDates[item.log_date] = item;
-            }
+        dateList.forEach(d => {
+          const holInfo = getHolidayInfo(d.dateStr);
+          if (holInfo) {
+            holidayDates[d.dateStr] = holInfo;
           }
         });
         const holidayTracker = {};
@@ -387,43 +409,47 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           dateList.forEach(d => {
             let item = dataLookup[`${rowObj.teacher}::${rowObj.shift}::${d.dateStr}`];
             const holidayItem = holidayDates[d.dateStr];
-            const isSpecialTeacher = rowObj.teacher.includes('천은선') || rowObj.teacher.includes('서승희');
-            if (holidayItem && isSpecialTeacher && !item) {
-              item = holidayItem;
+            const isHolidayRaw = !!holidayItem;
+
+            let isFirstHolidayShift = false;
+            if (isHolidayRaw) {
+              const hKey = `${rowObj.teacher}::${d.dateStr}`;
+              if (!holidayTracker[hKey]) {
+                holidayTracker[hKey] = rowObj.shift;
+              }
+              if (holidayTracker[hKey] === rowObj.shift) {
+                isFirstHolidayShift = true;
+              }
             }
+
+            const isMeeting = item && item.student && item.student.includes("간담회");
+            const isFirstShift = rowObj.shift === excelFirstShiftForTeacher[rowObj.teacher];
+
             let val = "";
-            if (item) {
-              const isHolidayRaw = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
-                (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
-                (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
-
-              let isFirstHolidayShift = false;
-              if (isHolidayRaw) {
-                const hKey = `${rowObj.teacher}::${d.dateStr}`;
-                if (!holidayTracker[hKey]) {
-                  holidayTracker[hKey] = rowObj.shift;
-                }
-                if (holidayTracker[hKey] === rowObj.shift) {
-                  isFirstHolidayShift = true;
-                }
-              }
-
-              const isMeeting = item.student && item.student.includes("간담회");
-              const isFirstShift = rowObj.shift === excelFirstShiftForTeacher[rowObj.teacher];
-
-              if (isHolidayRaw && !isFirstHolidayShift) {
-                val = "";
-              } else if (isMeeting && !isFirstShift) {
-                val = "";
+            if (isHolidayRaw) {
+              if (isFirstHolidayShift) {
+                if (rowObj.category === "대상") val = holidayItem.name || '공휴일';
+                else if (rowObj.category === "장소") val = holidayItem.content1 || '공휴일';
+                else if (rowObj.category === "진행") val = holidayItem.content2 || '';
               } else {
-                if (rowObj.category === "대상") val = item.student || "";
-                else if (rowObj.category === "장소") {
-                  const isSignatureUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")));
-                  if (isSignatureUrl) val = ""; // Will overlay image
-                  else val = item.location || "";
-                }
-                else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
+                val = "";
               }
+            } else if (isMeeting) {
+              if (isFirstShift && item) {
+                if (rowObj.category === "대상") val = item.student || "";
+                else if (rowObj.category === "장소") val = item.location || "";
+                else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
+              } else {
+                val = "";
+              }
+            } else if (item) {
+              if (rowObj.category === "대상") val = item.student || "";
+              else if (rowObj.category === "장소") {
+                const isSignatureUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")));
+                if (isSignatureUrl) val = ""; // Will overlay image
+                else val = item.location || "";
+              }
+              else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
             }
             rowArr.push(val);
           });
@@ -453,95 +479,89 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               const dateObj = dateList[C - 3];
               let item = dataLookup[`${rowObj.teacher}::${rowObj.shift}::${dateObj.dateStr}`];
               const holidayItem = holidayDates[dateObj.dateStr];
-              const isSpecialTeacher = rowObj.teacher.includes('천은선') || rowObj.teacher.includes('서승희');
-              if (holidayItem && isSpecialTeacher && !item) {
-                item = holidayItem;
+              const isHolidayRaw = !!holidayItem;
+
+              let isFirstHolidayShift = false;
+              if (isHolidayRaw) {
+                const hKey = `${rowObj.teacher}::${dateObj.dateStr}`;
+                if (holidayTracker[hKey] === rowObj.shift) {
+                  isFirstHolidayShift = true;
+                }
               }
 
               let fillRGB = "FFFFFFFF";
               let fontColorRGB = "FF475569";
               let isBold = false;
 
-              if (item) {
-                const isHolidayRaw = (item.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.student)) ||
-                  (item.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.status)) ||
-                  (item.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(item.location));
+              const isMeeting = item && item.student && item.student.includes("간담회");
+              const isFirstShift = rowObj.shift === excelFirstShiftForTeacher[rowObj.teacher];
 
-                let isFirstHolidayShift = false;
-                if (isHolidayRaw) {
-                  const hKey = `${rowObj.teacher}::${dateObj.dateStr}`;
-                  if (holidayTracker[hKey] === rowObj.shift) {
-                    isFirstHolidayShift = true;
-                  }
-                }
-
-                const isMeeting = item.student && item.student.includes("간담회");
-                const isFirstShift = rowObj.shift === excelFirstShiftForTeacher[rowObj.teacher];
-
-                if (isHolidayRaw && !isFirstHolidayShift) {
-                  // Keep white background and blank
-                } else if (isHolidayRaw) {
-                  fillRGB = "FFFCA5A5"; // bg-red-300
+              if (isHolidayRaw) {
+                if (isFirstHolidayShift) {
+                  const isRedHoliday = holidayItem.content1 && holidayItem.content1.includes('공휴일');
+                  fillRGB = isRedHoliday ? "FFFCA5A5" : "FF86EFAC";
                   fontColorRGB = "FF374151"; // 진한 회색
                   isBold = true;
-                } else if (isMeeting) {
-                  if (isFirstShift) {
-                    fillRGB = "FF86EFAC"; // 초록색-300
-                    isBold = true;
-                    if (rowObj.category === "대상") {
-                      fontColorRGB = "FF374151"; // 진한 회색
-                    } else if (rowObj.category === "장소") {
-                      fontColorRGB = "FF374151"; // 진한 회색
-                    } else if (rowObj.category === "진행") {
-                      fontColorRGB = "FFFFFFFF"; // 하얀색
-                    }
-                  } else {
-                    fillRGB = "FFFFFFFF"; // 흰색 배경
-                    fontColorRGB = "FF475569"; // 기본 텍스트 색상
+                } else {
+                  fillRGB = "FFFFFFFF";
+                }
+              } else if (isMeeting) {
+                if (isFirstShift) {
+                  fillRGB = "FF86EFAC"; // 초록색-300
+                  isBold = true;
+                  if (rowObj.category === "대상") {
+                    fontColorRGB = "FF374151";
+                  } else if (rowObj.category === "장소") {
+                    fontColorRGB = "FF374151";
+                  } else if (rowObj.category === "진행") {
+                    fontColorRGB = "FFFFFFFF";
                   }
                 } else {
-                  if (rowObj.category === "장소") {
-                    fillRGB = "FFFFFFFF";
-                    const sigUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null);
-                    if (sigUrl) {
-                      const promise = fetch(sigUrl)
-                        .then(res => res.arrayBuffer())
-                        .then(buffer => {
-                          const imageId = wb.addImage({
-                            buffer: buffer,
-                            extension: 'png'
-                          });
-                          const isEmpTeam = tName === "취업팀";
-                          const imgWidth = isEmpTeam ? 90 : 70;
-                          const imgHeight = isEmpTeam ? 35 : 35;
-                          const colOffset = isEmpTeam ? 0.24 : 0.2;
-                          const rowOffset = isEmpTeam ? 0.175 : 0.15;
+                  fillRGB = "FFFFFFFF";
+                  fontColorRGB = "FF475569";
+                }
+              } else if (item) {
+                if (rowObj.category === "장소") {
+                  fillRGB = "FFFFFFFF";
+                  const sigUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null);
+                  if (sigUrl) {
+                    const promise = fetch(sigUrl)
+                      .then(res => res.arrayBuffer())
+                      .then(buffer => {
+                        const imageId = wb.addImage({
+                          buffer: buffer,
+                          extension: 'png'
+                        });
+                        const isEmpTeam = tName === "취업팀";
+                        const imgWidth = isEmpTeam ? 90 : 70;
+                        const imgHeight = isEmpTeam ? 35 : 35;
+                        const colOffset = isEmpTeam ? 0.24 : 0.2;
+                        const rowOffset = isEmpTeam ? 0.175 : 0.15;
 
-                          ws.addImage(imageId, {
-                            tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
-                            ext: { width: imgWidth, height: imgHeight },
-                            editAs: 'oneCell'
-                          });
-                        }).catch(err => console.error("Error downloading image", err));
-                      imagePromises.push(promise);
-                    } else if (item.location) {
-                      fontColorRGB = "FF000000";
+                        ws.addImage(imageId, {
+                          tl: { col: C + colOffset, row: excelRowIdx - 1 + rowOffset },
+                          ext: { width: imgWidth, height: imgHeight },
+                          editAs: 'oneCell'
+                        });
+                      }).catch(err => console.error("Error downloading image", err));
+                    imagePromises.push(promise);
+                  } else if (item.location) {
+                    fontColorRGB = "FF000000";
+                  }
+                } else {
+                  if (rowObj.category === "대상") {
+                    if (item.student?.includes('보조강사')) {
+                      fillRGB = "FFFFFF00"; fontColorRGB = "FF000000"; isBold = true;
+                    } else if (item.student) {
+                      fillRGB = "FFE0F2FE"; fontColorRGB = "FF000000"; isBold = true;
                     }
-                  } else {
-                    if (rowObj.category === "대상") {
-                      if (item.student?.includes('보조강사')) {
-                        fillRGB = "FFFFFF00"; fontColorRGB = "FF000000"; isBold = true;
-                      } else if (item.student) {
-                        fillRGB = "FFE0F2FE"; fontColorRGB = "FF000000"; isBold = true;
-                      }
-                    } else if (rowObj.category === "진행") {
-                      if (item.status?.includes('결석') || item.status?.includes('취소')) {
-                        fillRGB = "FFFEE2E2"; fontColorRGB = "FFDC2626"; isBold = true;
-                      } else if (item.status?.includes('휴가')) {
-                        fillRGB = "FFF3F4F6"; fontColorRGB = "FF6B7280"; isBold = true;
-                      } else if (item.status) {
-                        fillRGB = "FFF0FDF4"; fontColorRGB = "FF000000"; isBold = true;
-                      }
+                  } else if (rowObj.category === "진행") {
+                    if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                      fillRGB = "FFFEE2E2"; fontColorRGB = "FFDC2626"; isBold = true;
+                    } else if (item.status?.includes('휴가')) {
+                      fillRGB = "FFF3F4F6"; fontColorRGB = "FF6B7280"; isBold = true;
+                    } else if (item.status) {
+                      fillRGB = "FFF0FDF4"; fontColorRGB = "FF000000"; isBold = true;
                     }
                   }
                 }
@@ -822,20 +842,23 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
     dataLookup[key] = item;
   });
 
-  const isHolidayStr = (str) => {
-    if (!str) return false;
-    if (/공휴일|근로자의날|어린이날|공휴|명절|연휴/.test(str)) return true;
-    if (str.trim() === "휴일") return true;
-    return false;
+  const getHolidayInfo = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    if (parts.length < 3) return null;
+    const m = parts[1];
+    const d = parts[2];
+    const mmdd1 = `${m}-${d}`;
+    const mmdd2 = `${parseInt(m)}-${parseInt(d)}`;
+    const mmdd3 = `${parseInt(m)}/${parseInt(d)}`;
+    return holidaysList.find(h => h.date === mmdd1 || h.date === mmdd2 || h.date === mmdd3) || null;
   };
 
   const holidayDates = {};
-  filteredData.forEach(item => {
-    if (!holidayDates[item.log_date]) {
-      const isHol = isHolidayStr(item.student) || isHolidayStr(item.status) || isHolidayStr(item.location);
-      if (isHol && !item.status?.includes("결석") && !item.status?.includes("취소")) {
-        holidayDates[item.log_date] = item;
-      }
+  uniqueDates.forEach(dateStr => {
+    const holInfo = getHolidayInfo(dateStr);
+    if (holInfo) {
+      holidayDates[dateStr] = holInfo;
     }
   });
 
@@ -1033,40 +1056,28 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               ? "3px solid #4B5563"
                               : (isFriday ? "2px solid #2563EB" : "1px solid #D1D5DB");
 
-                            const holidayItem = holidayDates[dateStr];
-                            const isHolidayDate = !!holidayItem;
+                            const holidayInfo = holidayDates[dateStr];
+                            const isHoliday = !!holidayInfo;
                             const isFirstShift = row.shift === firstShiftForTeacher[row.teacher];
-                            const isSpecialTeacher = row.teacher.includes('천은선') || row.teacher.includes('서승희');
 
-                            const isHolidayItem = item && (isHolidayStr(item.student) || isHolidayStr(item.status) || isHolidayStr(item.location)) && !item.status?.includes("결석") && !item.status?.includes("취소");
-
-                            if (isHolidayDate && isFirstShift && isSpecialTeacher && !item) {
-                              if (row.category === "대상") {
-                                cellContent = holidayItem.student || '공휴일';
-                              } else if (row.category === "장소") {
-                                cellContent = holidayItem.location || '공휴일';
-                              } else if (row.category === "진행") {
-                                cellContent = holidayItem.status || '';
+                            if (isHoliday) {
+                              if (isFirstShift) {
+                                if (row.category === "대상") {
+                                  cellContent = holidayInfo.name || '공휴일';
+                                } else if (row.category === "장소") {
+                                  cellContent = holidayInfo.content1 || '공휴일';
+                                } else if (row.category === "진행") {
+                                  cellContent = holidayInfo.content2 || '';
+                                }
+                                cellClass = "text-gray-700 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
+                              } else {
+                                cellContent = '';
+                                cellClass = "bg-white text-gray-400 font-normal";
                               }
-                              cellClass = "text-gray-700 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                             } else if (item) {
                               const isMeeting = item.student && item.student.includes("간담회");
 
-                              if (isHolidayItem) {
-                                if (!isFirstShift) {
-                                  cellContent = '';
-                                  cellClass = "bg-white text-gray-400 font-normal";
-                                } else {
-                                  if (row.category === "대상") {
-                                    cellContent = holidayItem.student || '공휴일';
-                                  } else if (row.category === "장소") {
-                                    cellContent = holidayItem.location || '공휴일';
-                                  } else if (row.category === "진행") {
-                                    cellContent = holidayItem.status || '';
-                                  }
-                                  cellClass = "text-gray-700 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
-                                }
-                              } else if (isMeeting) {
+                              if (isMeeting) {
                                 if (isFirstShift) {
                                   if (row.category === "대상") {
                                     cellContent = item.student || '간담회';
@@ -1129,11 +1140,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             }
 
                             let cellStyle = { height: '36px', borderRight: rightBorderStyle };
-                            const isMeeting = item && item.student && item.student.includes("간담회");
-                            const isHoliday = isHolidayItem || (isHolidayDate && isSpecialTeacher && !item);
+                            const isMeeting = !isHoliday && item && item.student && item.student.includes("간담회");
                             if (isHoliday) {
                               if (isFirstShift) {
-                                cellStyle.backgroundColor = "#fca5a5"; // bg-red-300
+                                const isRedHoliday = holidayInfo.content1 && holidayInfo.content1.includes('공휴일');
+                                cellStyle.backgroundColor = isRedHoliday ? "#fca5a5" : "#86efac";
                               } else {
                                 cellStyle.backgroundColor = "#ffffff";
                               }
@@ -1244,13 +1255,17 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               ? { borderTop: '2px solid #cbd5e1' }
                               : (isNewTeacher ? { borderTop: '1px solid #e2e8f0' } : {});
 
-                            const isMeeting = item.student && item.student.includes("간담회");
-                            const isHoliday = (isHolidayStr(item.student) || isHolidayStr(item.status) || isHolidayStr(item.location)) && !item.status?.includes("결석") && !item.status?.includes("취소");
+                            const holidayInfo = getHolidayInfo(item.log_date);
+                            const isHoliday = !!holidayInfo;
+                            const isMeeting = !isHoliday && item.student && item.student.includes("간담회");
 
                             // 배경색 style 계산
                             let targetStyle = {};
                             if (isHoliday) {
-                              if (item.render.teacher) targetStyle = { backgroundColor: "#fca5a5" };
+                              if (item.render.teacher) {
+                                const isRedHoliday = holidayInfo.content1 && holidayInfo.content1.includes('공휴일');
+                                targetStyle = { backgroundColor: isRedHoliday ? "#fca5a5" : "#86efac" };
+                              }
                             } else if (isMeeting) {
                               if (item.render.teacher) targetStyle = { backgroundColor: "#86efac" };
                             }
@@ -1291,10 +1306,10 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 )}
                                 <td className="border-r border-b border-gray-200 text-blue-700 font-bold align-middle py-2 px-1">{item.shift}</td>
                                 <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1" style={targetStyle}>
-                                  <span className={`text-sm font-bold ${studentTextClass}`}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : (item.student || '-')}</span>
+                                  <span className={`text-sm font-bold ${studentTextClass}`}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.name || '공휴일') : (item.student || '-')}</span>
                                 </td>
                                 <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1" style={targetStyle}>
-                                  {(item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")))) && !(isHoliday && !item.render.teacher) ? (
+                                  {(item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")))) && !(isHoliday) ? (
                                     (() => {
                                       const sigUrl = item.signature_url || item.location;
                                       return (
@@ -1304,12 +1319,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                       );
                                     })()
                                   ) : (
-                                    <span className={`truncate block max-w-[120px] mx-auto ${locationTextClass}`} title={item.location}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : (item.location || '-')}</span>
+                                    <span className={`truncate block max-w-[120px] mx-auto ${locationTextClass}`} title={isHoliday ? (holidayInfo.content1 || '공휴일') : item.location}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content1 || '공휴일') : (item.location || '-')}</span>
                                   )}
                                 </td>
                                 <td className="border-b border-gray-200 align-middle py-2 px-1" style={targetStyle}>
-                                  <span className={`text-sm font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={(!isHoliday || item.render.teacher) ? (item.status || '') : ''}>
-                                    {(isHoliday && !item.render.teacher) ? '' : (item.status || '-')}
+                                  <span className={`text-sm font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={isHoliday ? (item.render.teacher ? (holidayInfo.content2 || '') : '') : (item.status || '')}>
+                                    {(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content2 || '-') : (item.status || '-')}
                                   </span>
                                 </td>
                               </tr>
