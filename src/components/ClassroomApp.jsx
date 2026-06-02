@@ -466,7 +466,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                         const cellBg = state === '평생교육실' ? 'bg-green-200' : state === '낭만스튜디오' ? 'bg-blue-600' : state === '평생교육실/낭만스튜디오' ? 'bg-purple-200' : 'bg-white';
                         const textCol = state === '평생교육실' ? 'text-green-900' : state === '낭만스튜디오' ? 'text-white' : state === '평생교육실/낭만스튜디오' ? 'text-purple-900' : 'text-gray-500';
-                        const cellPadding = (state === '낭만스튜디오' || state === '평생교육실/낭만스튜디오') ? 'px-0 py-1' : 'p-0.5 sm:p-2';
+                        const cellPadding = state === '평생교육실/낭만스튜디오' ? 'p-0 sm:p-0.5' : (state === '낭만스튜디오' ? 'px-0 py-1' : 'p-0.5 sm:p-2');
 
                         let cellContent = null;
                         if (state === '평생교육실') {
@@ -474,7 +474,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         } else if (state === '낭만스튜디오') {
                           cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span>;
                         } else if (state === '평생교육실/낭만스튜디오') {
-                          cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter text-[9px] sm:text-[10px] md:text-[14px] leading-tight" style={{ letterSpacing: '-1.5px' }}>평생교육실/<br />낭만스튜디오</span>;
+                          cellContent = <span className="block whitespace-nowrap -mx-2 tracking-tighter text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] font-black leading-none" style={{ letterSpacing: '-2px' }}>평생교육실/<br />낭만스튜디오</span>;
                         } else {
                           cellContent = null; // '   ' 또는 빈 칸
                         }
