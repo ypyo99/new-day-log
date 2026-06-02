@@ -194,7 +194,9 @@ export default function NangmanStudioApp({ onNavigateBack }) {
   const handleSelectChange = async (key, val) => {
     let finalValue = false;
     const trimmed = val.trim();
-    if (trimmed !== "" && trimmed !== "false") {
+    if (val === '     ') {
+      finalValue = '     ';
+    } else if (trimmed !== "" && trimmed !== "false") {
       if (trimmed === "disabled") {
         finalValue = "disabled";
       } else if (trimmed === "공휴일" || trimmed === "부처님오신날" || trimmed === "어린이날" || trimmed.includes("공휴일")) {
@@ -522,9 +524,7 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                 <thead>
                   <tr className="bg-pink-100 border-b-2 border-gray-400">
                     <th
-                      onClick={toggleAll}
-                      title={isManagerMode ? "클릭 시 이번 주 전체 선택/해제" : ""}
-                      className={`pt-1 pb-1.5 px-0 border-r border-gray-400 font-extrabold text-gray-700 w-[14%] sm:w-28 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation ${isManagerMode ? 'cursor-pointer hover:bg-pink-200' : ''}`}
+                      className="pt-1 pb-1.5 px-0 border-r border-gray-400 font-extrabold text-gray-700 w-[14%] sm:w-28 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation"
                     >
                       <span>팀명</span><br /><span>요일</span>
                       {isManagerMode && (
@@ -550,9 +550,7 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                       return (
                         <th
                           key={i}
-                          onClick={() => toggleWholeDay(dateStr)}
-                          title={isManagerMode ? "클릭 시 해당 요일 전체 선택/해제" : ""}
-                          className={`pt-0.5 pb-1.5 px-0 font-extrabold text-gray-900 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation tracking-tighter sm:tracking-normal ${isManagerMode ? 'cursor-pointer hover:bg-pink-200' : ''} ${isToday ? 'border-x-[4px] sm:border-x-[6px] border-t-[4px] sm:border-t-[6px] border-pink-500 relative z-10' : 'border-r border-gray-400'}`}
+                          className={`pt-0.5 pb-1.5 px-0 font-extrabold text-gray-900 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation tracking-tighter sm:tracking-normal ${isToday ? 'border-x-[4px] sm:border-x-[6px] border-t-[4px] sm:border-t-[6px] border-pink-500 relative z-10' : 'border-r border-gray-400'}`}
                         >
                           {day.getMonth() + 1}/{day.getDate()}<br className="block md:hidden" /> ({weekDays[i]})
                         </th>
@@ -564,9 +562,7 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                   {timeSlots.map((time, ti) => (
                     <tr key={ti} className={`${ti === 2 ? 'border-b-[3px] border-gray-500' : 'border-b border-gray-400 last:border-0'}`}>
                       <td
-                        onClick={() => toggleWholeWeek(time)}
-                        title={isManagerMode ? "클릭 시 해당 시간대 전체 요일 선택/해제" : ""}
-                        className={`p-0.5 sm:p-1.5 bg-pink-100 border-r border-gray-400 font-extrabold select-none text-[13px] min-[360px]:text-[15px] landscape:text-[21px] md:text-[25px] tracking-tighter sm:tracking-normal touch-manipulation text-pink-700 ${isManagerMode ? 'cursor-pointer hover:bg-pink-200' : ''}`}
+                        className="p-0.5 sm:p-1.5 bg-pink-100 border-r border-gray-400 font-extrabold select-none text-[13px] min-[360px]:text-[15px] landscape:text-[21px] md:text-[25px] tracking-tighter sm:tracking-normal touch-manipulation text-pink-700"
                       >
                         {time}
                       </td>
@@ -618,12 +614,13 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 >
                                   <option value="false" hidden></option>
+                                  <option value="     ">     </option>
                                   <option value="1조">1조</option>
                                   <option value="2조">2조</option>
                                   <option value="3조">3조</option>
                                   <option value="4조">4조</option>
                                   <option value="disabled">사용불가</option>
-                                  {isCustomStr && !["1조", "2조", "3조", "4조", "disabled"].includes(state.replace('holiday:', '').replace('disabled:', '')) && (
+                                  {isCustomStr && !["1조", "2조", "3조", "4조", "disabled", "     "].includes(state.replace('holiday:', '').replace('disabled:', '')) && (
                                     <option value={state.replace('holiday:', '').replace('disabled:', '')} hidden>
                                       {state.replace('holiday:', '').replace('disabled:', '')}
                                     </option>

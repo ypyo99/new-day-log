@@ -167,14 +167,14 @@ export default function ClassroomApp({ onNavigateBack }) {
     const currentValue = schedule[key];
 
     let newValue;
-    if (!currentValue) {
-      newValue = true;
-    } else if (currentValue === true) {
-      newValue = 'nangman';
-    } else if (currentValue === 'nangman') {
-      newValue = 'pending';
+    if (!currentValue || currentValue === '   ') {
+      newValue = '평생교육실';
+    } else if (currentValue === '평생교육실') {
+      newValue = '낭만스튜디오';
+    } else if (currentValue === '낭만스튜디오') {
+      newValue = '평생교육실/낭만스튜디오';
     } else {
-      newValue = false;
+      newValue = '   ';
     }
     const newSchedule = { ...schedule, [key]: newValue };
     setSchedule(newSchedule);
@@ -190,15 +190,15 @@ export default function ClassroomApp({ onNavigateBack }) {
       timeSlots.forEach(slot => allKeys.push(getScheduleKey(ds, slot)));
     });
 
-    const allActive = allKeys.every(k => schedule[k] === true);
-    const allNangman = allKeys.every(k => schedule[k] === 'nangman');
-    const allPending = allKeys.every(k => schedule[k] === 'pending');
+    const allEdu = allKeys.every(k => schedule[k] === '평생교육실');
+    const allNangman = allKeys.every(k => schedule[k] === '낭만스튜디오');
+    const allBoth = allKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
 
     let newValue;
-    if (allActive) newValue = 'nangman';
-    else if (allNangman) newValue = 'pending';
-    else if (allPending) newValue = false;
-    else newValue = true;
+    if (allEdu) newValue = '낭만스튜디오';
+    else if (allNangman) newValue = '평생교육실/낭만스튜디오';
+    else if (allBoth) newValue = '   ';
+    else newValue = '평생교육실';
 
     const changes = {};
     allKeys.forEach(k => { changes[`data.${k}`] = newValue; });
@@ -208,15 +208,15 @@ export default function ClassroomApp({ onNavigateBack }) {
   const toggleWholeDay = (dateStr) => {
     if (!isManagerMode) return;
     const dayKeys = timeSlots.map(slot => getScheduleKey(dateStr, slot));
-    const allActive = dayKeys.every(k => schedule[k] === true);
-    const allNangman = dayKeys.every(k => schedule[k] === 'nangman');
-    const allPending = dayKeys.every(k => schedule[k] === 'pending');
+    const allEdu = dayKeys.every(k => schedule[k] === '평생교육실');
+    const allNangman = dayKeys.every(k => schedule[k] === '낭만스튜디오');
+    const allBoth = dayKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
 
     let newValue;
-    if (allActive) newValue = 'nangman';
-    else if (allNangman) newValue = 'pending';
-    else if (allPending) newValue = false;
-    else newValue = true;
+    if (allEdu) newValue = '낭만스튜디오';
+    else if (allNangman) newValue = '평생교육실/낭만스튜디오';
+    else if (allBoth) newValue = '   ';
+    else newValue = '평생교육실';
 
     const changes = {};
     dayKeys.forEach(k => { changes[`data.${k}`] = newValue; });
@@ -227,15 +227,15 @@ export default function ClassroomApp({ onNavigateBack }) {
     if (!isManagerMode) return;
     const currentDays = getCurrentWeekDays();
     const weekKeys = currentDays.map(day => getScheduleKey(formatDateString(day), timeSlot));
-    const allActive = weekKeys.every(k => schedule[k] === true);
-    const allNangman = weekKeys.every(k => schedule[k] === 'nangman');
-    const allPending = weekKeys.every(k => schedule[k] === 'pending');
+    const allEdu = weekKeys.every(k => schedule[k] === '평생교육실');
+    const allNangman = weekKeys.every(k => schedule[k] === '낭만스튜디오');
+    const allBoth = weekKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
 
     let newValue;
-    if (allActive) newValue = 'nangman';
-    else if (allNangman) newValue = 'pending';
-    else if (allPending) newValue = false;
-    else newValue = true;
+    if (allEdu) newValue = '낭만스튜디오';
+    else if (allNangman) newValue = '평생교육실/낭만스튜디오';
+    else if (allBoth) newValue = '   ';
+    else newValue = '평생교육실';
 
     const changes = {};
     weekKeys.forEach(k => { changes[`data.${k}`] = newValue; });
@@ -408,8 +408,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                   <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
                 </button>
               </div>
-              <p className="text-[14px] landscape:text-xl md:text-2xl text-gray-600 text-center mt-2">
-                <span className="bg-green-200 text-green-900 font-semibold px-2 py-0.5 rounded-md">사용 가능</span>으로 표시된 시간대에 이용할 수 있습니다.
+              <p className="text-[14px] landscape:text-xl md:text-2xl text-gray-600 text-center mt-2 font-medium">
+                각 셀을 클릭하면 <span className="bg-green-200 text-green-900 font-semibold px-2 py-0.5 rounded-md">평생교육실</span> ➡️ <span className="bg-blue-600 text-white font-semibold px-2 py-0.5 rounded-md">낭만스튜디오</span> ➡️ <span className="bg-purple-200 text-purple-900 font-semibold px-2 py-0.5 rounded-md">평생교육실/낭만스튜디오</span> ➡️ <span className="bg-white border border-gray-300 text-gray-500 font-semibold px-2 py-0.5 rounded-md">빈 칸</span> 순서로 토글됩니다.
               </p>
             </div>
           </div>
@@ -464,10 +464,20 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         const isToday = dateStr === adjustedTodayStr;
                         const isLastRow = ti === timeSlots.length - 1;
 
-                        const cellBg = state === true ? 'bg-green-200' : state === 'nangman' ? 'bg-blue-600' : state === 'pending' ? 'bg-gray-300' : 'bg-pink-50';
-                        const textCol = state === true ? 'text-green-900' : state === 'nangman' ? 'text-white' : state === 'pending' ? 'text-gray-800' : 'text-pink-800';
-                        const cellPadding = state === 'nangman' ? 'px-0 py-1' : 'p-0.5 sm:p-2';
-                        const cellContent = state === true ? <>사용<br />가능</> : state === 'nangman' ? <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span> : state === 'pending' ? <span>미정</span> : <>사용<br />불가</>;
+                        const cellBg = state === '평생교육실' ? 'bg-green-200' : state === '낭만스튜디오' ? 'bg-blue-600' : state === '평생교육실/낭만스튜디오' ? 'bg-purple-200' : 'bg-white';
+                        const textCol = state === '평생교육실' ? 'text-green-900' : state === '낭만스튜디오' ? 'text-white' : state === '평생교육실/낭만스튜디오' ? 'text-purple-900' : 'text-gray-500';
+                        const cellPadding = (state === '낭만스튜디오' || state === '평생교육실/낭만스튜디오') ? 'px-0 py-1' : 'p-0.5 sm:p-2';
+                        
+                        let cellContent = null;
+                        if (state === '평생교육실') {
+                          cellContent = <>평생<br />교육실</>;
+                        } else if (state === '낭만스튜디오') {
+                          cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span>;
+                        } else if (state === '평생교육실/낭만스튜디오') {
+                          cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter text-[9px] sm:text-[10px] md:text-[14px] leading-tight" style={{ letterSpacing: '-1.5px' }}>평생교육실/<br />낭만스튜디오</span>;
+                        } else {
+                          cellContent = null; // '   ' 또는 빈 칸
+                        }
 
                         return (
                           <td key={di} onClick={() => toggleAvailability(dateStr, time)}
