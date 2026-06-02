@@ -474,7 +474,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         } else if (state === '낭만스튜디오') {
                           cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span>;
                         } else if (state === '평생교육실/낭만스튜디오') {
-                          cellContent = <span className="block whitespace-nowrap -mx-2 tracking-tighter text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] font-black" style={{ letterSpacing: '-1.8px', lineHeight: '1.1' }}>평생교육실/<br />낭만스튜디오</span>;
+                          cellContent = <span className="block whitespace-nowrap -mx-2 tracking-tighter text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] font-black" style={{ letterSpacing: '-1.8px', lineHeight: '1.25' }}>평생교육실/<br />낭만스튜디오</span>;
                         } else {
                           cellContent = null; // '   ' 또는 빈 칸
                         }
