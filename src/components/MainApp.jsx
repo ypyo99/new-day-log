@@ -2105,7 +2105,12 @@ export default function MainApp({
                   );
                 })}
               </div>
-              <button type="submit" disabled={isDataLoading || !hasChanges} className={`w-full py-4 md:py-5 mt-4 md:mt-6 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-all active:scale-95 flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}>
+              <button
+                type="submit"
+                disabled={isDataLoading || !hasChanges}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`w-full py-4 md:py-5 mt-4 md:mt-6 mb-8 sm:mb-2 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-transform duration-150 active:scale-[0.98] flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}
+              >
                 {isSubmitting ? <><Clock className="w-6 h-6 mr-2 animate-spin" />저장 중...</> : <><SaveIcon className="w-6 h-6 mr-2" />데이터베이스에 저장</>}
               </button>
             </form>
