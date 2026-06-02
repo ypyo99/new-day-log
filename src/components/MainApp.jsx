@@ -106,19 +106,43 @@ export default function MainApp({
     } catch (e) { return []; }
   });
 
-  const [holidaysDbList, setHolidaysDbList] = useState([]);
+  const [holidaysDbList, setHolidaysDbList] = useState(() => {
+    try {
+      const cached = window.localStorage.getItem('sungdong_holidays');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
 
   useEffect(() => {
     const loadHolidays = async () => {
       try {
         const { data, error } = await supabaseClient.from('holidays').select('date');
         if (data && !error) {
-          setHolidaysDbList(data.map(d => d.date));
+          const dates = data.map(d => d.date);
+          setHolidaysDbList(dates);
+          window.localStorage.setItem('sungdong_holidays', JSON.stringify(dates));
+        } else if (error) {
+          console.error("holidays fetch error:", error);
         }
-      } catch (e) { console.error("holidays fetch error", e); }
+      } catch (e) {
+        console.error("holidays fetch error", e);
+      }
     };
     loadHolidays();
   }, []);
+
+  const isHoliday = useCallback((dateStr) => {
+    if (!dateStr || !holidaysDbList || holidaysDbList.length === 0) return false;
+    const cleanDate = dateStr.trim();
+    const mmdd = cleanDate.length === 10 ? cleanDate.substring(5) : cleanDate;
+    return holidaysDbList.some(h => {
+      if (!h) return false;
+      const cleanH = h.trim();
+      return cleanH === cleanDate || cleanH === mmdd;
+    });
+  }, [holidaysDbList]);
 
   useEffect(() => {
     const fetchDbTeachers = async () => {
@@ -994,6 +1018,7 @@ export default function MainApp({
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
+      if (isHoliday(d)) return false;
       const targetData = allScheduleData[d] || {};
       return Object.values(targetData).some(s => {
         const student = s?.student || "";
@@ -1045,7 +1070,7 @@ export default function MainApp({
     let allTasks = [];
 
     repeatTargetDates.forEach((targetDate) => {
-      if (holidaysDbList.includes(targetDate) || holidaysDbList.includes(targetDate.substring(5))) {
+      if (isHoliday(targetDate)) {
         console.log(`Skipping repeat replication for holiday target date: ${targetDate}`);
         return;
       }
@@ -1217,6 +1242,7 @@ export default function MainApp({
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
+      if (isHoliday(d)) return false;
       const targetData = allScheduleData[d] || {};
       return Object.values(targetData).some(s => {
         const student = s?.student || "";
@@ -1248,7 +1274,7 @@ export default function MainApp({
   const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
   const isSkipDate = (d) => {
-    if (holidaysDbList.includes(d) || holidaysDbList.includes(d.substring(5))) return true;
+    if (isHoliday(d)) return true;
 
     const targetData = allScheduleData[d] || {};
     const items = Object.values(targetData).filter(s => (s?.student || "").trim() !== "");
