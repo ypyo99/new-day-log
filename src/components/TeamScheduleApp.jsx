@@ -850,7 +850,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
     <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans">
       <div className="bg-white flex-1 flex flex-col overflow-hidden relative">
         {/* Header */}
-        <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex items-start px-4 pt-3 pb-7 min-h-[84px]">
+        <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative flex items-start px-4 pt-3 pb-9 sm:pb-7 min-h-[110px] sm:min-h-[92px]">
           <div>
             <div className="flex items-center mb-1">
               <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
