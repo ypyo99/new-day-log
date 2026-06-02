@@ -438,7 +438,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           key={i}
                           onClick={() => toggleWholeDay(dateStr)}
                           title={isManagerMode ? "클릭 시 해당 요일 전체 선택/해제" : ""}
-                          className={`pt-0.5 pb-1.5 px-0 font-extrabold text-gray-900 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation tracking-tighter sm:tracking-normal ${isManagerMode ? 'cursor-pointer hover:bg-sky-200' : ''} ${isToday ? 'border-x-[4px] sm:border-x-[6px] border-t-[4px] sm:border-t-[6px] border-blue-600 relative z-10' : 'border-r border-gray-400'}`}
+                          className={`pt-0.5 pb-1.5 px-0 font-extrabold text-gray-900 select-none text-[11px] min-[360px]:text-[13px] landscape:text-[21px] md:text-[23px] leading-tight touch-manipulation tracking-tighter sm:tracking-normal ${isManagerMode ? 'cursor-pointer hover:bg-sky-200' : ''} ${isToday ? 'border-x-[4px] sm:border-x-[6px] border-t-[4px] sm:border-t-[6px] border-red-500 relative z-10' : 'border-r border-gray-400'}`}
                         >
                           {day.getMonth() + 1}/{day.getDate()}<br className="block md:hidden" /> ({weekDays[i]})
                         </th>
@@ -481,7 +481,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                         return (
                           <td key={di} onClick={() => toggleAvailability(dateStr, time)}
-                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${isManagerMode ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-blue-600 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-blue-600 relative z-10') : 'border-r border-gray-400'}`}>
+                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${isManagerMode ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-red-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-red-500 relative z-10') : 'border-r border-gray-400'}`}>
                             <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol}`}>
                               {cellContent}
                             </span>
