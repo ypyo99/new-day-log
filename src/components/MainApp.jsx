@@ -880,14 +880,28 @@ export default function MainApp({
     console.log("💾 배치 저장 시작 - 선택된 팀:", selectedTeam, "날짜:", date, "항목 수:", batchItems.length);
 
     let finalValidRecords = [];
+    let deletedShiftsList = [];
 
     try {
       setSaveProgress(prev => prev.map(item => changedIndices.includes(item.index) ? { ...item, status: '저장 중...' } : item));
 
       const upsertData = [];
+      const deleteShifts = [];
 
       for (let i = 0; i < batchItems.length; i++) {
         const item = batchItems[i];
+
+        const isTeam123 = selectedTeam === "1팀" || selectedTeam === "2팀" || selectedTeam === "3팀";
+        const isCareerTeam = selectedTeam === "취업팀";
+        
+        const isStudentBlank = !item.student || item.student.trim() === "";
+        const isLocationBlank = !item.location || item.location.trim() === "";
+
+        if ((isTeam123 && isStudentBlank && isLocationBlank) || (isCareerTeam && isStudentBlank)) {
+          deleteShifts.push(item.shift);
+          continue;
+        }
+
         let signature_url = null;
         let location = item.location;
 
@@ -930,13 +944,48 @@ export default function MainApp({
         });
       }
 
-      const { error } = await supabaseClient
-        .from('daily_logs')
-        .upsert(upsertData, { onConflict: 'team, log_date, teacher, shift' });
+      if (deleteShifts.length > 0) {
+        const { error: deleteError } = await supabaseClient
+          .from('daily_logs')
+          .delete()
+          .eq('team', selectedTeam)
+          .eq('log_date', date)
+          .eq('teacher', currentUser)
+          .in('shift', deleteShifts);
 
-      if (error) throw new Error("Supabase 저장 실패: " + error.message);
+        if (deleteError) throw new Error("Supabase 삭제 실패: " + deleteError.message);
+        console.log("🗑️ 삭제 완료 - shifts:", deleteShifts);
+      }
 
-      const validRecords = batchItems.map(item => {
+      if (upsertData.length > 0) {
+        const { error } = await supabaseClient
+          .from('daily_logs')
+          .upsert(upsertData, { onConflict: 'team, log_date, teacher, shift' });
+
+        if (error) throw new Error("Supabase 저장 실패: " + error.message);
+      }
+
+      const validRecords = [];
+      
+      batchItems.forEach(item => {
+        const isDeleted = deleteShifts.includes(item.shift);
+        if (isDeleted) {
+          setLogs(prev => ({
+            ...prev,
+            [item.index]: {
+              student: "",
+              status: "",
+              location: "",
+              selectedTags: [[]],
+              memo: "",
+              headcount: ""
+            }
+          }));
+          const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
+          window.localStorage.removeItem(backupKey);
+          return;
+        }
+
         const res = upsertData.find(r => r.shift === item.shift);
         const finalUrl = res ? (res.signature_url || res.location) : item.location;
 
@@ -944,7 +993,7 @@ export default function MainApp({
         const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
         window.localStorage.removeItem(backupKey);
 
-        return {
+        validRecords.push({
           index: item.index,
           id: Date.now() + parseInt(item.index),
           team: selectedTeam,
@@ -955,11 +1004,21 @@ export default function MainApp({
           location: finalUrl,
           status: item.status,
           submittedAt: new Date().toLocaleTimeString()
-        };
+        });
       });
 
       finalValidRecords = validRecords;
-      setSaveProgress(prev => prev.map(item => changedIndices.includes(item.index) ? { ...item, status: '저장 완료' } : item));
+      deletedShiftsList = deleteShifts;
+
+      setSaveProgress(prev => prev.map(item => {
+        if (!changedIndices.includes(item.index)) return item;
+        const shiftTime = shifts[item.index];
+        const isDeleted = deleteShifts.includes(shiftTime);
+        return {
+          ...item,
+          status: isDeleted ? '삭제 완료' : '저장 완료'
+        };
+      }));
     } catch (e) {
       console.error("❌ 배치 저장 실패:", e);
       setErrorMessage("⚠️ 저장 중 오류가 발생했습니다: " + e.message);
@@ -967,11 +1026,12 @@ export default function MainApp({
       setTimeout(() => setErrorMessage(""), 5000);
     }
 
-    if (finalValidRecords.length > 0) {
+    if (finalValidRecords.length > 0 || deletedShiftsList.length > 0) {
       setRecords(prev => [...finalValidRecords.reverse(), ...prev]);
       setAllScheduleData(prev => {
         const newData = { ...prev };
         if (!newData[date]) newData[date] = {};
+
         finalValidRecords.forEach(record => {
           newData[date][record.shift] = {
             ...logs[record.index],
@@ -979,6 +1039,18 @@ export default function MainApp({
             status: record.status
           };
         });
+
+        deletedShiftsList.forEach(shift => {
+          if (newData[date]) {
+            delete newData[date][shift];
+          }
+        });
+
+        if (selectedTeam && currentUser) {
+          const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
+          window.localStorage.setItem(cacheKey, JSON.stringify(newData));
+        }
+
         return newData;
       });
     }
