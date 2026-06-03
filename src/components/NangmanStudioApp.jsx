@@ -7,7 +7,7 @@ import { LucideCalendar, Home } from './Icons';
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
 
-export default function NangmanStudioApp({ onNavigateBack }) {
+export default function NangmanStudioApp({ onNavigateBack, onNavigateToClassroom }) {
   const [saveErrorMsg, setSaveErrorMsg] = useState("");
   const [supabaseTableMissing, setSupabaseTableMissing] = useState(false);
 
@@ -171,7 +171,7 @@ export default function NangmanStudioApp({ onNavigateBack }) {
     const newSchedule = { ...schedule, ...optimisticData };
     setSchedule(newSchedule);
     window.localStorage.setItem('nangman_schedule_backup', JSON.stringify(newSchedule));
-    
+
     // 즉시 DB 저장
     try {
       await supabaseClient.from('nangman_schedules').upsert({
@@ -210,7 +210,7 @@ export default function NangmanStudioApp({ onNavigateBack }) {
     setSchedule(newSchedule);
     window.localStorage.setItem('nangman_schedule_backup', JSON.stringify(newSchedule));
     setEditingCell(null);
-    
+
     // 즉시 DB 저장
     try {
       await supabaseClient.from('nangman_schedules').upsert({
@@ -235,21 +235,21 @@ export default function NangmanStudioApp({ onNavigateBack }) {
       currentDays.forEach(day => {
         const currentDateStr = formatDateString(day);
         const currentKey = getScheduleKey(currentDateStr, time);
-        
+
         // 1. Get previous week's date
         const prevDate = new Date(day);
         prevDate.setDate(prevDate.getDate() - 7);
         const prevDateStr = formatDateString(prevDate);
-        
+
         // 2. Resolve exactly what the previous week was displaying visually
         let state = schedule[getScheduleKey(prevDateStr, time)];
-        
+
         // 3. If it was completely blank visually, save it explicitly as 'false' (blank).
         // Otherwise, save the exact state.
         changes[`data.${currentKey}`] = state === undefined ? false : state;
       });
     });
-    
+
     await saveBulkChanges(changes);
   };
 
@@ -267,7 +267,7 @@ export default function NangmanStudioApp({ onNavigateBack }) {
         changes[`data.${currentKey}`] = false;
       });
     });
-    
+
     await saveBulkChanges(changes);
   };
 
@@ -338,7 +338,7 @@ export default function NangmanStudioApp({ onNavigateBack }) {
       window.localStorage.setItem('nangman_memo_backup', memo);
       setIsTyping(false);
       isTypingRef.current = false;
-      
+
       // 즉시 DB 저장
       try {
         await supabaseClient.from('nangman_schedules').upsert({
@@ -569,11 +569,11 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                       {currentDays.map((day, di) => {
                         const dateStr = formatDateString(day);
                         const key = getScheduleKey(dateStr, time);
-                        
+
                         const mmdd = dateStr.substring(5);
                         const isSystemHoliday = holidayDates.has(mmdd);
                         let state = schedule[key];
-                        
+
                         if (isSystemHoliday) {
                           state = `holiday:${holidayDates.get(mmdd)}`;
                         }
@@ -587,19 +587,19 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                         const cellBg = state === true ? 'bg-green-200' : state === 'nangman' ? 'bg-pink-500' : state === 'pending' ? 'bg-gray-300' : isHolidayStr ? 'bg-red-50' : isCustomStr ? 'bg-pink-200' : 'bg-pink-50';
                         const textCol = state === true ? 'text-green-900' : state === 'nangman' ? 'text-white' : state === 'pending' ? 'text-gray-800' : isHolidayStr ? 'text-red-500' : isCustomStr ? 'text-pink-900' : 'text-pink-800';
                         const cellPadding = (state === 'nangman' || isCustomStr) ? 'px-0 py-1' : 'p-0.5 sm:p-2';
-                        
+
                         let cellContent = null;
                         if (state === true) cellContent = <>사용<br />가능</>;
                         else if (state === 'nangman') cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span>;
                         else if (state === 'pending') cellContent = <span>미정</span>;
                         else if (isHolidayStr) {
-                           const hName = state.replace('holiday:', '');
-                           cellContent = <span className="block whitespace-pre-wrap leading-tight text-[11px] sm:text-[13px] landscape:text-[15px] md:text-[18px] font-bold">{hName}</span>;
+                          const hName = state.replace('holiday:', '');
+                          cellContent = <span className="block whitespace-pre-wrap leading-tight text-[11px] sm:text-[13px] landscape:text-[15px] md:text-[18px] font-bold">{hName}</span>;
                         } else if (isDisabledStr) {
                           cellContent = <>사용<br />불가</>;
                         } else if (isCustomStr) {
                           const parts = state.split('\\n');
-                          cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter text-[13px] sm:text-[16px] landscape:text-[22px] md:text-[26px] font-black leading-tight drop-shadow-sm">{parts.map((p, idx) => <React.Fragment key={idx}>{p}<br/></React.Fragment>)}</span>;
+                          cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter text-[13px] sm:text-[16px] landscape:text-[22px] md:text-[26px] font-black leading-tight drop-shadow-sm">{parts.map((p, idx) => <React.Fragment key={idx}>{p}<br /></React.Fragment>)}</span>;
                         }
                         return (
                           <td key={di}
@@ -608,24 +608,24 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                               {cellContent}
                             </span>
                             {isManagerMode && !isSystemHoliday && (
-                                <select
-                                  value={typeof state === 'string' && state !== 'nangman' && state !== 'pending' ? state.replace('holiday:', '').replace('disabled:', '') : "false"}
-                                  onChange={(e) => handleSelectChange(key, e.target.value)}
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                >
-                                  <option value="false" hidden></option>
-                                  <option value="     ">     </option>
-                                  <option value="1조">1조</option>
-                                  <option value="2조">2조</option>
-                                  <option value="3조">3조</option>
-                                  <option value="4조">4조</option>
-                                  <option value="disabled">사용불가</option>
-                                  {isCustomStr && !["1조", "2조", "3조", "4조", "disabled", "     "].includes(state.replace('holiday:', '').replace('disabled:', '')) && (
-                                    <option value={state.replace('holiday:', '').replace('disabled:', '')} hidden>
-                                      {state.replace('holiday:', '').replace('disabled:', '')}
-                                    </option>
-                                  )}
-                                </select>
+                              <select
+                                value={typeof state === 'string' && state !== 'nangman' && state !== 'pending' ? state.replace('holiday:', '').replace('disabled:', '') : "false"}
+                                onChange={(e) => handleSelectChange(key, e.target.value)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                              >
+                                <option value="false" hidden></option>
+                                <option value="     ">     </option>
+                                <option value="1조">1조</option>
+                                <option value="2조">2조</option>
+                                <option value="3조">3조</option>
+                                <option value="4조">4조</option>
+                                <option value="disabled">사용불가</option>
+                                {isCustomStr && !["1조", "2조", "3조", "4조", "disabled", "     "].includes(state.replace('holiday:', '').replace('disabled:', '')) && (
+                                  <option value={state.replace('holiday:', '').replace('disabled:', '')} hidden>
+                                    {state.replace('holiday:', '').replace('disabled:', '')}
+                                  </option>
+                                )}
+                              </select>
                             )}
                           </td>
                         );
@@ -637,7 +637,15 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
             </div>
 
             <div className="mt-6 bg-gray-100 p-4 rounded-xl border border-gray-200 shadow-inner">
-              <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2 text-sm landscape:text-[20px] md:text-[22px]">📢 공지 및 메모</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-gray-700 flex items-center gap-2 text-sm landscape:text-[20px] md:text-[22px]">📢 공지 및 메모</h3>
+                <button
+                  onClick={onNavigateToClassroom}
+                  className="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-xs md:text-sm font-bold shadow-sm transition-all active:scale-95 touch-manipulation"
+                >
+                  지하1층 공간
+                </button>
+              </div>
               <textarea
                 value={memo}
                 onChange={(e) => {

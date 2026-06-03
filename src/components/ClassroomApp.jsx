@@ -7,7 +7,7 @@ import { LucideCalendar, Home } from './Icons';
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
 
-export default function ClassroomApp({ onNavigateBack }) {
+export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio }) {
   const [saveErrorMsg, setSaveErrorMsg] = useState("");
   const [supabaseTableMissing, setSupabaseTableMissing] = useState(false);
   const [holidayDates, setHolidayDates] = useState(new Map());
@@ -540,7 +540,15 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
             </div>
 
             <div className="mt-6 bg-gray-100 p-4 rounded-xl border border-gray-200 shadow-inner">
-              <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2 text-sm landscape:text-[20px] md:text-[22px]">📢 공지 및 메모</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-gray-700 flex items-center gap-2 text-sm landscape:text-[20px] md:text-[22px]">📢 공지 및 메모</h3>
+                <button
+                  onClick={onNavigateToNangmanStudio}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs md:text-sm font-bold shadow-sm transition-all active:scale-95 touch-manipulation"
+                >
+                  낭만스튜디오
+                </button>
+              </div>
               <textarea
                 value={memo}
                 onChange={(e) => {

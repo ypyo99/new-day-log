@@ -39,7 +39,12 @@ export default function App() {
   }, []);
 
   if (currentView === 'classroom') {
-    return <ClassroomApp onNavigateBack={() => setCurrentView('main')} />;
+    return (
+      <ClassroomApp
+        onNavigateBack={() => setCurrentView('main')}
+        onNavigateToNangmanStudio={() => setCurrentView('nangmanStudio')}
+      />
+    );
   }
 
   if (currentView === 'dailySchedule') {
@@ -83,7 +88,12 @@ export default function App() {
   }
 
   if (currentView === 'nangmanStudio') {
-    return <NangmanStudioApp onNavigateBack={() => setCurrentView('main')} />;
+    return (
+      <NangmanStudioApp
+        onNavigateBack={() => setCurrentView('main')}
+        onNavigateToClassroom={() => setCurrentView('classroom')}
+      />
+    );
   }
 
   return (
