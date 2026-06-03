@@ -864,7 +864,10 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                       let sessionCellBg = "bg-gray-300";
                                       let sessionTextCol = "text-black";
 
-                                      if (sc.count >= 10) {
+                                      if (sc.count >= 15) {
+                                        sessionCellBg = "bg-orange-600";
+                                        sessionTextCol = "text-white";
+                                      } else if (sc.count >= 10) {
                                         sessionCellBg = "bg-purple-900";
                                         sessionTextCol = "text-white";
                                       } else if (sc.count >= 7) {

@@ -1956,7 +1956,8 @@ export default function MainApp({
                             <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
                               {counts.map((c, cIdx) => {
                                 let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
-                                if (c.count >= 10) sessionColorClass = "bg-purple-900 text-white border-purple-950 font-black shadow-inner";
+                                if (c.count >= 15) sessionColorClass = "bg-orange-600 text-white border-orange-700 font-black shadow-inner";
+                                else if (c.count >= 10) sessionColorClass = "bg-purple-900 text-white border-purple-950 font-black shadow-inner";
                                 else if (c.count >= 7) sessionColorClass = "bg-purple-500 text-white border-purple-600 font-extrabold";
 
                                 return (
