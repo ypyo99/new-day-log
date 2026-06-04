@@ -789,7 +789,9 @@ export default function MainApp({
       }
       const isSignBlank = !currentLoc || (!currentLoc.startsWith('data:image') && !currentLoc.startsWith('http') && !currentLoc.includes('drive.google.com') && !currentLoc.startsWith('=IMAGE'));
 
-      if (!isFutureDate && studentNames.length >= 2 && !hasAssistant && !isBalGul) {
+      const isTeamMeeting = studentNames.some(name => name.includes("팀장간담회"));
+
+      if (!isFutureDate && studentNames.length >= 2 && !hasAssistant && !isBalGul && !isTeamMeeting) {
         if (checkedCount > 0 && checkedCount < studentNames.length) {
           const displayNames = studentNames.join('/');
           setValidationErrorMsg(`${displayNames} 님의 출결 상태를 모두 체크해 주세요! (한 명만 체크할 수 없습니다.)`);
@@ -800,7 +802,7 @@ export default function MainApp({
         }
       }
 
-      if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && memo !== "" && !memo.replace(/\s+/g, '').includes("복지관으로이동")) {
+      if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && memo !== "" && !memo.replace(/\s+/g, '').includes("복지관으로이동") && !isTeamMeeting) {
         if (!hasCheckedAttendance) {
           const displayNames = studentNames.join('/');
           const isKyungrodangEntry = displayNames.includes("경로당");
@@ -1393,7 +1395,13 @@ export default function MainApp({
     if (items.length === 0) return false;
 
     return items.every(s => {
-      const text = (s?.student || "") + " " + (s?.location || "");
+      const student = (s?.student || "").trim();
+      const location = (s?.location || "").trim();
+      
+      // 학생이름이 '팀장간담회'인 경우에는 날짜를 스킵하지 않고 정상적으로 수정할 수 있도록 함
+      if (student.includes("팀장간담회")) return false;
+
+      const text = student + " " + location;
       return /공휴일|근로자의날|어린이날|명절|연휴|간담회|소양교육/.test(text) || text.includes("휴일");
     });
   };
