@@ -935,7 +935,7 @@ export default function MainApp({
 
         const isTeam123 = selectedTeam === "1팀" || selectedTeam === "2팀" || selectedTeam === "3팀";
         const isCareerTeam = selectedTeam === "취업팀";
-        
+
         const isStudentBlank = !item.student || item.student.trim() === "";
         const isLocationBlank = !item.location || item.location.trim() === "";
 
@@ -1008,7 +1008,7 @@ export default function MainApp({
       }
 
       const validRecords = [];
-      
+
       batchItems.forEach(item => {
         const isDeleted = deleteShifts.includes(item.shift);
         if (isDeleted) {
@@ -1397,7 +1397,7 @@ export default function MainApp({
     return items.every(s => {
       const student = (s?.student || "").trim();
       const location = (s?.location || "").trim();
-      
+
       // 학생이름이 '팀장간담회'인 경우에는 날짜를 스킵하지 않고 정상적으로 수정할 수 있도록 함
       if (student.includes("팀장간담회")) return false;
 
@@ -1786,7 +1786,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260529-studio
+            v260604
           </div>
         </div>
       </div>
