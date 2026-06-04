@@ -252,6 +252,16 @@ export default function StudentSearchApp({ onNavigateBack }) {
         if (r.memo && !existing.memo.includes(r.memo)) {
           existing.memo = existing.memo ? existing.memo + ', ' + r.memo : r.memo;
         }
+        
+        // 출결 태그(attendanceTag) 병합 논리:
+        // 한 선생님이 '선생님휴가'를 선택하고 다른 선생님이 '출석', '결석', '취소' 등을 선택한 경우, 실제 선택된 태그를 우선 표시함.
+        const t1 = existing.attendanceTag || "";
+        const t2 = r.attendanceTag || "";
+        if (t1 === "선생님휴가" && t2 && t2 !== "선생님휴가") {
+          existing.attendanceTag = t2;
+        } else if (!t1 && t2) {
+          existing.attendanceTag = t2;
+        }
       } else {
         dateMap.set(key, { ...r });
       }

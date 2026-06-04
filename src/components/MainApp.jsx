@@ -686,6 +686,46 @@ export default function MainApp({
   }, []);
 
   const performAutoSave = async (forceIndex = null, signatureOverride = null) => {
+    // 입력 유효성 검사 (학생 이름 / 장소 블랭크 검사)
+    for (let i = 0; i < shifts.length; i++) {
+      const log = logs[i];
+      if (!log) continue;
+      const studentName = (log.student || "").trim();
+      const locationName = (log.location || "").trim();
+
+      // 학생 이름이 블랭크가 아니면서 장소가 블랭크인 경우 (취업팀 제외)
+      if (studentName !== "" && locationName === "" && selectedTeam !== "취업팀") {
+        setValidationErrorMsg(`${studentName}님의 수업장소를 입력하세요`);
+        setValidationErrorIndex(i);
+        setValidationErrorType("location_validation");
+        setShowValidationError(true);
+        setTimeout(() => {
+          setShowValidationError(false);
+          const el = document.getElementById(`log-card-${i}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 2000);
+        return false;
+      }
+
+      // 장소가 블랭크가 아니면서 학생이름이 블랭크인 경우
+      if (locationName !== "" && studentName === "") {
+        setValidationErrorMsg(`대상자 이름을 입력하세요`);
+        setValidationErrorIndex(i);
+        setValidationErrorType("student_validation");
+        setShowValidationError(true);
+        setTimeout(() => {
+          setShowValidationError(false);
+          const el = document.getElementById(`log-card-${i}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 2000);
+        return false;
+      }
+    }
+
     const todayStr = getLocalDateString(new Date());
     const isFutureDate = date > todayStr;
     const todaysOriginalData = allScheduleData[date] || {};
@@ -760,7 +800,7 @@ export default function MainApp({
         }
       }
 
-      if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && memo !== "") {
+      if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && memo !== "" && !memo.replace(/\s+/g, '').includes("복지관으로이동")) {
         if (!hasCheckedAttendance) {
           const displayNames = studentNames.join('/');
           const isKyungrodangEntry = displayNames.includes("경로당");
