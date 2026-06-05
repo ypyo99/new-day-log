@@ -107,9 +107,10 @@ export default function MainApp({
       try {
         const { data, error } = await supabaseClient
           .from('notices')
-          .select('title')
+          .select('title, is_top')
           .lte('start_date', date)
           .gte('end_date', date)
+          .order('is_top', { ascending: false })
           .order('created_at', { ascending: false });
 
         if (!error && data) {
@@ -1826,8 +1827,8 @@ export default function MainApp({
                       </h4>
                       <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
                         {todayNotices.map((notice, idx) => (
-                          <p key={idx} className="font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight text-red-700 tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block">
-                            • {notice.title}
+                          <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${notice.is_top ? 'text-red-900 bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : 'text-red-700'}`}>
+                            {notice.is_top ? '📌 ' : '• '} {notice.title}
                           </p>
                         ))}
                       </div>

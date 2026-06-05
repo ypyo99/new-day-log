@@ -228,6 +228,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
   // Form states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isTop, setIsTop] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -278,6 +279,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       const { data, error } = await supabaseClient
         .from('notices')
         .select('*')
+        .order('is_top', { ascending: false })
         .order('created_at', { ascending: false })
         .order('updated_at', { ascending: false });
 
@@ -339,6 +341,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setSelectedNotice(notice);
     setTitle(notice.title);
     setContent(notice.content);
+    setIsTop(notice.is_top || false);
     setStartDate(notice.start_date ? notice.start_date.substring(5) : "");
     setEndDate(notice.end_date ? notice.end_date.substring(5) : "");
     setCreatedAt(notice.created_at ? notice.created_at.substring(5) : "");
@@ -354,6 +357,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setSelectedNotice(null);
     setTitle("");
     setContent("");
+    setIsTop(false);
     setStartDate(getTodayString());
     setEndDate("");
     setCreatedAt(getTodayString());
@@ -480,6 +484,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       const payload = {
         title: title.trim(),
         content: content.trim(),
+        is_top: isTop,
         created_at: fullCreatedAt,
         start_date: fullStartDate,
         end_date: fullEndDate,
@@ -601,16 +606,26 @@ export default function NoticeManagementApp({ onNavigateBack }) {
         {supabaseTableMissing && (
           <div className="bg-amber-50 text-amber-900 rounded-xl border border-amber-300 shadow-sm p-4 text-xs sm:text-sm flex flex-col gap-2 text-left">
             <div className="flex items-center gap-2 font-bold text-amber-800 text-[14px] sm:text-base">
-              ⚠️ 공지사항(notices) 테이블 생성이 필요합니다!
+              ⚠️ 공지사항(notices) 테이블 수정 또는 생성이 필요합니다!
             </div>
             <p className="leading-relaxed">
-              공지사항 관리 데이터를 활성화하려면 아래 SQL 쿼리를 복사하여 <b>Supabase Dashboard ➡️ SQL Editor</b>에 붙여넣고 실행(Run)해 주세요.
+              공지사항에 '상단 고정' 필드를 적용하려면 아래 SQL을 <b>Supabase Dashboard ➡️ SQL Editor</b>에서 실행해 주세요.
             </p>
-            <pre className="bg-gray-900 text-green-400 p-3 rounded-lg overflow-x-auto font-mono text-[10px] sm:text-xs max-h-40 border border-gray-800 select-all">
-              {`CREATE TABLE IF NOT EXISTS public.notices (
+            <div className="flex flex-col gap-3 font-semibold text-gray-700">
+              <div>
+                <p className="mb-1 text-xs text-blue-700 font-bold">1. 기존 테이블에 상단고정(is_top) 컬럼만 추가하는 경우 (추천):</p>
+                <pre className="bg-gray-900 text-green-400 p-3 rounded-lg overflow-x-auto font-mono text-[10px] sm:text-xs max-h-24 border border-gray-800 select-all">
+                  {`ALTER TABLE public.notices ADD COLUMN IF NOT EXISTS is_top boolean DEFAULT false;`}
+                </pre>
+              </div>
+              <div>
+                <p className="mb-1 text-xs text-blue-700 font-bold">2. 공지사항 테이블을 신규 생성하는 경우:</p>
+                <pre className="bg-gray-900 text-green-400 p-3 rounded-lg overflow-x-auto font-mono text-[10px] sm:text-xs max-h-40 border border-gray-800 select-all">
+                  {`CREATE TABLE IF NOT EXISTS public.notices (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     title text NOT NULL,
     content text NOT NULL,
+    is_top boolean DEFAULT false,
     created_at date NOT NULL DEFAULT CURRENT_DATE,
     start_date date,
     end_date date,
@@ -621,13 +636,26 @@ ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read access" ON public.notices FOR SELECT USING (true);
 CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) WITH CHECK (true);`}
-            </pre>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS public.notices (
+                </pre>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`ALTER TABLE public.notices ADD COLUMN IF NOT EXISTS is_top boolean DEFAULT false;`);
+                  alert("컬럼 추가 SQL이 클립보드에 복사되었습니다!");
+                }}
+                className="bg-sky-600 text-white font-bold py-1.5 px-3 rounded-lg hover:bg-sky-700 active:scale-95 transition-all text-xs shadow-sm"
+              >
+                1번 쿼리(컬럼 추가) 복사
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS public.notices (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     title text NOT NULL,
     content text NOT NULL,
+    is_top boolean DEFAULT false,
     created_at date NOT NULL DEFAULT CURRENT_DATE,
     start_date date,
     end_date date,
@@ -638,12 +666,13 @@ ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read access" ON public.notices FOR SELECT USING (true);
 CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) WITH CHECK (true);`);
-                alert("SQL 쿼리가 클립보드에 복사되었습니다!");
-              }}
-              className="bg-amber-600 text-white font-bold py-1.5 px-4 rounded-lg hover:bg-amber-700 active:scale-95 transition-all self-start text-xs shadow-sm"
-            >
-              SQL 쿼리 복사하기
-            </button>
+                  alert("신규 생성 SQL이 클립보드에 복사되었습니다!");
+                }}
+                className="bg-amber-600 text-white font-bold py-1.5 px-3 rounded-lg hover:bg-amber-700 active:scale-95 transition-all text-xs shadow-sm"
+              >
+                2번 쿼리(신규 생성) 복사
+              </button>
+            </div>
           </div>
         )}
 
@@ -679,13 +708,19 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       <tr
                         key={notice.id}
                         onClick={() => handleSelectNotice(notice)}
-                        className={`border-b cursor-pointer transition-colors hover:bg-blue-50/50 ${selectedNotice?.id === notice.id ? 'bg-blue-50 font-semibold' : ''}`}
+                        className={`border-b cursor-pointer transition-colors ${notice.is_top ? 'bg-orange-50/50 hover:bg-orange-100/60' : 'hover:bg-blue-50/50'} ${selectedNotice?.id === notice.id ? '!bg-blue-50 font-semibold' : ''}`}
                       >
                         <td className="py-3 px-1 text-base sm:text-lg text-gray-800">
                           <div className="flex items-start">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 mr-2 mt-0.5 shrink-0 shadow-sm">
-                              <svg className="w-3 h-3 translate-x-[0.5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                            </span>
+                            {notice.is_top ? (
+                              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-red-100 border border-red-200 text-red-600 text-xs font-bold mr-2 mt-0.5 shrink-0 shadow-sm animate-pulse">
+                                📌
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 mr-2 mt-0.5 shrink-0 shadow-sm">
+                                <svg className="w-3 h-3 translate-x-[0.5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                              </span>
+                            )}
                             <span className="line-clamp-2 break-all">{notice.title}</span>
                           </div>
                         </td>
@@ -733,6 +768,20 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       placeholder="공지사항 제목을 입력해 주세요"
                       className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base bg-gray-200"
                     />
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-blue-50/40 p-2.5 rounded-xl border border-blue-100">
+                    <input
+                      type="checkbox"
+                      id="isTopCheckbox"
+                      checked={isTop}
+                      onChange={(e) => setIsTop(e.target.checked)}
+                      disabled={saving}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                    />
+                    <label htmlFor="isTopCheckbox" className="text-sm font-bold text-blue-900 cursor-pointer select-none">
+                      📌 이 공지사항을 목록 상단에 고정
+                    </label>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2.5">
