@@ -126,6 +126,18 @@ export default function MainApp({
     }
   }, [date]);
 
+  useEffect(() => {
+    if (todayNotices.length > 0) {
+      try {
+        if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+          window.navigator.vibrate([150, 100, 150]);
+        }
+      } catch (e) {
+        console.error("Vibration failed:", e);
+      }
+    }
+  }, [todayNotices]);
+
   const [dbTeachers, setDbTeachers] = useState(() => {
     try {
       const stored = window.localStorage.getItem('sungdong_teacher_list');
@@ -1317,6 +1329,203 @@ export default function MainApp({
     return !hasDifference ? "already_identical" : null;
   }, [date, availableDates, allScheduleData, logs, selectedTeam, isFetchingSchedule, isSyncing, isSubmitting, shifts]);
 
+  const shouldRepeatPerShift = useMemo(() => {
+    if (isFetchingSchedule || isSyncing || isSubmitting) return {};
+    const currentDayOfWeek = new Date(date).getDay();
+    const targetDates = availableDates.filter(d => {
+      if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
+      if (isHoliday(d)) return false;
+      return true;
+    });
+
+    const result = {};
+    shifts.forEach((shiftTime, i) => {
+      const log = logs[i];
+      const student = (log?.student || "").trim();
+      const location = (log?.location || "").trim();
+
+      if (!student && !location) {
+        result[i] = false;
+        return;
+      }
+
+      const hasDiff = targetDates.some(targetDate => {
+        const targetData = allScheduleData[targetDate] || {};
+        const original = targetData[shiftTime] || {};
+        const isStudentDiff = student !== (original.student || "").trim();
+        const isLocationDiff = location !== (original.location || "").trim();
+        return isStudentDiff || isLocationDiff;
+      });
+
+      result[i] = hasDiff;
+    });
+
+    return result;
+  }, [date, availableDates, allScheduleData, logs, isFetchingSchedule, isSyncing, isSubmitting, shifts]);
+
+  const handleRepeatScheduleForShift = async (index) => {
+    if (isDataLoading) return;
+
+    // 현재 선택한 시간대의 정보가 기존 저장된 정보와 다른지 확인
+    const todaysOriginalData = allScheduleData[date] || {};
+    const original = todaysOriginalData[shifts[index]] || {};
+    const log = logs[index];
+    const originalStatus = formatStatusIfDate(original.status);
+    const currentStatusStr = buildStatusString(log);
+
+    const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
+    const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
+    const statusChanged = currentStatusStr !== originalStatus;
+
+    if (studentChanged || locationChanged || statusChanged) {
+      const saved = await performAutoSave();
+      if (!saved) return;
+    }
+
+    const currentDayOfWeek = new Date(date).getDay();
+    const targetDates = availableDates.filter(d => {
+      if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
+      if (isHoliday(d)) return false;
+      return true;
+    });
+
+    if (targetDates.length === 0) {
+      setErrorMessage("⚠️ 이후 동일한 요일의 날짜가 없습니다.");
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
+
+    const validTargetDates = targetDates.filter(targetDate => {
+      const targetOriginalData = allScheduleData[targetDate] || {};
+      const currentLog = logs[index];
+      const targetOriginal = targetOriginalData[shifts[index]] || {};
+      const isStudentDiff = (currentLog.student || "").trim() !== (targetOriginal.student || "").trim();
+      const isLocationDiff = (currentLog.location || "").trim() !== (targetOriginal.location || "").trim();
+      return isStudentDiff || isLocationDiff;
+    });
+
+    if (validTargetDates.length === 0) {
+      setErrorMessage(<span>⚠️ 이미 동일한 일정이 등록되어 있습니다.</span>);
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
+
+    if (window.confirm(`이 시간대(${shifts[index]})의 일정을 이후 동일한 요일의 미래 일정들에 복제하시겠습니까?`)) {
+      executeRepeatScheduleForShift(index, validTargetDates);
+    }
+  };
+
+  const executeRepeatScheduleForShift = async (index, targetDates) => {
+    setIsSubmitting(true);
+    setShowSavePopup(true);
+    setIsSaveComplete(false);
+
+    let allTasks = [];
+    const shiftTime = shifts[index];
+    const log = logs[index];
+
+    targetDates.forEach((targetDate) => {
+      if (isHoliday(targetDate)) return;
+      const targetOriginalData = allScheduleData[targetDate] || {};
+      const original = targetOriginalData[shiftTime] || {};
+      allTasks.push({
+        id: `${targetDate}_${index}`,
+        date: targetDate,
+        shift: shiftTime,
+        student: log.student || "",
+        location: log.location || "",
+        statusStr: original.status || "",
+        index: index
+      });
+    });
+
+    setSaveProgress(allTasks.map(t => {
+      const mm = t.date.substring(5, 7);
+      const dd = t.date.substring(8, 10);
+      const dayName = getDayName(t.date);
+      return {
+        id: t.id,
+        isRepeat: true,
+        dateDisplay: `${mm}/${dd}(${dayName})`,
+        timeDisplay: t.shift,
+        student: t.student || "미입력",
+        status: '대기 중'
+      };
+    }));
+
+    const validRecords = [];
+    const chunkSize = 3;
+
+    for (let idx = 0; idx < allTasks.length; idx += chunkSize) {
+      const chunkTasks = allTasks.slice(idx, idx + chunkSize);
+      const chunkPromises = chunkTasks.map(async (task, chunkIdx) => {
+        if (chunkIdx > 0) await new Promise(res => setTimeout(res, chunkIdx * 150));
+
+        let location = task.location;
+
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          try {
+            setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: attempt === 1 ? '저장 중...' : `재시도 중...(${attempt}/5)` } : item));
+
+            const upsertPayload = {
+              team: selectedTeam,
+              log_date: task.date,
+              teacher: currentUser,
+              shift: task.shift,
+              student: task.student || "",
+              location: location || "",
+              signature_url: null
+            };
+
+            const { error: upsertError } = await supabaseClient
+              .from('daily_logs')
+              .upsert(upsertPayload, { onConflict: 'team, log_date, teacher, shift' });
+
+            if (upsertError) throw new Error("Supabase 저장 실패: " + upsertError.message);
+
+            setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 완료' } : item));
+            return task;
+          } catch (e) {
+            if (attempt === 5) {
+              setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: '저장 실패' } : item));
+              return null;
+            } else {
+              await new Promise(res => setTimeout(res, 1000 + Math.floor(Math.random() * 500)));
+            }
+          }
+        }
+        return null;
+      });
+
+      const resolvedChunk = await Promise.all(chunkPromises);
+      resolvedChunk.forEach(record => { if (record !== null) validRecords.push(record); });
+      if (idx + chunkSize < allTasks.length) await new Promise(res => setTimeout(res, 300));
+    }
+
+    if (validRecords.length > 0) {
+      setAllScheduleData(prev => {
+        const newData = { ...prev };
+        validRecords.forEach(record => {
+          if (!newData[record.date]) newData[record.date] = {};
+          newData[record.date][record.shift] = {
+            student: record.student,
+            location: record.location,
+            status: record.statusStr
+          };
+        });
+
+        if (selectedTeam && currentUser) {
+          const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
+          window.localStorage.setItem(cacheKey, JSON.stringify(newData));
+        }
+
+        return newData;
+      });
+    }
+    setIsSubmitting(false);
+    setIsSaveComplete(true);
+  };
+
   const minDate = availableDates.length > 0 ? availableDates[0] : "";
   const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
@@ -1948,7 +2157,7 @@ export default function MainApp({
 
                   return (
                     <div key={index} id={`log-card-${index}`} className={`${isCompact ? 'p-2.5 sm:p-3 md:p-4' : 'p-4 sm:p-5 md:p-6'} border rounded-xl shadow-md ${cardColorClass}`}>
-                      <div className={`flex justify-between items-start ${isCompact ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
+                      <div className={`flex justify-between items-center w-full ${isCompact ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
                         <div className="flex items-center text-blue-700 font-bold text-lg sm:text-xl flex-wrap gap-y-1">
                           <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" />
                           <span className="shrink-0">
@@ -1985,6 +2194,16 @@ export default function MainApp({
                             </div>
                           ) : null}
                         </div>
+
+                        {shouldRepeatPerShift[index] && (
+                          <button
+                            type="button"
+                            onClick={() => handleRepeatScheduleForShift(index)}
+                            className="ml-auto bg-orange-500 hover:bg-orange-600 text-white border border-orange-600 px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-95 font-bold"
+                          >
+                            복제
+                          </button>
+                        )}
                       </div>
 
                       <div className={isCompact ? "space-y-2" : "space-y-4"}>
