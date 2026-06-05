@@ -182,16 +182,7 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
     const key = getScheduleKey(dateStr, timeSlot);
     const currentValue = schedule[key];
 
-    let newValue;
-    if (currentValue !== '평생교육실' && currentValue !== '낭만스튜디오' && currentValue !== '평생교육실/낭만스튜디오') {
-      newValue = '평생교육실';
-    } else if (currentValue === '평생교육실') {
-      newValue = '낭만스튜디오';
-    } else if (currentValue === '낭만스튜디오') {
-      newValue = '평생교육실/낭만스튜디오';
-    } else {
-      newValue = '   ';
-    }
+    const newValue = currentValue === '사용가능' ? '사용불가' : '사용가능';
     const newSchedule = { ...schedule, [key]: newValue };
     setSchedule(newSchedule);
     window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(newSchedule));
@@ -208,15 +199,8 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
       timeSlots.forEach(slot => allKeys.push(getScheduleKey(ds, slot)));
     });
 
-    const allEdu = allKeys.every(k => schedule[k] === '평생교육실');
-    const allNangman = allKeys.every(k => schedule[k] === '낭만스튜디오');
-    const allBoth = allKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
-
-    let newValue;
-    if (allEdu) newValue = '낭만스튜디오';
-    else if (allNangman) newValue = '평생교육실/낭만스튜디오';
-    else if (allBoth) newValue = '   ';
-    else newValue = '평생교육실';
+    const allAvailable = allKeys.every(k => schedule[k] === '사용가능');
+    const newValue = allAvailable ? '사용불가' : '사용가능';
 
     const changes = {};
     allKeys.forEach(k => { changes[`data.${k}`] = newValue; });
@@ -229,15 +213,8 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
     if (holidayDates.has(mmdd)) return; // 공휴일 일괄 토글 차단
 
     const dayKeys = timeSlots.map(slot => getScheduleKey(dateStr, slot));
-    const allEdu = dayKeys.every(k => schedule[k] === '평생교육실');
-    const allNangman = dayKeys.every(k => schedule[k] === '낭만스튜디오');
-    const allBoth = dayKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
-
-    let newValue;
-    if (allEdu) newValue = '낭만스튜디오';
-    else if (allNangman) newValue = '평생교육실/낭만스튜디오';
-    else if (allBoth) newValue = '   ';
-    else newValue = '평생교육실';
+    const allAvailable = dayKeys.every(k => schedule[k] === '사용가능');
+    const newValue = allAvailable ? '사용불가' : '사용가능';
 
     const changes = {};
     dayKeys.forEach(k => { changes[`data.${k}`] = newValue; });
@@ -256,15 +233,8 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
       }
     });
 
-    const allEdu = weekKeys.every(k => schedule[k] === '평생교육실');
-    const allNangman = weekKeys.every(k => schedule[k] === '낭만스튜디오');
-    const allBoth = weekKeys.every(k => schedule[k] === '평생교육실/낭만스튜디오');
-
-    let newValue;
-    if (allEdu) newValue = '낭만스튜디오';
-    else if (allNangman) newValue = '평생교육실/낭만스튜디오';
-    else if (allBoth) newValue = '   ';
-    else newValue = '평생교육실';
+    const allAvailable = weekKeys.every(k => schedule[k] === '사용가능');
+    const newValue = allAvailable ? '사용불가' : '사용가능';
 
     const changes = {};
     weekKeys.forEach(k => { changes[`data.${k}`] = newValue; });
@@ -496,9 +466,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         const mmdd = dateStr.substring(5);
                         const isSystemHoliday = holidayDates.has(mmdd);
 
-                        const cellBg = isSystemHoliday ? 'bg-red-50' : (state === '평생교육실' ? 'bg-green-200' : state === '낭만스튜디오' ? 'bg-blue-600' : state === '평생교육실/낭만스튜디오' ? 'bg-purple-200' : 'bg-white');
-                        const textCol = isSystemHoliday ? 'text-red-700' : (state === '평생교육실' ? 'text-green-900' : state === '낭만스튜디오' ? 'text-white' : state === '평생교육실/낭만스튜디오' ? 'text-purple-900' : 'text-gray-500');
-                        const cellPadding = isSystemHoliday ? 'p-0.5 sm:p-2' : (state === '평생교육실/낭만스튜디오' ? 'p-0 sm:p-0.5' : (state === '낭만스튜디오' ? 'px-0 py-1' : 'p-0.5 sm:p-2'));
+                        const isAvailable = state === '사용가능';
+                        const cellBg = isSystemHoliday ? 'bg-red-50' : (isAvailable ? 'bg-green-200' : 'bg-pink-100');
+                        const textCol = isSystemHoliday ? 'text-red-700' : (isAvailable ? 'text-green-900' : 'text-pink-800');
+                        const cellPadding = 'p-0.5 sm:p-2';
 
                         let cellContent = null;
                         if (isSystemHoliday) {
@@ -514,14 +485,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                           } else {
                             cellContent = null;
                           }
-                        } else if (state === '평생교육실') {
-                          cellContent = <>평생<br />교육실</>;
-                        } else if (state === '낭만스튜디오') {
-                          cellContent = <span className="block whitespace-nowrap -mx-1 tracking-tighter" style={{ letterSpacing: '-1px' }}>낭만<br /><span className="text-[9px] min-[360px]:text-[10px] landscape:text-[17px] md:text-[18px]">스튜디오</span></span>;
-                        } else if (state === '평생교육실/낭만스튜디오') {
-                          cellContent = <span className="block whitespace-nowrap -mx-2 tracking-tighter text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] font-bold" style={{ letterSpacing: '-1.8px', lineHeight: '1.25' }}>평생교육실/<br />낭만스튜디오</span>;
+                        } else if (isAvailable) {
+                          cellContent = <span>사용가능</span>;
                         } else {
-                          cellContent = null; // '   ' 또는 빈 칸
+                          cellContent = <span>사용불가</span>;
                         }
 
                         return (

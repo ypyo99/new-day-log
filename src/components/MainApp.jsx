@@ -36,7 +36,7 @@ import {
   LucideCalendar,
   VintageDivider
 } from './Icons';
-import SignaturePad from './SignaturePad';
+
 
 const AnimatedRefreshButton = ({ onClick, isFetching }) => {
   const [toggle, setToggle] = useState(false);
@@ -192,14 +192,7 @@ export default function MainApp({
     }
   }, [allScheduleData, selectedTeam, currentUser, dbTeachers]);
 
-  const [hiddenLogs, setHiddenLogs] = useState({});
-  const toggleHideLog = (index) => {
-    setHiddenLogs(prev => ({ ...prev, [index]: !prev[index] }));
-  };
 
-  useEffect(() => {
-    setHiddenLogs({});
-  }, [date]);
 
   const lastTagClickRef = useRef({ time: 0, index: -1, sIdx: -1, tag: '' });
 
@@ -842,14 +835,7 @@ export default function MainApp({
       });
       const needsSignature = isPresentChecked || (targetNameForHeadcount && hc !== "");
 
-      if (!isFutureDate && selectedTeam === '취업팀' && needsSignature && studentNames.length > 0 && isSignBlank && !isBalGul) {
-        const displayNames = studentNames.join('/');
-        setValidationErrorMsg(`${displayNames} 님의 싸인을 작성해 주세요!`);
-        setValidationErrorIndex(i);
-        setValidationErrorType("signature");
-        setShowValidationError(true);
-        return false;
-      }
+
 
       if (!isFutureDate && targetNameForHeadcount) {
         const hc = (log.headcount || "").trim();
@@ -891,27 +877,12 @@ export default function MainApp({
       const log = logs[i];
       const currentStatusStr = buildStatusString(log);
 
-      let signatureData = null;
-      let effectiveLocation = log.location || "";
-
-      if (i === forceIndex) {
-        if (signatureOverride === "__DELETE__") {
-          signatureData = "__DELETE__";
-          effectiveLocation = "";
-        } else if (signatureOverride && signatureOverride.startsWith("data:image")) {
-          signatureData = signatureOverride;
-        }
-      } else if (selectedTeam === '취업팀' && (log.location || "").startsWith('data:image')) {
-        signatureData = log.location;
-      }
-
       return {
         index: i,
         shift: shiftTime,
         student: log.student || "",
-        location: effectiveLocation,
-        status: currentStatusStr,
-        signatureData: signatureData
+        location: log.location || "",
+        status: currentStatusStr
       };
     });
 
@@ -933,45 +904,12 @@ export default function MainApp({
       for (let i = 0; i < batchItems.length; i++) {
         const item = batchItems[i];
 
-        const isTeam123 = selectedTeam === "1팀" || selectedTeam === "2팀" || selectedTeam === "3팀";
-        const isCareerTeam = selectedTeam === "취업팀";
-
         const isStudentBlank = !item.student || item.student.trim() === "";
         const isLocationBlank = !item.location || item.location.trim() === "";
 
-        if ((isTeam123 && isStudentBlank && isLocationBlank) || (isCareerTeam && isStudentBlank)) {
+        if (isStudentBlank && isLocationBlank) {
           deleteShifts.push(item.shift);
           continue;
-        }
-
-        let signature_url = null;
-        let location = item.location;
-
-        if (selectedTeam.includes("취업팀") && location && location.startsWith("data:image")) {
-          const base64Data = location.split(',')[1];
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let j = 0; j < byteCharacters.length; j++) {
-            byteNumbers[j] = byteCharacters.charCodeAt(j);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'image/png' });
-
-          const safeTeacher = Array.from(currentUser).map(c => c.charCodeAt(0).toString(16)).join('');
-          const fileName = `${date}_${safeTeacher}_${item.shift.replace(/[^0-9]/g, "")}_${Date.now()}.png`;
-
-          const { data: uploadData, error: uploadError } = await supabaseClient.storage
-            .from('signatures')
-            .upload(fileName, blob, { contentType: 'image/png', upsert: true });
-
-          if (uploadError) throw new Error("서명 업로드 실패: " + uploadError.message);
-
-          const { data: publicUrlData } = supabaseClient.storage.from('signatures').getPublicUrl(fileName);
-          signature_url = publicUrlData.publicUrl;
-          location = signature_url;
-        } else if (selectedTeam.includes("취업팀") && (!location || location === "__DELETE__")) {
-          location = "";
-          signature_url = null;
         }
 
         upsertData.push({
@@ -980,9 +918,9 @@ export default function MainApp({
           teacher: currentUser,
           shift: item.shift,
           student: item.student || "",
-          location: signature_url ? "" : location || "",
+          location: item.location || "",
           status: item.status || "",
-          signature_url: signature_url
+          signature_url: null
         });
       }
 
@@ -1156,9 +1094,7 @@ export default function MainApp({
         const log = logs[i];
         const original = todaysOriginalData[shiftTime] || {};
         const isStudentDiff = (log.student || "") !== (original.student || "");
-        const isLocationDiff = selectedTeam === '취업팀'
-          ? (original.location || "") !== ""
-          : (log.location || "") !== (original.location || "");
+        const isLocationDiff = (log.location || "") !== (original.location || "");
         if (isStudentDiff || isLocationDiff) {
           hasDifference = true;
         }
@@ -1193,16 +1129,14 @@ export default function MainApp({
         const log = logs[i];
         const original = todaysOriginalData[shiftTime] || {};
         const isStudentDiff = (log.student || "") !== (original.student || "");
-        const isLocationDiff = selectedTeam === '취업팀'
-          ? (original.location || "") !== ""
-          : (log.location || "") !== (original.location || "");
+        const isLocationDiff = (log.location || "") !== (original.location || "");
         if (isStudentDiff || isLocationDiff) {
           allTasks.push({
             id: `${targetDate}_${i}`,
             date: targetDate,
             shift: shiftTime,
             student: log.student || "",
-            location: selectedTeam === '취업팀' ? "" : (log.location || ""),
+            location: log.location || "",
             statusStr: original.status || "",
             index: i
           });
@@ -1241,38 +1175,10 @@ export default function MainApp({
         if (chunkIdx > 0) await new Promise(res => setTimeout(res, chunkIdx * 150));
 
         let location = task.location;
-        let signature_url = null;
 
         for (let attempt = 1; attempt <= 5; attempt++) {
           try {
             setSaveProgress(prev => prev.map(item => item.id === task.id ? { ...item, status: attempt === 1 ? '저장 중...' : `재시도 중...(${attempt}/5)` } : item));
-
-            if (selectedTeam.includes('취업팀') && location && location.startsWith('data:image')) {
-              const base64Data = location.split(',')[1];
-              const byteCharacters = atob(base64Data);
-              const byteNumbers = new Array(byteCharacters.length);
-              for (let j = 0; j < byteCharacters.length; j++) {
-                byteNumbers[j] = byteCharacters.charCodeAt(j);
-              }
-              const byteArray = new Uint8Array(byteNumbers);
-              const blob = new Blob([byteArray], { type: 'image/png' });
-
-              const safeTeacher = Array.from(currentUser).map(c => c.charCodeAt(0).toString(16)).join('');
-              const fileName = `${task.date}_${safeTeacher}_${task.shift.replace(/[^0-9]/g, "")}_${Date.now()}.png`;
-
-              const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                .from('signatures')
-                .upload(fileName, blob, { contentType: 'image/png', upsert: true });
-
-              if (uploadError) throw new Error("서명 업로드 실패: " + uploadError.message);
-
-              const { data: publicUrlData } = supabaseClient.storage.from('signatures').getPublicUrl(fileName);
-              signature_url = publicUrlData.publicUrl;
-              location = signature_url;
-            } else if (selectedTeam.includes('취업팀') && (!location || location === "__DELETE__")) {
-              location = "";
-              signature_url = null;
-            }
 
             const upsertPayload = {
               team: selectedTeam,
@@ -1280,8 +1186,8 @@ export default function MainApp({
               teacher: currentUser,
               shift: task.shift,
               student: task.student || "",
-              location: signature_url ? "" : location || "",
-              signature_url: signature_url
+              location: location || "",
+              signature_url: null
             };
 
             const { error: upsertError } = await supabaseClient
@@ -1374,9 +1280,7 @@ export default function MainApp({
         const log = logs[i];
         const original = targetOriginalData[shiftTime] || {};
         const isStudentDiff = (log.student || "") !== (original.student || "");
-        const isLocationDiff = selectedTeam === '취업팀'
-          ? (original.location || "") !== ""
-          : (log.location || "") !== (original.location || "");
+        const isLocationDiff = (log.location || "") !== (original.location || "");
         return isStudentDiff || isLocationDiff;
       });
     });
@@ -1786,7 +1690,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260604
+            v260605-remove-signature
           </div>
         </div>
       </div>
@@ -2022,134 +1926,104 @@ export default function MainApp({
                             </div>
                           ) : null}
                         </div>
-                        {selectedTeam === '취업팀' && (
-                          <button
-                            type="button"
-                            onClick={() => toggleHideLog(index)}
-                            disabled={!logs[index]?.student?.trim()}
-                            className={`text-sm sm:text-base font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded shadow-sm transition-colors whitespace-nowrap shrink-0 ml-2 border active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${hiddenLogs[index] ? 'bg-sky-200 hover:bg-sky-300 border-sky-300 text-sky-900' : 'bg-yellow-200 hover:bg-yellow-300 border-yellow-300 text-yellow-800'}`}
-                          >
-                            {hiddenLogs[index] ? '기록 보이기' : '기록 숨기기'}
-                          </button>
-                        )}
                       </div>
 
-                      {hiddenLogs[index] ? (
-                        <div className="py-6 sm:py-8 flex flex-col items-center justify-center bg-white/60 rounded-lg border border-dashed border-gray-400">
-                          <span className="text-gray-500 font-bold text-sm sm:text-base mb-0">학생 기록이 숨겨졌습니다.</span>
+                      <div className={isCompact ? "space-y-2" : "space-y-4"}>
+                        <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
+                          <input
+                            type="text"
+                            placeholder="대상자 이름"
+                            value={logs[index].student}
+                            onChange={(e) => handleLogChange(index, 'student', e.target.value)}
+                            onBlur={handleInputBlur}
+                            disabled={isDataLoading}
+                            className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+                          />
+                          <input
+                            type="text"
+                            placeholder="장소"
+                            value={logs[index].location}
+                            onChange={(e) => handleLogChange(index, 'location', e.target.value)}
+                            onBlur={handleInputBlur}
+                            disabled={isDataLoading}
+                            className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+                          />
                         </div>
-                      ) : (
-                        <div className={isCompact ? "space-y-2" : "space-y-4"}>
-                          <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
-                            <input
-                              type="text"
-                              placeholder="대상자 이름"
-                              value={logs[index].student}
-                              onChange={(e) => handleLogChange(index, 'student', e.target.value)}
-                              onBlur={handleInputBlur}
-                              disabled={isDataLoading}
-                              className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
-                            />
-                            {selectedTeam !== '취업팀' && (
+
+                        <div className="space-y-1.5 !mt-3">
+                          {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
+                            return (
+                              <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-1.5 pt-1.5 border-t border-dashed border-blue-200' : ''}`}>
+                                <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
+                                  {RENDER_TAGS.map(tag => {
+                                    const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
+
+                                    const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
+                                    const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
+
+                                    return (
+                                      <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => toggleTag(index, sIdx, tag)}
+                                        disabled={isDataLoading || isInfoMissing || isBlurTarget}
+                                        className={
+                                          "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 " + (isCompact ? "py-0.5" : "py-0.5 sm:py-1 md:py-1.5") + " rounded-xl " +
+                                          fontSizeClass +
+                                          " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
+                                          (isBlurTarget
+                                            ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
+                                            : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
+                                        }
+                                      >
+                                        {tag === '1' ? '출석' : tag}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
+                          {isShowHeadcount && (() => {
+                            const isHeadcountEmpty = !(logs[index]?.headcount || "").trim();
+                            const hasMemo = (logs[index]?.memo || "").trim() !== "";
+                            const hasExcusedAttendance = studentNames.some((_, sIdx) => {
+                              const tags = (logs[index]?.selectedTags && logs[index].selectedTags[sIdx]) ? logs[index].selectedTags[sIdx] : [];
+                              return tags.includes("결석") || tags.includes("선생님휴가") || tags.includes("취소");
+                            });
+                            const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty && !hasExcusedAttendance);
+
+                            return (
                               <input
                                 type="text"
-                                placeholder="장소"
-                                value={logs[index].location}
-                                onChange={(e) => handleLogChange(index, 'location', e.target.value)}
+                                inputMode="numeric"
+                                maxLength="2"
+                                placeholder="인원"
+                                value={logs[index]?.headcount || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                  handleLogChange(index, 'headcount', val);
+                                }}
                                 onBlur={handleInputBlur}
-                                disabled={isDataLoading}
-                                className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+                                disabled={isDataLoading || isInfoMissing}
+                                className={`w-12 md:w-14 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
                               />
-                            )}
-                          </div>
-
-                          <div className="space-y-1.5 !mt-3">
-                            {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
-                              return (
-                                <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-1.5 pt-1.5 border-t border-dashed border-blue-200' : ''}`}>
-                                  <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
-                                    {RENDER_TAGS.map(tag => {
-                                      const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
-
-                                      const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
-                                      const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
-
-                                      return (
-                                        <button
-                                          key={tag}
-                                          type="button"
-                                          onClick={() => toggleTag(index, sIdx, tag)}
-                                          disabled={isDataLoading || isInfoMissing || isBlurTarget}
-                                          className={
-                                            "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 " + (isCompact ? "py-0.5" : "py-0.5 sm:py-1 md:py-1.5") + " rounded-xl " +
-                                            fontSizeClass +
-                                            " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
-                                            (isBlurTarget
-                                              ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
-                                              : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
-                                          }
-                                        >
-                                          {tag === '1' ? '출석' : tag}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
-                            {isShowHeadcount && (() => {
-                              const isHeadcountEmpty = !(logs[index]?.headcount || "").trim();
-                              const hasMemo = (logs[index]?.memo || "").trim() !== "";
-                              const hasExcusedAttendance = studentNames.some((_, sIdx) => {
-                                const tags = (logs[index]?.selectedTags && logs[index].selectedTags[sIdx]) ? logs[index].selectedTags[sIdx] : [];
-                                return tags.includes("결석") || tags.includes("선생님휴가") || tags.includes("취소");
-                              });
-                              const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty && !hasExcusedAttendance);
-
-                              return (
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  maxLength="2"
-                                  placeholder="인원"
-                                  value={logs[index]?.headcount || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                    handleLogChange(index, 'headcount', val);
-                                  }}
-                                  onBlur={handleInputBlur}
-                                  disabled={isDataLoading || isInfoMissing}
-                                  className={`w-12 md:w-14 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
-                                />
-                              );
-                            })()}
-                            <textarea
-                              rows="3"
-                              placeholder="메모"
-                              value={logs[index]?.memo || ""}
-                              onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
-                              onBlur={handleInputBlur}
-                              disabled={isDataLoading || isInfoMissing}
-                              className={`flex-1 min-w-0 ${isCompact ? 'py-1.5 sm:py-2' : 'py-2 sm:py-2.5 md:py-3'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none`}
-                            />
-                          </div>
-
-                          {selectedTeam === '취업팀' && (
-                            <SignaturePad
-                              onSave={(base64) => handleLogChange(index, 'location', base64)}
-                              onTriggerSave={(base64) => performAutoSave(index, base64)}
-                              onRefresh={() => setRefreshTrigger(prev => prev + 1)}
-                              disabled={isDataLoading || !logs[index]?.student?.trim()}
-                              currentUrl={logs[index]?.location}
-                              isDoubleHeight={studentNames.length >= 2}
-                              forceSign={validationErrorIndex === index && validationErrorType === 'signature'}
-                            />
-                          )}
+                            );
+                          })()}
+                          <textarea
+                            rows="3"
+                            placeholder="메모"
+                            value={logs[index]?.memo || ""}
+                            onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
+                            onBlur={handleInputBlur}
+                            disabled={isDataLoading || isInfoMissing}
+                            className={`flex-1 min-w-0 ${isCompact ? 'py-1.5 sm:py-2' : 'py-2 sm:py-2.5 md:py-3'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none`}
+                          />
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -2246,11 +2120,7 @@ export default function MainApp({
                         <span className={`text-lg font-bold break-all leading-relaxed ${attColor}`}>
                           {prog.attendance}
                         </span>
-                        {selectedTeam === '취업팀' && prog.location && (prog.location.startsWith('data:image') || prog.location.startsWith('http') || prog.location.includes('drive.google.com') || prog.location.startsWith('=')) && (
-                          <div className={`mt-1.5 border border-blue-200 rounded-lg bg-sky-100 overflow-hidden w-24 flex items-center justify-center shadow-sm ${prog.isDoubleHeight ? 'h-[88px]' : 'h-10'}`}>
-                            <img src={getDirectImageUrl(prog.location)} alt="싸인" className="max-w-full max-h-full object-contain" />
-                          </div>
-                        )}
+
                       </div>
                       <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
                         {prog.status}
