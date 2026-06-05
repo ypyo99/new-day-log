@@ -640,7 +640,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-6 items-start flex-1">
           {/* 좌측: 공지사항 목록 */}
           <section className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[500px] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
@@ -653,7 +653,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 등록된 공지사항이 없습니다.
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto pr-1">
+              <div className="overflow-y-auto pr-1 max-h-[300px] md:max-h-[60vh]">
                 <table className="w-full text-left" style={{ borderSpacing: 0 }}>
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
