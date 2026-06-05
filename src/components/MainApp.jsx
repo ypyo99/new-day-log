@@ -108,7 +108,8 @@ export default function MainApp({
         const { data, error } = await supabaseClient
           .from('notices')
           .select('title')
-          .or(`created_at.eq.${date},start_date.eq.${date},and(start_date.lte.${date},end_date.gte.${date})`)
+          .lte('start_date', date)
+          .gte('end_date', date)
           .order('created_at', { ascending: false });
 
         if (!error && data) {
