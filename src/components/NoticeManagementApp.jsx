@@ -609,7 +609,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch flex-1">
           {/* 좌측: 공지사항 목록 */}
-          <section className="md:col-span-5 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col h-[500px] md:h-auto overflow-hidden">
+          <section className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col h-[500px] md:h-auto overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
@@ -650,200 +650,196 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
           </section>
 
           {/* 우측: 상세 조회 또는 편집 */}
-          <section className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col">
-            {isEditing ? (
-              /* 편집 및 작성 폼 */
-              <form onSubmit={handleSave} className="flex flex-col gap-4 flex-1">
-                <div className="flex justify-between items-center border-b pb-2 mb-1">
-                  <h2 className="text-base sm:text-lg font-bold text-blue-700">
-                    {selectedNotice ? '공지사항 수정' : '공지사항 새로 작성'}
-                  </h2>
-                  {selectedNotice && (
+          {(selectedNotice || isEditing) && (
+            <section className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350">
+              {isEditing ? (
+                /* 편집 및 작성 폼 */
+                <form onSubmit={handleSave} className="flex flex-col gap-4 flex-1">
+                  <div className="flex justify-between items-center border-b pb-2 mb-1">
+                    <h2 className="text-base sm:text-lg font-bold text-blue-700">
+                      {selectedNotice ? '공지사항 수정' : '공지사항 새로 작성'}
+                    </h2>
+                    {selectedNotice && (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={saving}
+                        className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold text-xs transition-colors active:scale-95"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-bold text-gray-600">제목</label>
+                    <input
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      disabled={saving}
+                      placeholder="공지사항 제목을 입력해 주세요"
+                      className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-600">작성일자</label>
+                      <input
+                        type="date"
+                        readOnly
+                        value={createdAt}
+                        className="p-2 border rounded-xl bg-gray-100 text-gray-600 font-bold outline-none text-xs sm:text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-600">게시시작일</label>
+                      <input
+                        type="date"
+                        required
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        disabled={saving}
+                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-600">게시종료일</label>
+                      <input
+                        type="date"
+                        required
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        disabled={saving}
+                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
+                    {selectedImg && (
+                      <div className="bg-sky-50 border border-sky-200 rounded-xl p-2.5 flex flex-col sm:flex-row items-center gap-3 animate-fadeIn text-xs sm:text-sm">
+                        <span className="font-bold text-sky-850 shrink-0">선택된 이미지 크기:</span>
+                        <div className="flex items-center gap-2 flex-1 w-full">
+                          <input
+                            type="range"
+                            min="10"
+                            max="100"
+                            value={selectedImgWidth}
+                            onChange={handleImageResize}
+                            className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
+                        </div>
+                        <div className="flex gap-1 shrink-0 w-full sm:w-auto">
+                          {[25, 50, 75, 100].map(pct => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => applyQuickResize(pct)}
+                              className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
+                            >
+                              {pct}%
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-bold text-gray-600">내용</label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="image-file-input"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploading || saving}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="image-file-input"
+                          className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          {uploading ? '그림 올리는 중...' : '그림(이미지) 추가'}
+                        </label>
+                      </div>
+                    </div>
+                    <div className="relative flex-1 flex flex-col min-h-[200px]">
+                      {selectedImg && isEditing && (
+                        <ImageResizer
+                          selectedImg={selectedImg}
+                          editorRef={editorRef}
+                          onResize={(pct) => setSelectedImgWidth(pct)}
+                          onResizeEnd={() => {
+                            if (editorRef.current) {
+                              setContent(editorRef.current.innerHTML);
+                            }
+                          }}
+                        />
+                      )}
+                      <div
+                        ref={editorRef}
+                        contentEditable
+                        onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                        onClick={handleEditorClick}
+                        placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
+                        className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
+                        style={{ minHeight: '200px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
                     <button
                       type="button"
-                      onClick={handleDelete}
+                      onClick={() => {
+                        setIsEditing(false);
+                        setSelectedNotice(null);
+                        setSelectedImg(null);
+                      }}
                       disabled={saving}
-                      className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold text-xs transition-colors active:scale-95"
+                      className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm sm:text-base transition-colors"
                     >
-                      삭제
+                      취소
                     </button>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-gray-600">제목</label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={saving}
-                    placeholder="공지사항 제목을 입력해 주세요"
-                    className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-bold text-gray-600">작성일자</label>
-                    <input
-                      type="date"
-                      readOnly
-                      value={createdAt}
-                      className="p-2 border rounded-xl bg-gray-100 text-gray-600 font-bold outline-none text-xs sm:text-sm"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-bold text-gray-600">게시시작일</label>
-                    <input
-                      type="date"
-                      required
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                    <button
+                      type="submit"
                       disabled={saving}
-                      className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm"
-                    />
+                      className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2"
+                    >
+                      {saving && <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
+                      {saving ? '저장 중...' : '작성 완료'}
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-bold text-gray-600">게시종료일</label>
-                    <input
-                      type="date"
-                      required
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      disabled={saving}
-                      className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
-                  {selectedImg && (
-                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-2.5 flex flex-col sm:flex-row items-center gap-3 animate-fadeIn text-xs sm:text-sm">
-                      <span className="font-bold text-sky-850 shrink-0">선택된 이미지 크기:</span>
-                      <div className="flex items-center gap-2 flex-1 w-full">
-                        <input
-                          type="range"
-                          min="10"
-                          max="100"
-                          value={selectedImgWidth}
-                          onChange={handleImageResize}
-                          className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
-                      </div>
-                      <div className="flex gap-1 shrink-0 w-full sm:w-auto">
-                        {[25, 50, 75, 100].map(pct => (
-                          <button
-                            key={pct}
-                            type="button"
-                            onClick={() => applyQuickResize(pct)}
-                            className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
-                          >
-                            {pct}%
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-bold text-gray-600">내용</label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="image-file-input"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={uploading || saving}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="image-file-input"
-                        className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        {uploading ? '그림 올리는 중...' : '그림(이미지) 추가'}
-                      </label>
+                </form>
+              ) : (
+                /* 공지사항 상세 조회 */
+                <div className="flex flex-col gap-4 flex-1 h-full overflow-hidden">
+                  <div className="border-b pb-3 shrink-0">
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight">
+                      {selectedNotice.title}
+                    </h2>
+                    <div className="flex justify-between items-center mt-2 flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium">
+                      <span>작성일자: {selectedNotice.created_at}</span>
+                      <span className="bg-sky-50 border border-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">
+                        게시기간: {selectedNotice.start_date} ~ {selectedNotice.end_date}
+                      </span>
                     </div>
                   </div>
-                  <div className="relative flex-1 flex flex-col min-h-[200px]">
-                    {selectedImg && isEditing && (
-                      <ImageResizer
-                        selectedImg={selectedImg}
-                        editorRef={editorRef}
-                        onResize={(pct) => setSelectedImgWidth(pct)}
-                        onResizeEnd={() => {
-                          if (editorRef.current) {
-                            setContent(editorRef.current.innerHTML);
-                          }
-                        }}
-                      />
-                    )}
-                    <div
-                      ref={editorRef}
-                      contentEditable
-                      onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                      onClick={handleEditorClick}
-                      placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-                      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
-                      style={{ minHeight: '200px' }}
+
+                  <div className="flex-1 overflow-y-auto pr-1">
+                    <div 
+                      className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
+                      dangerouslySetInnerHTML={{ __html: selectedNotice.content.replace(/\n/g, '<br />') }}
                     />
                   </div>
                 </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setSelectedNotice(null);
-                      setSelectedImg(null);
-                    }}
-                    disabled={saving}
-                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm sm:text-base transition-colors"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2"
-                  >
-                    {saving && <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
-                    {saving ? '저장 중...' : '작성 완료'}
-                  </button>
-                </div>
-              </form>
-            ) : selectedNotice ? (
-              /* 공지사항 상세 조회 */
-              <div className="flex flex-col gap-4 flex-1 h-full overflow-hidden">
-                <div className="border-b pb-3 shrink-0">
-                  <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight">
-                    {selectedNotice.title}
-                  </h2>
-                  <div className="flex justify-between items-center mt-2 flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium">
-                    <span>작성일자: {selectedNotice.created_at}</span>
-                    <span className="bg-sky-50 border border-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">
-                      게시기간: {selectedNotice.start_date} ~ {selectedNotice.end_date}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto pr-1">
-                  <div 
-                    className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
-                    dangerouslySetInnerHTML={{ __html: selectedNotice.content.replace(/\n/g, '<br />') }}
-                  />
-                </div>
-              </div>
-            ) : (
-              /* 선택된 공지사항 없음 */
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 font-bold gap-2 py-12">
-                <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span>조회할 공지사항 제목을 선택해 주세요.</span>
-              </div>
-            )}
-          </section>
+              )}
+            </section>
+          )}
         </div>
       </main>
 
