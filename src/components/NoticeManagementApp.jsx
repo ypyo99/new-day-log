@@ -654,11 +654,11 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto pr-1">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left" style={{ borderSpacing: 0 }}>
                   <thead>
-                    <tr className="border-b-2 text-sm font-bold text-blue-900 uppercase tracking-wider">
-                      <th className="py-2.5 px-3 bg-blue-300 rounded-l-lg">제목</th>
-                      <th className="py-2.5 px-3 bg-blue-300 text-right w-28 rounded-r-lg">작성일자</th>
+                    <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
+                      <th className="py-2.5 px-3 bg-blue-300 border-b-2 border-blue-400 rounded-tl-lg">제목</th>
+                      <th className="py-2.5 px-3 bg-blue-300 border-b-2 border-blue-400 text-right w-28 rounded-tr-lg">작성일자</th>
                     </tr>
                   </thead>
                   <tbody>
