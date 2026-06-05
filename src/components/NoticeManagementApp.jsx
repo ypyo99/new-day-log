@@ -685,7 +685,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             <span className="line-clamp-2 break-all">{notice.title}</span>
                           </div>
                         </td>
-                        <td className="py-3 text-right text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                        <td className="py-3 text-right text-sm sm:text-base text-gray-500 whitespace-nowrap">
                           {notice.created_at ? notice.created_at.substring(5) : ''}
                         </td>
                       </tr>
