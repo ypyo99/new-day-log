@@ -287,6 +287,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
           if (!hasReal) {
             let fallbackDate = baseDate;
+            let foundReal = false;
             for (let attempt = 1; attempt <= 5; attempt++) {
               const d = new Date(fallbackDate);
               d.setDate(d.getDate() - 7);
@@ -310,9 +311,13 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                 });
                 if (fbHasReal) {
                   targetRecords = fbRecords;
+                  foundReal = true;
                   break;
                 }
               }
+            }
+            if (!foundReal) {
+              targetRecords = []; // 과거 일정에서도 정상 근무를 못 찾으면 공휴일 텍스트를 그대로 쓰지 않도록 빈 배열로 초기화
             }
           }
 
