@@ -640,9 +640,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start flex-1">
           {/* 좌측: 공지사항 목록 */}
-          <section className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col h-[500px] md:h-auto overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
+          <section className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[500px] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
