@@ -1098,6 +1098,7 @@ export default function MainApp({
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
+      if (selectedTeam === '취업팀') return true;
       const targetData = allScheduleData[d] || {};
       return Object.values(targetData).some(s => {
         const student = s?.student || "";
@@ -1290,6 +1291,7 @@ export default function MainApp({
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
+      if (selectedTeam === '취업팀') return true;
       const targetData = allScheduleData[d] || {};
       return Object.values(targetData).some(s => {
         const student = s?.student || "";
