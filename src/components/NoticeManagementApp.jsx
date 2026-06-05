@@ -713,7 +713,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       onChange={(e) => setTitle(e.target.value)}
                       disabled={saving}
                       placeholder="공지사항 제목을 입력해 주세요"
-                      className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base bg-blue-200"
+                      className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base bg-gray-200"
                     />
                   </div>
 
@@ -725,7 +725,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         readOnly
                         placeholder="MM-DD"
                         value={createdAt}
-                        className="p-2 border rounded-xl bg-blue-200 text-gray-600 font-bold outline-none text-xs sm:text-sm text-center"
+                        className="p-2 border rounded-xl bg-gray-200 text-gray-600 font-bold outline-none text-xs sm:text-sm text-center"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -738,7 +738,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         value={startDate}
                         onChange={(e) => setStartDate(formatMMDD(e.target.value))}
                         disabled={saving}
-                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center bg-blue-200"
+                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center bg-gray-200"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -751,7 +751,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         value={endDate}
                         onChange={(e) => setEndDate(formatMMDD(e.target.value))}
                         disabled={saving}
-                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center bg-blue-200"
+                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center bg-gray-200"
                       />
                     </div>
                   </div>
