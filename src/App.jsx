@@ -9,6 +9,7 @@ import AutoScheduleApp from './components/AutoScheduleApp';
 import HolidayManagementApp from './components/HolidayManagementApp';
 import NangmanStudioApp from './components/NangmanStudioApp';
 import MainApp from './components/MainApp';
+import NoticeManagementApp from './components/NoticeManagementApp';
 import {
   getSessionItem,
   setSessionItem,
@@ -96,6 +97,10 @@ export default function App() {
     );
   }
 
+  if (currentView === 'noticeManagement') {
+    return <NoticeManagementApp onNavigateBack={() => setCurrentView('main')} />;
+  }
+
   return (
     <MainApp
       onNavigateToClassroom={() => setCurrentView('classroom')}
@@ -122,6 +127,7 @@ export default function App() {
       onNavigateToAutoSchedule={() => setCurrentView('autoSchedule')}
       onNavigateToHolidayManagement={() => setCurrentView('holidayManagement')}
       onNavigateToNangmanStudio={() => setCurrentView('nangmanStudio')}
+      onNavigateToNoticeManagement={() => setCurrentView('noticeManagement')}
     />
   );
 }
