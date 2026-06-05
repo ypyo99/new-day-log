@@ -97,6 +97,15 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   const [editCell, setEditCell] = useState(null); // { teacherName, dayNum, shift, student, location }
   const [lastBackupId, setLastBackupId] = useState(() => getSavedItem('sungdong_auto_lastBackupId', null));
   const [restoring, setRestoring] = useState(false);
+  const [triggerAnalyze, setTriggerAnalyze] = useState(false);
+
+  useEffect(() => {
+    if (triggerAnalyze && startDate && endDate && isAdmin) {
+      handleAnalyze();
+      setTriggerAnalyze(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerAnalyze, startDate, endDate, isAdmin, team]);
 
   useEffect(() => { setSavedItem('sungdong_auto_lastBackupId', lastBackupId); }, [lastBackupId]);
 
@@ -797,6 +806,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                     setDraftRecords([]);
                     setScheduleTemplates({});
                     setPreviewFilter("ALL");
+                    setTriggerAnalyze(true);
                   }}
                   className="w-full p-1.5 sm:p-2.5 text-[16px] sm:text-[21px] border border-sky-300 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-sky-100 shadow-sm"
                 >
