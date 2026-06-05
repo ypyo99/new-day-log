@@ -566,7 +566,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
           {isAdmin && (
             <button
               onClick={handleNewNotice}
-              className="px-5 py-1.5 md:px-8 md:py-2 rounded-lg border border-amber-600 font-bold transition-all active:scale-95 text-xs md:text-sm touch-manipulation whitespace-nowrap bg-amber-500 hover:bg-amber-600 text-white shadow-md"
+              className="px-5 py-1.5 md:px-8 md:py-2 rounded-lg border border-blue-900 font-bold transition-all active:scale-95 text-xs md:text-sm touch-manipulation whitespace-nowrap bg-blue-800 hover:bg-blue-900 text-white shadow-md"
             >
               새로 작성
             </button>
