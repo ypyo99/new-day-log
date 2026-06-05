@@ -657,8 +657,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 <table className="w-full text-left" style={{ borderSpacing: 0 }}>
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
-                      <th className="py-2.5 px-3 border-b-2 border-blue-400 rounded-tl-lg" style={{ backgroundColor: '#93c5fd' }}>제목</th>
-                      <th className="py-2.5 px-3 border-b-2 border-blue-400 text-right w-28 rounded-tr-lg" style={{ backgroundColor: '#93c5fd' }}>작성일자</th>
+                      <th className="py-2.5 px-3 border-b-2 border-blue-400 rounded-tl-lg" style={{ backgroundColor: '#dbeafe' }}>제목</th>
+                      <th className="py-2.5 px-3 border-b-2 border-blue-400 text-right w-28 rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>작성일자</th>
                     </tr>
                   </thead>
                   <tbody>
