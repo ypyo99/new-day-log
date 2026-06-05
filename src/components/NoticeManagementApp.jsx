@@ -33,6 +33,13 @@ export default function NoticeManagementApp({ onNavigateBack }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [createdAt, setCreatedAt] = useState("");
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    if (isEditing && editorRef.current) {
+      editorRef.current.innerHTML = selectedNotice ? selectedNotice.content : "";
+    }
+  }, [isEditing, selectedNotice]);
 
   const getTodayString = () => {
     const d = new Date();
@@ -125,6 +132,9 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setEndDate("");
     setCreatedAt(getTodayString());
     setIsEditing(true);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = "";
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -146,15 +156,24 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       const { data: publicUrlData } = supabaseClient.storage.from('signatures').getPublicUrl(fileName);
       const imageUrl = publicUrlData.publicUrl;
 
-      // 에디터(content)에 이미지 태그 추가
-      const imgHtml = `\n<img src="${imageUrl}" alt="첨부 이미지" style="max-width: 100%; height: auto; display: block; margin: 12px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />\n`;
-      setContent(prev => prev + imgHtml);
+      const imgHtml = `<img src="${imageUrl}" alt="첨부 이미지" style="max-width: 100%; height: auto; display: block; margin: 12px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
+
+      if (editorRef.current) {
+        editorRef.current.focus();
+        try {
+          document.execCommand('insertHTML', false, imgHtml);
+        } catch (execErr) {
+          editorRef.current.innerHTML += imgHtml;
+        }
+        setContent(editorRef.current.innerHTML);
+      } else {
+        setContent(prev => prev + imgHtml);
+      }
     } catch (err) {
       console.error(err);
       alert("이미지 업로드에 실패했습니다: " + err.message);
     } finally {
       setUploading(false);
-      // 인풋 초기화
       e.target.value = '';
     }
   };
@@ -235,6 +254,13 @@ export default function NoticeManagementApp({ onNavigateBack }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
+      <style>{`
+        .rich-editor:empty:before {
+          content: attr(placeholder);
+          color: #9ca3af;
+          font-weight: 500;
+        }
+      `}</style>
       {/* 헤더 영역 */}
       <header className="bg-blue-600 text-white px-4 pt-4 pb-7 shadow-lg z-40 flex justify-between items-start relative shrink-0 min-h-[96px]">
         <div className="flex items-center">
@@ -466,13 +492,13 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       </label>
                     </div>
                   </div>
-                  <textarea
-                    required
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    disabled={saving}
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={(e) => setContent(e.currentTarget.innerHTML)}
                     placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-                    className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base resize-none flex-1"
+                    className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none"
+                    style={{ minHeight: '200px' }}
                   />
                 </div>
 
