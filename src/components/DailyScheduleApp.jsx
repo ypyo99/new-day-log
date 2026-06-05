@@ -627,7 +627,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         <div className="max-w-5xl mx-auto px-4 pb-4 pt-safe-4 flex justify-between items-start">
           <div>
             <div className="flex items-center mb-1">
-              <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
               <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
             </div>
             <p className="text-lg font-bold text-yellow-300 mb-1">디지털교육 서포터즈</p>

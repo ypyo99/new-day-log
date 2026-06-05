@@ -1586,7 +1586,7 @@ export default function MainApp({
         >
           <div className="text-center mb-5 sm:mb-8 shrink-0 mt-2 sm:mt-0">
             <div className="flex justify-center mb-2 sm:mb-4">
-              <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-[42px] sm:h-[52px] object-contain" onError={(e) => e.target.style.display = 'none'} />
+              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-[42px] sm:h-[52px] object-contain" onError={(e) => e.target.style.display = 'none'} />
             </div>
             <div className="flex items-center justify-center mb-1 sm:mb-2">
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-blue-600">성동노인종합복지관<sub className="text-[0.38em] font-black align-sub ml-0.5 text-gray-400">DB</sub></h1>
@@ -1761,7 +1761,7 @@ export default function MainApp({
         <div className="flex items-center">
           <div className="flex flex-col">
             <div className="flex items-center mb-1">
-              <img src="Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
               <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
             </div>
             <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
