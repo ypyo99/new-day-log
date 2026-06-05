@@ -677,12 +677,12 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         onClick={() => handleSelectNotice(notice)}
                         className={`border-b cursor-pointer transition-colors hover:bg-blue-50/50 ${selectedNotice?.id === notice.id ? 'bg-blue-50 font-semibold' : ''}`}
                       >
-                        <td className="py-3 px-1 text-sm sm:text-base text-gray-800 max-w-[200px] min-[360px]:max-w-[260px] min-[400px]:max-w-[300px] md:max-w-none truncate">
-                          <div className="flex items-center">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 mr-2 shrink-0 shadow-sm">
+                        <td className="py-3 px-1 text-base sm:text-lg text-gray-800">
+                          <div className="flex items-start">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 mr-2 mt-0.5 shrink-0 shadow-sm">
                               <svg className="w-3 h-3 translate-x-[0.5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                             </span>
-                            <span className="truncate">{notice.title}</span>
+                            <span className="line-clamp-2 break-all">{notice.title}</span>
                           </div>
                         </td>
                         <td className="py-3 text-right text-xs sm:text-sm text-gray-500 whitespace-nowrap">
