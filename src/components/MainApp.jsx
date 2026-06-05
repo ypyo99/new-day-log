@@ -1684,17 +1684,17 @@ export default function MainApp({
                 }
                 onNavigateToMyWeeklySchedule();
               }}
-              className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-blue-900 bg-[#a9d0fd] border-2 border-blue-400 hover:bg-blue-300'}`}
+              className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200'}`}
             >
               <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정 보기
             </button>
 
             {selectedTeam ? (
               <>
-                <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToDailySchedule(selectedTeam); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToDailySchedule(selectedTeam); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
                   <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀별 오늘 일정 보기
                 </button>
-                <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToTeamSchedule(selectedTeam); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToTeamSchedule(selectedTeam); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
                   <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
                 </button>
               </>
@@ -1710,23 +1710,23 @@ export default function MainApp({
             )}
             {errorMessage && <div className="text-red-600 font-bold text-center text-sm md:text-base -mt-2 -mb-2">{errorMessage}</div>}
 
-            <a href="https://docs.google.com/spreadsheets/d/1e4g_HIsmAQbLK8n0eMz_RGX3okou75tqKSSAkbWDsBk/edit?gid=936021842#gid=936021842" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-emerald-900 bg-emerald-50 border-2 border-emerald-200 hover:bg-emerald-100 shadow-md transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <a href="https://docs.google.com/spreadsheets/d/1e4g_HIsmAQbLK8n0eMz_RGX3okou75tqKSSAkbWDsBk/edit?gid=936021842#gid=936021842" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg> 수업 희망자 및 기타 참여자 관리
             </a>
 
-            <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-teal-50 border-2 border-teal-200 hover:bg-teal-100 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><path d="M11 8a3 3 0 0 0-3 3" /></svg> 대상자 검색하기
             </button>
 
-            <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-purple-900 bg-purple-500/20 border-2 border-purple-600/20 hover:bg-purple-500/30 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 사용 보기
             </button>
 
-            <button onClick={() => { handleLogout(); onNavigateToNangmanStudio(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-purple-900 bg-purple-500/20 border-2 border-purple-600/20 hover:bg-purple-500/30 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToNangmanStudio(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 낭만스튜디오 사용 보기
             </button>
 
-            <button onClick={() => { handleLogout(); onNavigateToNoticeManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-amber-900 bg-amber-400/40 border-2 border-amber-500/40 hover:bg-amber-500/50 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToNoticeManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> 공지사항
             </button>
 
@@ -1734,15 +1734,15 @@ export default function MainApp({
               <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
             </div>
 
-            <button onClick={() => { handleLogout(); onNavigateToTeacherManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-indigo-900 bg-indigo-400/40 border-2 border-indigo-500/40 hover:bg-indigo-500/50 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToTeacherManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
             </button>
 
-            <button onClick={() => { handleLogout(); onNavigateToHolidayManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-rose-900 bg-rose-400/40 border-2 border-rose-500/40 hover:bg-rose-500/50 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToHolidayManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일/휴무일 관리
             </button>
 
-            <button onClick={() => { handleLogout(); onNavigateToAutoSchedule(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-emerald-900 bg-emerald-400/40 border-2 border-emerald-500/40 hover:bg-emerald-500/50 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+            <button onClick={() => { handleLogout(); onNavigateToAutoSchedule(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 작성
             </button>
           </div>

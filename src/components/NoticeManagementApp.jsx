@@ -315,6 +315,8 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       setIsEditing(false);
       setSelectedNotice(null);
     } else {
+      setSelectedNotice(null);
+      setIsEditing(false);
       setShowPwdModal(true);
       setPwdInput("");
       setPwdError(false);
@@ -326,6 +328,8 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       setIsAdmin(true);
       window.localStorage.setItem('sungdong_admin_logged_in', 'true');
       setShowPwdModal(false);
+      setSelectedNotice(null);
+      setIsEditing(false);
     } else {
       setPwdError(true);
     }
@@ -918,6 +922,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   setIsAdmin(true);
                   window.localStorage.setItem('sungdong_admin_logged_in', 'true');
                   setShowPwdModal(false);
+                  setSelectedNotice(null);
+                  setIsEditing(false);
                 }
               }}
               onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
