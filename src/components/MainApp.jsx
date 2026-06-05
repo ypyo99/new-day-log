@@ -108,8 +108,7 @@ export default function MainApp({
         const { data, error } = await supabaseClient
           .from('notices')
           .select('title')
-          .lte('start_date', date)
-          .gte('end_date', date)
+          .or(`created_at.eq.${date},start_date.eq.${date},and(start_date.lte.${date},end_date.gte.${date})`)
           .order('created_at', { ascending: false });
 
         if (!error && data) {
@@ -1837,8 +1836,8 @@ export default function MainApp({
               {errorMessage && <div className="text-red-600 font-bold text-base text-center pb-2">{errorMessage}</div>}
 
               {todayNotices.length > 0 && !isDataLoading && (
-                <div className="mt-2 animate-fadeIn">
-                  <div className="bg-red-100 border-2 border-red-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 shadow-sm overflow-hidden text-left">
+                <div className="mt-2 animate-fadeIn" onClick={onNavigateToNoticeManagement}>
+                  <div className="bg-red-100 border-2 border-red-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 shadow-sm overflow-hidden text-left cursor-pointer hover:bg-red-200 transition-colors active:scale-[0.98]">
                     <div className="flex items-start gap-1.5 sm:gap-3 w-full">
                       <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0 mt-0.5">
                         <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
