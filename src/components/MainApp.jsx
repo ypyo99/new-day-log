@@ -1811,31 +1811,31 @@ export default function MainApp({
           </div>
 
           <div className="flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
-              {todayNotices.length > 0 && (
-                <div className="animate-fadeIn w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]" onClick={onNavigateToNoticeManagement}>
-                  <div className="bg-red-100 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
-                    <div className="flex items-start gap-2 sm:gap-3 w-full">
-                      <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0 mt-0.5">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                        </svg>
-                      </div>
-                      <div className="flex flex-col gap-0.5 sm:gap-1 w-full min-w-0">
-                        <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight flex items-center gap-1 sm:gap-2 text-red-800">
-                          오늘의 공지사항
-                        </h4>
-                        <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
-                          {todayNotices.map((notice, idx) => (
-                            <p key={idx} className="font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight text-red-700 tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block">
-                              • {notice.title}
-                            </p>
-                          ))}
-                        </div>
+            {todayNotices.length > 0 && (
+              <div className="animate-fadeIn w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]" onClick={onNavigateToNoticeManagement}>
+                <div className="bg-red-100 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
+                  <div className="flex items-start gap-2 sm:gap-3 w-full">
+                    <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      </svg>
+                    </div>
+                    <div className="flex flex-col gap-0.5 sm:gap-1 w-full min-w-0">
+                      <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight flex items-center gap-1 sm:gap-2 text-red-800">
+                        오늘의 공지사항
+                      </h4>
+                      <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
+                        {todayNotices.map((notice, idx) => (
+                          <p key={idx} className="font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight text-red-700 tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block">
+                            • {notice.title}
+                          </p>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
             <div className="w-full">
               <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl md:text-2xl">1. 팀 선택</label>
               <select className="w-full h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl bg-gray-100 text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400" value={selectedTeam} onChange={(e) => {
@@ -1957,7 +1957,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260605-remove-signature
+            v260606-notice
           </div>
         </div>
       </div>
