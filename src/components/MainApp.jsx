@@ -1839,7 +1839,7 @@ export default function MainApp({
             )}
             <div className="w-full">
               <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl md:text-2xl">1. 팀 선택</label>
-              <select className="w-full h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl bg-gray-100 text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400" value={selectedTeam} onChange={(e) => {
+              <select className="w-full h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl bg-[#ebebeb] text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400" value={selectedTeam} onChange={(e) => {
                 setSelectedTeam(e.target.value);
                 setCurrentUser("");
               }}>
@@ -1854,7 +1854,7 @@ export default function MainApp({
                   {isFetchingTeachers && <span className="text-base sm:text-lg md:text-xl text-red-600 font-bold flex items-center mb-1 animate-pulse"><Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />로딩 중...</span>}
                 </label>
                 <div className="flex gap-2">
-                  <select className="flex-1 h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl bg-gray-100 text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400" value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
+                  <select className="flex-1 h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl bg-[#ebebeb] text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400" value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
                     <option value="">선생님을 선택하세요</option>
                     {teachers.map(name => <option key={name} value={name}>{name.replace(/\n/g, ' ')}</option>)}
                   </select>
