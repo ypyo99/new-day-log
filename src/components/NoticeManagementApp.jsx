@@ -398,6 +398,10 @@ export default function NoticeManagementApp({ onNavigateBack }) {
 
   const handleEditorClick = (e) => {
     if (e.target.tagName === 'IMG') {
+      const parentA = e.target.closest('a');
+      if (parentA) {
+        e.preventDefault();
+      }
       setSelectedImg(e.target);
       const currentWidthStr = e.target.style.width || "";
       const matchPct = currentWidthStr.match(/(\d+)%/);
@@ -872,6 +876,14 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     <div 
                       className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
                       dangerouslySetInnerHTML={{ __html: selectedNotice.content.replace(/\n/g, '<br />') }}
+                      onClick={(e) => {
+                        if (e.target.tagName === 'IMG') {
+                          const parentA = e.target.closest('a');
+                          if (parentA) {
+                            e.preventDefault();
+                          }
+                        }
+                      }}
                     />
                   </div>
                 </div>
