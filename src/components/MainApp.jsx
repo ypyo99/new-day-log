@@ -100,6 +100,32 @@ export default function MainApp({
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
+  const [todayNotices, setTodayNotices] = useState([]);
+
+  useEffect(() => {
+    const fetchTodayNotices = async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('notices')
+          .select('title')
+          .lte('start_date', date)
+          .gte('end_date', date)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setTodayNotices(data);
+        } else {
+          setTodayNotices([]);
+        }
+      } catch (e) {
+        setTodayNotices([]);
+      }
+    };
+    if (date) {
+      fetchTodayNotices();
+    }
+  }, [date]);
+
   const [dbTeachers, setDbTeachers] = useState(() => {
     try {
       const stored = window.localStorage.getItem('sungdong_teacher_list');
@@ -1809,6 +1835,32 @@ export default function MainApp({
                 </button>
               </div>
               {errorMessage && <div className="text-red-600 font-bold text-base text-center pb-2">{errorMessage}</div>}
+
+              {todayNotices.length > 0 && !isDataLoading && (
+                <div className="mt-2 animate-fadeIn">
+                  <div className="bg-red-100 border-2 border-red-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 shadow-sm overflow-hidden text-left">
+                    <div className="flex items-start gap-1.5 sm:gap-3 w-full">
+                      <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0 mt-0.5">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                      </div>
+                      <div className="flex flex-col gap-0.5 sm:gap-1 w-full min-w-0">
+                        <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight flex items-center gap-1 sm:gap-2 text-red-800">
+                          오늘의 공지사항
+                        </h4>
+                        <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
+                          {todayNotices.map((notice, idx) => (
+                            <p key={idx} className="font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight text-red-700 tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block">
+                              • {notice.title}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {isMissingHeadcount && !isDataLoading && (
                 <div className="mt-2 animate-fadeIn">
