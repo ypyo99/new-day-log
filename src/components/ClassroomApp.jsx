@@ -408,7 +408,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 </button>
               </div>
               <p className="text-[14px] landscape:text-xl md:text-2xl text-gray-600 text-center mt-2 font-medium">
-                각 셀을 클릭하면 사용 가능한 장소를 변경가능합니다.
+                '<span className="bg-green-200 text-green-900 font-bold px-1.5 py-0.5 rounded">사용가능</span>'으로 표시된 날짜의 시간대에 이용 가능합니다.
               </p>
             </div>
           </div>
