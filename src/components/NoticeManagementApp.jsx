@@ -4,6 +4,25 @@ import { Home, LucideCalendar } from './Icons';
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
 
+const formatMMDD = (value) => {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+};
+
+const isValidMMDD = (value) => {
+  if (!/^\d{2}-\d{2}$/.test(value)) return false;
+  const [mm, dd] = value.split('-').map(Number);
+  if (mm < 1 || mm > 12) return false;
+  
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (dd < 1 || dd > daysInMonth[mm - 1]) return false;
+  
+  return true;
+};
+
 function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
   const [style, setStyle] = useState({ left: 0, top: 0, width: 0, height: 0 });
   const isResizing = useRef(false);
@@ -241,10 +260,9 @@ export default function NoticeManagementApp({ onNavigateBack }) {
 
   const getTodayString = () => {
     const d = new Date();
-    const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    return `${mm}-${dd}`;
   };
 
   useEffect(() => {
@@ -312,9 +330,9 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setSelectedNotice(notice);
     setTitle(notice.title);
     setContent(notice.content);
-    setStartDate(notice.start_date || "");
-    setEndDate(notice.end_date || "");
-    setCreatedAt(notice.created_at || "");
+    setStartDate(notice.start_date ? notice.start_date.substring(5) : "");
+    setEndDate(notice.end_date ? notice.end_date.substring(5) : "");
+    setCreatedAt(notice.created_at ? notice.created_at.substring(5) : "");
     setSelectedImg(null);
     if (isAdmin) {
       setIsEditing(true);
@@ -424,7 +442,22 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       alert("게시시작일과 게시종료일을 입력해 주세요.");
       return;
     }
-    if (new Date(startDate) > new Date(endDate)) {
+    if (!isValidMMDD(startDate) || !isValidMMDD(endDate)) {
+      alert("올바른 날짜(MM-DD 형식, 예: 06-05)로 입력해 주세요.");
+      return;
+    }
+
+    const currentYear = selectedNotice 
+      ? selectedNotice.created_at.split('-')[0]
+      : new Date().getFullYear().toString();
+
+    const fullStartDate = `${currentYear}-${startDate}`;
+    const fullEndDate = `${currentYear}-${endDate}`;
+    const fullCreatedAt = selectedNotice 
+      ? selectedNotice.created_at 
+      : `${currentYear}-${createdAt}`;
+
+    if (new Date(fullStartDate) > new Date(fullEndDate)) {
       alert("게시시작일은 게시종료일보다 빠르거나 같아야 합니다.");
       return;
     }
@@ -434,9 +467,9 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       const payload = {
         title: title.trim(),
         content: content.trim(),
-        created_at: createdAt,
-        start_date: startDate,
-        end_date: endDate,
+        created_at: fullCreatedAt,
+        start_date: fullStartDate,
+        end_date: fullEndDate,
         updated_at: new Date().toISOString()
       };
 
@@ -639,7 +672,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           {notice.title}
                         </td>
                         <td className="py-3 text-right text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-                          {notice.created_at}
+                          {notice.created_at ? notice.created_at.substring(5) : ''}
                         </td>
                       </tr>
                     ))}
@@ -688,32 +721,37 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold text-gray-600">작성일자</label>
                       <input
-                        type="date"
+                        type="text"
                         readOnly
+                        placeholder="MM-DD"
                         value={createdAt}
-                        className="p-2 border rounded-xl bg-gray-100 text-gray-600 font-bold outline-none text-xs sm:text-sm"
+                        className="p-2 border rounded-xl bg-gray-100 text-gray-600 font-bold outline-none text-xs sm:text-sm text-center"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold text-gray-600">게시시작일</label>
                       <input
-                        type="date"
+                        type="text"
                         required
+                        placeholder="MM-DD"
+                        maxLength={5}
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={(e) => setStartDate(formatMMDD(e.target.value))}
                         disabled={saving}
-                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm"
+                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold text-gray-600">게시종료일</label>
                       <input
-                        type="date"
+                        type="text"
                         required
+                        placeholder="MM-DD"
+                        maxLength={5}
                         value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                        onChange={(e) => setEndDate(formatMMDD(e.target.value))}
                         disabled={saving}
-                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm"
+                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center"
                       />
                     </div>
                   </div>
@@ -823,9 +861,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       {selectedNotice.title}
                     </h2>
                     <div className="flex justify-between items-center mt-2 flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium">
-                      <span>작성일자: {selectedNotice.created_at}</span>
+                      <span>작성일자: {selectedNotice.created_at ? selectedNotice.created_at.substring(5) : ''}</span>
                       <span className="bg-sky-50 border border-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">
-                        게시기간: {selectedNotice.start_date} ~ {selectedNotice.end_date}
+                        게시기간: {selectedNotice.start_date ? selectedNotice.start_date.substring(5) : ''} ~ {selectedNotice.end_date ? selectedNotice.end_date.substring(5) : ''}
                       </span>
                     </div>
                   </div>
