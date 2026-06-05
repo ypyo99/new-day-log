@@ -4,6 +4,185 @@ import { Home, LucideCalendar } from './Icons';
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
 
+function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
+  const [style, setStyle] = useState({ left: 0, top: 0, width: 0, height: 0 });
+  const isResizing = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, width: 0, height: 0, direction: '' });
+
+  const updatePosition = () => {
+    if (!selectedImg || !editorRef.current) return;
+    const imgRect = selectedImg.getBoundingClientRect();
+    const editorRect = editorRef.current.getBoundingClientRect();
+
+    const scrollTop = editorRef.current.scrollTop;
+    const scrollLeft = editorRef.current.scrollLeft;
+
+    setStyle({
+      left: imgRect.left - editorRect.left + scrollLeft,
+      top: imgRect.top - editorRect.top + scrollTop,
+      width: imgRect.width,
+      height: imgRect.height
+    });
+  };
+
+  useEffect(() => {
+    updatePosition();
+    
+    const editor = editorRef.current;
+    if (editor) {
+      editor.addEventListener('scroll', updatePosition);
+    }
+    window.addEventListener('resize', updatePosition);
+
+    const observer = new MutationObserver(updatePosition);
+    if (editor) {
+      observer.observe(editor, { attributes: true, childList: true, subtree: true });
+    }
+
+    return () => {
+      if (editor) {
+        editor.removeEventListener('scroll', updatePosition);
+      }
+      window.removeEventListener('resize', updatePosition);
+      observer.disconnect();
+    };
+  }, [selectedImg]);
+
+  const handleMouseDown = (e, direction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizing.current = true;
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      width: selectedImg.offsetWidth,
+      height: selectedImg.offsetHeight,
+      direction
+    };
+
+    const handleMouseMove = (moveEvent) => {
+      if (!isResizing.current) return;
+      const deltaX = moveEvent.clientX - dragStart.current.x;
+      const editorWidth = editorRef.current.clientWidth - 24; // 패딩 등 여백 고려
+
+      let newWidth = dragStart.current.width;
+      
+      if (dragStart.current.direction.includes('right')) {
+        newWidth = dragStart.current.width + deltaX;
+      } else if (dragStart.current.direction.includes('left')) {
+        newWidth = dragStart.current.width - deltaX;
+      }
+
+      // 최소 너비 40px, 최대 에디터 너비
+      newWidth = Math.max(40, Math.min(newWidth, editorWidth));
+      const pctWidth = Math.round((newWidth / editorWidth) * 100);
+      
+      selectedImg.style.width = `${pctWidth}%`;
+      selectedImg.style.height = 'auto';
+      
+      if (onResize) {
+        onResize(pctWidth);
+      }
+      
+      updatePosition();
+    };
+
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      if (onResizeEnd) {
+        onResizeEnd();
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  if (!selectedImg) return null;
+
+  const handleStyle = {
+    position: 'absolute',
+    width: '12px',
+    height: '12px',
+    background: '#3b82f6',
+    border: '2px solid #ffffff',
+    borderRadius: '50%',
+    zIndex: 50,
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${style.left}px`,
+        top: `${style.top}px`,
+        width: `${style.width}px`,
+        height: `${style.height}px`,
+        pointerEvents: 'none',
+        zIndex: 40,
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          border: '2px dashed #3b82f6',
+          boxSizing: 'border-box',
+          position: 'absolute',
+          left: 0,
+          top: 0
+        }}
+      />
+      {/* 우하단 */}
+      <div
+        style={{
+          ...handleStyle,
+          right: '-6px',
+          bottom: '-6px',
+          cursor: 'se-resize',
+          pointerEvents: 'auto',
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'bottom-right')}
+      />
+      {/* 좌하단 */}
+      <div
+        style={{
+          ...handleStyle,
+          left: '-6px',
+          bottom: '-6px',
+          cursor: 'sw-resize',
+          pointerEvents: 'auto',
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'bottom-left')}
+      />
+      {/* 우상단 */}
+      <div
+        style={{
+          ...handleStyle,
+          right: '-6px',
+          top: '-6px',
+          cursor: 'ne-resize',
+          pointerEvents: 'auto',
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'top-right')}
+      />
+      {/* 좌상단 */}
+      <div
+        style={{
+          ...handleStyle,
+          left: '-6px',
+          top: '-6px',
+          cursor: 'nw-resize',
+          pointerEvents: 'auto',
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'top-left')}
+      />
+    </div>
+  );
+}
+
 export default function NoticeManagementApp({ onNavigateBack }) {
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
@@ -177,7 +356,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       const { data: publicUrlData } = supabaseClient.storage.from('signatures').getPublicUrl(fileName);
       const imageUrl = publicUrlData.publicUrl;
 
-      const imgHtml = `<img src="${imageUrl}" alt="첨부 이미지" style="max-width: 100%; height: auto; display: block; margin: 12px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
+      const imgHtml = `<img src="${imageUrl}" alt="첨부 이미지" style="max-width: 100%; height: auto; display: block; margin: 12px 0; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
 
       if (editorRef.current) {
         editorRef.current.focus();
@@ -318,7 +497,9 @@ export default function NoticeManagementApp({ onNavigateBack }) {
           color: #9ca3af;
           font-weight: 500;
         }
-        .rich-editor img {
+        .rich-editor img, .prose img {
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
           cursor: pointer;
           transition: outline 0.15s ease, box-shadow 0.15s ease;
         }
@@ -585,15 +766,29 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       </label>
                     </div>
                   </div>
-                  <div
-                    ref={editorRef}
-                    contentEditable
-                    onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                    onClick={handleEditorClick}
-                    placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-                    className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none"
-                    style={{ minHeight: '200px' }}
-                  />
+                  <div className="relative flex-1 flex flex-col min-h-[200px]">
+                    {selectedImg && isEditing && (
+                      <ImageResizer
+                        selectedImg={selectedImg}
+                        editorRef={editorRef}
+                        onResize={(pct) => setSelectedImgWidth(pct)}
+                        onResizeEnd={() => {
+                          if (editorRef.current) {
+                            setContent(editorRef.current.innerHTML);
+                          }
+                        }}
+                      />
+                    )}
+                    <div
+                      ref={editorRef}
+                      contentEditable
+                      onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                      onClick={handleEditorClick}
+                      placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
+                      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
+                      style={{ minHeight: '200px' }}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-3">
