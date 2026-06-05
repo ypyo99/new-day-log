@@ -34,12 +34,31 @@ export default function NoticeManagementApp({ onNavigateBack }) {
   const [endDate, setEndDate] = useState("");
   const [createdAt, setCreatedAt] = useState("");
   const editorRef = useRef(null);
+  const [selectedImg, setSelectedImg] = useState(null);
+  const [selectedImgWidth, setSelectedImgWidth] = useState(100);
+  const prevSelectedImgRef = useRef(null);
 
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.innerHTML = selectedNotice ? selectedNotice.content : "";
     }
   }, [isEditing, selectedNotice]);
+
+  useEffect(() => {
+    if (prevSelectedImgRef.current) {
+      try {
+        prevSelectedImgRef.current.style.outline = "";
+        prevSelectedImgRef.current.style.boxShadow = "";
+      } catch (e) {}
+    }
+    if (selectedImg) {
+      try {
+        selectedImg.style.outline = "3px solid #3b82f6";
+        selectedImg.style.boxShadow = "0 0 12px rgba(59, 130, 246, 0.4)";
+      } catch (e) {}
+    }
+    prevSelectedImgRef.current = selectedImg;
+  }, [selectedImg]);
 
   const getTodayString = () => {
     const d = new Date();
@@ -117,6 +136,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setStartDate(notice.start_date || "");
     setEndDate(notice.end_date || "");
     setCreatedAt(notice.created_at || "");
+    setSelectedImg(null);
     if (isAdmin) {
       setIsEditing(true);
     } else {
@@ -132,6 +152,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setEndDate("");
     setCreatedAt(getTodayString());
     setIsEditing(true);
+    setSelectedImg(null);
     if (editorRef.current) {
       editorRef.current.innerHTML = "";
     }
@@ -178,6 +199,42 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     }
   };
 
+  const handleEditorClick = (e) => {
+    if (e.target.tagName === 'IMG') {
+      setSelectedImg(e.target);
+      const currentWidthStr = e.target.style.width || "";
+      const matchPct = currentWidthStr.match(/(\d+)%/);
+      if (matchPct) {
+        setSelectedImgWidth(parseInt(matchPct[1]));
+      } else {
+        setSelectedImgWidth(100);
+      }
+    } else {
+      setSelectedImg(null);
+    }
+  };
+
+  const handleImageResize = (e) => {
+    const val = parseInt(e.target.value);
+    setSelectedImgWidth(val);
+    if (selectedImg) {
+      selectedImg.style.width = `${val}%`;
+      if (editorRef.current) {
+        setContent(editorRef.current.innerHTML);
+      }
+    }
+  };
+
+  const applyQuickResize = (pct) => {
+    setSelectedImgWidth(pct);
+    if (selectedImg) {
+      selectedImg.style.width = `${pct}%`;
+      if (editorRef.current) {
+        setContent(editorRef.current.innerHTML);
+      }
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
@@ -218,6 +275,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       alert("공지사항이 성공적으로 저장되었습니다.");
       setIsEditing(false);
       setSelectedNotice(null);
+      setSelectedImg(null);
       loadNotices();
     } catch (err) {
       console.error(err);
@@ -259,6 +317,13 @@ export default function NoticeManagementApp({ onNavigateBack }) {
           content: attr(placeholder);
           color: #9ca3af;
           font-weight: 500;
+        }
+        .rich-editor img {
+          cursor: pointer;
+          transition: outline 0.15s ease, box-shadow 0.15s ease;
+        }
+        .rich-editor img:hover {
+          outline: 2px solid #3b82f6;
         }
       `}</style>
       {/* 헤더 영역 */}
@@ -472,6 +537,34 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 </div>
 
                 <div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
+                  {selectedImg && (
+                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-2.5 flex flex-col sm:flex-row items-center gap-3 animate-fadeIn text-xs sm:text-sm">
+                      <span className="font-bold text-sky-850 shrink-0">선택된 이미지 크기:</span>
+                      <div className="flex items-center gap-2 flex-1 w-full">
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          value={selectedImgWidth}
+                          onChange={handleImageResize}
+                          className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
+                      </div>
+                      <div className="flex gap-1 shrink-0 w-full sm:w-auto">
+                        {[25, 50, 75, 100].map(pct => (
+                          <button
+                            key={pct}
+                            type="button"
+                            onClick={() => applyQuickResize(pct)}
+                            className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
+                          >
+                            {pct}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <label className="text-sm font-bold text-gray-600">내용</label>
                     <div className="relative">
@@ -496,6 +589,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     ref={editorRef}
                     contentEditable
                     onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                    onClick={handleEditorClick}
                     placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
                     className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none"
                     style={{ minHeight: '200px' }}
@@ -508,6 +602,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     onClick={() => {
                       setIsEditing(false);
                       setSelectedNotice(null);
+                      setSelectedImg(null);
                     }}
                     disabled={saving}
                     className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm sm:text-base transition-colors"
