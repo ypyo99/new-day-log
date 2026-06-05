@@ -303,8 +303,13 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     loadNotices();
   }, []);
 
-  const handleAdminClick = () => {
+  const handleAdminClick = async () => {
     if (isAdmin) {
+      if (isEditing && title.trim() && content.trim() && startDate && endDate && isValidMMDD(startDate) && isValidMMDD(endDate)) {
+        try {
+          await handleSave({ preventDefault: () => {} });
+        } catch (e) {}
+      }
       setIsAdmin(false);
       window.localStorage.removeItem('sungdong_admin_logged_in');
       setIsEditing(false);
