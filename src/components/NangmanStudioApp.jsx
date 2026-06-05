@@ -643,7 +643,7 @@ CREATE POLICY "Allow public all access" ON public.nangman_schedules FOR ALL USIN
                   onClick={onNavigateToClassroom}
                   className="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-xs md:text-sm font-bold shadow-sm transition-all active:scale-95 touch-manipulation"
                 >
-                  지하1층 공간
+                  평생교육실2
                 </button>
               </div>
               <textarea
