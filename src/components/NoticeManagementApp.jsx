@@ -656,9 +656,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
               <div className="flex-1 overflow-y-auto pr-1">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <th className="pb-2">제목</th>
-                      <th className="pb-2 text-right w-28">작성일자</th>
+                    <tr className="border-b-2 text-sm font-bold text-blue-900 uppercase tracking-wider bg-blue-300">
+                      <th className="py-2.5 px-3 rounded-l-lg">제목</th>
+                      <th className="py-2.5 px-3 text-right w-28 rounded-r-lg">작성일자</th>
                     </tr>
                   </thead>
                   <tbody>
