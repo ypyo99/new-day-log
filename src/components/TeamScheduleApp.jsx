@@ -1159,7 +1159,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             }
 
                             return (
-                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] ${cellClass}`} style={cellStyle}>{cellContent || '\u00A0'}
+                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>{cellContent || '\u00A0'}
                               </td>
                             );
                           })}
@@ -1306,7 +1306,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 )}
                                 <td className="border-r border-b border-gray-200 text-blue-700 font-bold align-middle py-2 px-1">{item.shift}</td>
                                 <td className="border-r border-b border-gray-200 text-gray-800 font-medium align-middle py-2 px-1" style={targetStyle}>
-                                  <span className={`text-sm font-bold ${studentTextClass}`}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.name || '공휴일') : (item.student || '-')}</span>
+                                  <span className={`text-sm font-bold break-all whitespace-pre-wrap ${studentTextClass}`}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.name || '공휴일') : (item.student || '-')}</span>
                                 </td>
                                 <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1" style={targetStyle}>
                                   {(item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")))) && !(isHoliday) ? (
