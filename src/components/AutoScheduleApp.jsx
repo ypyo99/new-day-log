@@ -279,8 +279,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           let dayRecords = baseLogs.filter(l => l.teacher.trim() === teacherName && l.log_date === baseDate);
 
           let hasReal = dayRecords.some(r => {
-            const s = (r.student || "").trim();
-            return s && !EXCLUDE_KEYWORDS.some(kw => s.includes(kw));
+            const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
+            return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
           });
 
           let targetRecords = dayRecords;
@@ -306,8 +306,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
               if (!fbErr && fbRecords && fbRecords.length > 0) {
                 const fbHasReal = fbRecords.some(r => {
-                  const s = (r.student || "").trim();
-                  return s && !EXCLUDE_KEYWORDS.some(kw => s.includes(kw));
+                  const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
+                  return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
                 });
                 if (fbHasReal) {
                   targetRecords = fbRecords;
@@ -929,7 +929,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                           && editCell.shift === shift;
 
                         const isHighlight = student && (student.includes("보조강사") || student.includes("컴기초") || student.includes("스마트폰"));
-                        const isExclude = student && EXCLUDE_KEYWORDS.some(kw => student.includes(kw));
+                        const isExclude = (student || location) && EXCLUDE_KEYWORDS.some(kw => (student + location).replace(/\s+/g, "").includes(kw));
 
                         let cellBg = isEditing ? "bg-indigo-50" : "bg-white";
                         if (!isEditing && isHighlight) cellBg = "bg-yellow-100";
