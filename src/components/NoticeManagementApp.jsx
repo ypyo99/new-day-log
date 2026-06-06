@@ -731,7 +731,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
                       <th className="py-2.5 px-3 border-b-2 border-blue-400 rounded-tl-lg" style={{ backgroundColor: '#dbeafe' }}>제목</th>
-                      <th className="py-2.5 px-3 border-b-2 border-blue-400 text-right w-28 rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>작성일자</th>
+                      <th className="py-2.5 px-3 border-b-2 border-blue-400 text-right w-20 rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>작성일자</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -741,18 +741,18 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         onClick={() => handleSelectNotice(notice)}
                         className={`border-b cursor-pointer transition-colors ${notice.is_top ? 'bg-orange-50/50 hover:bg-orange-100/60' : 'hover:bg-blue-50/50'} ${selectedNotice?.id === notice.id ? '!bg-blue-50 font-semibold' : ''}`}
                       >
-                        <td className="py-3 px-1 text-base sm:text-lg text-gray-800">
-                          <div className="flex items-start">
+                        <td className="py-3 px-1 text-base sm:text-lg text-gray-800 min-w-0">
+                          <div className="flex items-center min-w-0">
                             {notice.is_top ? (
-                              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-red-100 border border-red-200 text-red-600 text-xs font-bold mr-2 mt-0.5 shrink-0 shadow-sm animate-pulse">
+                              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-red-100 border border-red-200 text-red-600 text-xs font-bold mr-2 shrink-0 shadow-sm animate-pulse">
                                 📌
                               </span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 mr-2 mt-0.5 shrink-0 shadow-sm">
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 mr-2 shrink-0 shadow-sm">
                                 <svg className="w-3 h-3 translate-x-[0.5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                               </span>
                             )}
-                            <span className="line-clamp-2 break-all">{notice.title}</span>
+                            <span className="truncate block flex-1">{notice.title}</span>
                           </div>
                         </td>
                         <td className="py-3 text-right text-sm sm:text-base text-gray-500 whitespace-nowrap">
