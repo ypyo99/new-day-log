@@ -107,14 +107,27 @@ export default function MainApp({
       try {
         const { data, error } = await supabaseClient
           .from('notices')
-          .select('title, is_top')
+          .select('title, is_top, end_date, created_at')
           .lte('start_date', date)
-          .gte('end_date', date)
-          .order('is_top', { ascending: false })
-          .order('created_at', { ascending: false });
+          .gte('end_date', date);
 
         if (!error && data) {
-          setTodayNotices(data);
+          const sorted = [...data].sort((a, b) => {
+            const isTopA = a.is_top || false;
+            const isTopB = b.is_top || false;
+            if (isTopA !== isTopB) {
+              return isTopB ? 1 : -1;
+            }
+            if (isTopA && isTopB) {
+              const dateA = a.end_date ? new Date(a.end_date) : new Date('9999-12-31');
+              const dateB = b.end_date ? new Date(b.end_date) : new Date('9999-12-31');
+              return dateA - dateB;
+            }
+            const dateA = a.created_at ? new Date(a.created_at) : new Date('1970-01-01');
+            const dateB = b.created_at ? new Date(b.created_at) : new Date('1970-01-01');
+            return dateB - dateA;
+          });
+          setTodayNotices(sorted);
         } else {
           setTodayNotices([]);
         }

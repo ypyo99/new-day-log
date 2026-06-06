@@ -309,10 +309,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     try {
       const { data, error } = await supabaseClient
         .from('notices')
-        .select('*')
-        .order('is_top', { ascending: false })
-        .order('created_at', { ascending: false })
-        .order('updated_at', { ascending: false });
+        .select('*');
 
       if (error) {
         if (error.code === '42P01' || error.code === 'PGRST205' || (error.message && error.message.includes('notices'))) {
@@ -321,7 +318,22 @@ export default function NoticeManagementApp({ onNavigateBack }) {
           setErrorMsg("데이터 로드 실패: " + error.message);
         }
       } else {
-        setNotices(data || []);
+        const sortedData = (data || []).sort((a, b) => {
+          const isTopA = a.is_top || false;
+          const isTopB = b.is_top || false;
+          if (isTopA !== isTopB) {
+            return isTopB ? 1 : -1;
+          }
+          if (isTopA && isTopB) {
+            const dateA = a.end_date ? new Date(a.end_date) : new Date('9999-12-31');
+            const dateB = b.end_date ? new Date(b.end_date) : new Date('9999-12-31');
+            return dateA - dateB;
+          }
+          const dateA = a.created_at ? new Date(a.created_at) : new Date('1970-01-01');
+          const dateB = b.created_at ? new Date(b.created_at) : new Date('1970-01-01');
+          return dateB - dateA;
+        });
+        setNotices(sortedData);
         setSupabaseTableMissing(false);
       }
     } catch (err) {
