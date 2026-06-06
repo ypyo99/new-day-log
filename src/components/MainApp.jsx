@@ -1186,9 +1186,9 @@ export default function MainApp({
       const targetData = allScheduleData[d] || {};
       return Object.keys(targetData).some(shiftTime => {
         const original = getMyOriginalRecord(d, shiftTime);
+        if (!original || !(original.teacher || "").trim()) return false;
         const student = original?.student || "";
         const location = original?.location || "";
-        if (!student.trim()) return false;
         const combinedText = student + location;
         return !combinedText.includes("공휴일") && !combinedText.includes("간담회") && !combinedText.includes("소양교육");
       });
@@ -1201,11 +1201,10 @@ export default function MainApp({
     }
 
     const validTargetDates = targetDates.filter(targetDate => {
-      const todaysOriginalData = allScheduleData[targetDate] || {};
       let hasDifference = false;
       shifts.forEach((shiftTime, i) => {
         const log = logs[i];
-        const original = todaysOriginalData[shiftTime] || {};
+        const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = (log.student || "") !== (original.student || "");
         const isLocationDiff = (log.location || "") !== (original.location || "");
         if (isStudentDiff || isLocationDiff) {
@@ -1237,10 +1236,9 @@ export default function MainApp({
         console.log(`Skipping repeat replication for holiday target date: ${targetDate}`);
         return;
       }
-      const todaysOriginalData = allScheduleData[targetDate] || {};
       shifts.forEach((shiftTime, i) => {
         const log = logs[i];
-        const original = todaysOriginalData[shiftTime] || {};
+        const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = (log.student || "") !== (original.student || "");
         const isLocationDiff = (log.location || "") !== (original.location || "");
         if (isStudentDiff || isLocationDiff) {
@@ -1431,11 +1429,6 @@ export default function MainApp({
       const log = logs[i];
       const student = (log?.student || "").trim();
       const location = (log?.location || "").trim();
-
-      if (!student && !location) {
-        result[i] = false;
-        return;
-      }
 
       const hasDiff = targetDates.some(targetDate => {
         const original = getMyOriginalRecord(targetDate, shiftTime);
@@ -2229,14 +2222,13 @@ export default function MainApp({
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
-                    disabled={hasChanges || isEmptySchedule || !!noNewScheduleToRepeat}
-                    className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || isEmptySchedule || !!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
+                    disabled={hasChanges || !!noNewScheduleToRepeat}
+                    className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || !!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
                     title={
                       hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." :
-                        isEmptySchedule ? "복제할 일정이 없습니다. 학생이름과 장소를 먼저 입력해 주세요." :
-                          noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
-                            noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
-                              "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
+                        noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
+                          noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
+                            "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
                     }
                   >
                     <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제

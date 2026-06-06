@@ -125,6 +125,19 @@ export default function HolidayManagementApp({ onNavigateBack }) {
       payload.content1 = payload.content1 ? payload.content1.trim() : '';
       payload.content2 = payload.content2 ? payload.content2.trim() : '';
 
+      // ID 시퀀스 오류(duplicate key) 방지를 위해 수동으로 가장 큰 id를 찾아 +1 할당
+      const { data: maxData } = await supabaseClient
+        .from('holidays')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1);
+
+      if (maxData && maxData.length > 0) {
+        payload.id = maxData[0].id + 1;
+      } else {
+        payload.id = 1;
+      }
+
       const { error } = await supabaseClient
         .from('holidays')
         .insert(payload);
