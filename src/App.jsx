@@ -22,6 +22,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState(() => getSessionItem('sungdong_current_view', 'main'));
   const [selectedTeamForSchedule, setSelectedTeamForSchedule] = useState(() => getSavedItem('sungdong_schedule_team', ''));
   const [selectedTeacherForWeekly, setSelectedTeacherForWeekly] = useState(() => getSavedItem('sungdong_weekly_teacher', ''));
+  const [selectedNoticeForView, setSelectedNoticeForView] = useState(null);
 
   useEffect(() => {
     setSessionItem('sungdong_current_view', currentView);
@@ -98,7 +99,7 @@ export default function App() {
   }
 
   if (currentView === 'noticeManagement') {
-    return <NoticeManagementApp onNavigateBack={() => setCurrentView('main')} />;
+    return <NoticeManagementApp onNavigateBack={() => setCurrentView('main')} initialNotice={selectedNoticeForView} />;
   }
 
   return (
@@ -127,7 +128,10 @@ export default function App() {
       onNavigateToAutoSchedule={() => setCurrentView('autoSchedule')}
       onNavigateToHolidayManagement={() => setCurrentView('holidayManagement')}
       onNavigateToNangmanStudio={() => setCurrentView('nangmanStudio')}
-      onNavigateToNoticeManagement={() => setCurrentView('noticeManagement')}
+      onNavigateToNoticeManagement={(notice = null) => {
+        setSelectedNoticeForView(notice);
+        setCurrentView('noticeManagement');
+      }}
     />
   );
 }

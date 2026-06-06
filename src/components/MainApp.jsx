@@ -107,7 +107,7 @@ export default function MainApp({
       try {
         const { data, error } = await supabaseClient
           .from('notices')
-          .select('title, is_top, end_date, created_at')
+          .select('*')
           .lte('start_date', date)
           .gte('end_date', date);
 
@@ -2027,10 +2027,13 @@ export default function MainApp({
 
           <div className="flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
             {todayNotices.length > 0 && (
-              <div className="animate-fadeIn w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]" onClick={onNavigateToNoticeManagement}>
+              <div className="animate-fadeIn w-full">
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
                   <div className="flex flex-col gap-1.5 sm:gap-2 w-full min-w-0">
-                    <div className="flex items-center gap-2 sm:gap-3 w-full">
+                    <div 
+                      className="flex items-center gap-2 sm:gap-3 w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]"
+                      onClick={() => onNavigateToNoticeManagement()}
+                    >
                       <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0">
                         <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
@@ -2042,7 +2045,14 @@ export default function MainApp({
                     </div>
                     <div className="space-y-1 sm:space-y-1.5 w-full min-w-0">
                       {todayNotices.map((notice, idx) => (
-                        <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${notice.is_top ? 'text-red-900 bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : 'text-red-700'}`}>
+                        <p 
+                          key={idx} 
+                          className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'text-red-900 bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : 'text-red-700'}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigateToNoticeManagement(notice);
+                          }}
+                        >
                           {notice.is_top ? '📌 ' : '• '} {notice.title}
                         </p>
                       ))}

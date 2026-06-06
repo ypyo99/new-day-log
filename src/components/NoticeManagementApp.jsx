@@ -233,7 +233,7 @@ const linkifyHtml = (html) => {
   }
 };
 
-export default function NoticeManagementApp({ onNavigateBack }) {
+export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [showPwdModal, setShowPwdModal] = useState(false);
@@ -405,6 +405,12 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       setIsEditing(false);
     }
   };
+
+  useEffect(() => {
+    if (initialNotice) {
+      handleSelectNotice(initialNotice);
+    }
+  }, [initialNotice, isAdmin]);
 
   const handleNewNotice = () => {
     setSelectedNotice(null);
