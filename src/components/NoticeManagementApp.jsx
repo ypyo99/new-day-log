@@ -234,13 +234,7 @@ const linkifyHtml = (html) => {
 };
 
 export default function NoticeManagementApp({ onNavigateBack }) {
-  const [isAdmin, setIsAdmin] = useState(() => {
-    try {
-      return window.localStorage.getItem('sungdong_admin_logged_in') === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [pwdInput, setPwdInput] = useState("");
