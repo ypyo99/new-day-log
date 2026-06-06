@@ -2226,7 +2226,16 @@ export default function MainApp({
                             type="text"
                             placeholder="대상자 이름"
                             value={logs[index].student}
-                            onChange={(e) => handleLogChange(index, 'student', e.target.value)}
+                            onChange={(e) => {
+                              const newVal = e.target.value;
+                              const prevStudent = logs[index]?.student || "";
+                              const prevLocation = logs[index]?.location || "";
+                              handleLogChange(index, 'student', newVal);
+                              // 학생이름과 장소가 모두 블랭크인 상태에서 학생이름을 새로 입력할 때 장소를 '복지관'으로 자동 입력
+                              if (!prevStudent.trim() && !prevLocation.trim() && newVal.trim()) {
+                                handleLogChange(index, 'location', '복지관');
+                              }
+                            }}
                             onBlur={handleInputBlur}
                             disabled={isDataLoading}
                             className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
