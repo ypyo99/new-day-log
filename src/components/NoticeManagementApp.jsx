@@ -299,6 +299,14 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     return `${mm}-${dd}`;
   };
 
+  const getFullTodayString = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   useEffect(() => {
     if (showPwdModal && pwdInputRef.current) {
       pwdInputRef.current.focus();
@@ -352,7 +360,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
 
   const handleAdminClick = async () => {
     if (isAdmin) {
-      if (isEditing && title.trim() && content.trim() && startDate && endDate && isValidMMDD(startDate) && isValidMMDD(endDate)) {
+      if (isEditing && title.trim() && content.trim() && startDate && endDate) {
         try {
           await handleSave({ preventDefault: () => {} });
         } catch (e) {}
@@ -387,8 +395,8 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setTitle(notice.title);
     setContent(notice.content);
     setIsTop(notice.is_top || false);
-    setStartDate(notice.start_date ? notice.start_date.substring(5) : "");
-    setEndDate(notice.end_date ? notice.end_date.substring(5) : "");
+    setStartDate(notice.start_date || "");
+    setEndDate(notice.end_date || "");
     setCreatedAt(notice.created_at ? notice.created_at.substring(5) : "");
     setSelectedImg(null);
     if (isAdmin) {
@@ -403,7 +411,7 @@ export default function NoticeManagementApp({ onNavigateBack }) {
     setTitle("");
     setContent("");
     setIsTop(false);
-    setStartDate(getTodayString());
+    setStartDate(getFullTodayString());
     setEndDate("");
     setCreatedAt(getTodayString());
     setIsEditing(true);
@@ -504,17 +512,13 @@ export default function NoticeManagementApp({ onNavigateBack }) {
       alert("게시시작일과 게시종료일을 입력해 주세요.");
       return;
     }
-    if (!isValidMMDD(startDate) || !isValidMMDD(endDate)) {
-      alert("올바른 날짜(MM-DD 형식, 예: 06-05)로 입력해 주세요.");
-      return;
-    }
 
     const currentYear = selectedNotice 
       ? selectedNotice.created_at.split('-')[0]
       : new Date().getFullYear().toString();
 
-    const fullStartDate = `${currentYear}-${startDate}`;
-    const fullEndDate = `${currentYear}-${endDate}`;
+    const fullStartDate = startDate;
+    const fullEndDate = endDate;
     const fullCreatedAt = selectedNotice 
       ? selectedNotice.created_at 
       : `${currentYear}-${createdAt}`;
@@ -601,6 +605,26 @@ export default function NoticeManagementApp({ onNavigateBack }) {
         }
         .rich-editor img:hover {
           outline: 2px solid #3b82f6;
+        }
+        .date-input-hidden {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          cursor: pointer;
+          box-sizing: border-box;
+        }
+        .date-input-hidden::-webkit-calendar-picker-indicator {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          cursor: pointer;
         }
       `}</style>
       {/* 헤더 영역 */}
@@ -842,29 +866,31 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold text-gray-600">게시시작일</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM-DD"
-                        maxLength={5}
-                        value={startDate}
-                        onChange={(e) => setStartDate(formatMMDD(e.target.value))}
-                        disabled={saving}
-                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center bg-gray-200"
-                      />
+                      <div className="relative p-2 border rounded-xl font-bold text-gray-800 focus-within:border-blue-500 text-xs sm:text-sm text-center bg-gray-200 overflow-hidden">
+                        {startDate ? startDate.substring(5) : 'MM-DD'}
+                        <input
+                          type="date"
+                          required
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          disabled={saving}
+                          className="date-input-hidden"
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold text-gray-600">게시종료일</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM-DD"
-                        maxLength={5}
-                        value={endDate}
-                        onChange={(e) => setEndDate(formatMMDD(e.target.value))}
-                        disabled={saving}
-                        className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-xs sm:text-sm text-center bg-gray-200"
-                      />
+                      <div className="relative p-2 border rounded-xl font-bold text-gray-800 focus-within:border-blue-500 text-xs sm:text-sm text-center bg-gray-200 overflow-hidden">
+                        {endDate ? endDate.substring(5) : 'MM-DD'}
+                        <input
+                          type="date"
+                          required
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          disabled={saving}
+                          className="date-input-hidden"
+                        />
+                      </div>
                     </div>
                   </div>
 
