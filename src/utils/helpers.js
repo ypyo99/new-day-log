@@ -117,21 +117,24 @@ export const setGlobalTeachersList = (list) => {
 };
 
 export const getGlobalTeachersList = () => {
-  if (globalTeachersList.length > 0) return globalTeachersList;
+  if (globalTeachersList && globalTeachersList.length > 0) return globalTeachersList;
   try {
     const stored = window.localStorage.getItem('sungdong_teacher_list');
     if (stored) {
-      globalTeachersList = JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      globalTeachersList = Array.isArray(parsed) ? parsed : [];
       return globalTeachersList;
     }
   } catch (e) { }
-  return [];
+  globalTeachersList = [];
+  return globalTeachersList;
 };
 
 export const normalizeTeacherName = (name) => (name || "").trim().replace(/[\s\n\r]/g, "");
 
 export const findTeacherRecord = (team, teacherName, teacherList = null) => {
-  const list = teacherList || getGlobalTeachersList();
+  let list = teacherList || getGlobalTeachersList();
+  if (!Array.isArray(list)) list = [];
   const clean = normalizeTeacherName(teacherName);
   return list.find(t => t.team === team && normalizeTeacherName(t.name) === clean) || null;
 };

@@ -155,14 +155,18 @@ export default function MainApp({
   const [dbTeachers, setDbTeachers] = useState(() => {
     try {
       const stored = window.localStorage.getItem('sungdong_teacher_list');
-      return stored ? JSON.parse(stored) : [];
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) { return []; }
   });
 
   const [holidaysDbList, setHolidaysDbList] = useState(() => {
     try {
       const cached = window.localStorage.getItem('sungdong_holidays');
-      return cached ? JSON.parse(cached) : [];
+      if (!cached) return [];
+      const parsed = JSON.parse(cached);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
@@ -381,6 +385,7 @@ export default function MainApp({
     if (cachedTeachers) {
       try {
         const parsed = JSON.parse(cachedTeachers);
+        if (!Array.isArray(parsed)) throw new Error('Not array');
         const dbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
         const hasDefaultTeacher = parsed && dbNames.length > 0 && parsed.some(t => dbNames.includes(t));
         if (parsed && parsed.length > 0 && hasDefaultTeacher) {
