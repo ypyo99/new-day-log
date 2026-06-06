@@ -884,7 +884,39 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             min="10"
                             max="100"
                             value={selectedImgWidth}
-                                           <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              setSelectedImgWidth(val);
+                              if (selectedImg) {
+                                selectedImg.style.width = val + '%';
+                                selectedImg.style.height = 'auto';
+                              }
+                            }}
+                            className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
+                        </div>
+                        <div className="flex gap-1 shrink-0 w-full sm:w-auto">
+                          {[25, 50, 75, 100].map(pct => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => {
+                                setSelectedImgWidth(pct);
+                                if (selectedImg) {
+                                  selectedImg.style.width = pct + '%';
+                                  selectedImg.style.height = 'auto';
+                                }
+                              }}
+                              className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
+                            >
+                              {pct}%
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
                       <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
                         <div className="relative">
