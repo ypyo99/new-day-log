@@ -1367,22 +1367,6 @@ export default function MainApp({
   const handleRepeatScheduleForShift = async (index) => {
     if (isDataLoading) return;
 
-    // 현재 선택한 시간대의 정보가 기존 저장된 정보와 다른지 확인
-    const todaysOriginalData = allScheduleData[date] || {};
-    const original = todaysOriginalData[shifts[index]] || {};
-    const log = logs[index];
-    const originalStatus = formatStatusIfDate(original.status);
-    const currentStatusStr = buildStatusString(log);
-
-    const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
-    const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
-    const statusChanged = currentStatusStr !== originalStatus;
-
-    if (studentChanged || locationChanged || statusChanged) {
-      const saved = await performAutoSave();
-      if (!saved) return;
-    }
-
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
@@ -1412,6 +1396,22 @@ export default function MainApp({
     }
 
     if (window.confirm(`이 시간대(${shifts[index]})의 일정을 이후 동일한 요일의 미래 일정들에 복제하시겠습니까?`)) {
+      // 현재 선택한 시간대의 정보가 기존 저장된 정보와 다른지 확인 후 저장
+      const todaysOriginalData = allScheduleData[date] || {};
+      const original = todaysOriginalData[shifts[index]] || {};
+      const log = logs[index];
+      const originalStatus = formatStatusIfDate(original.status);
+      const currentStatusStr = buildStatusString(log);
+
+      const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
+      const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
+      const statusChanged = currentStatusStr !== originalStatus;
+
+      if (studentChanged || locationChanged || statusChanged) {
+        const saved = await performAutoSave();
+        if (!saved) return;
+      }
+
       executeRepeatScheduleForShift(index, validTargetDates);
     }
   };

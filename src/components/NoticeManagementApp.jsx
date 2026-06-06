@@ -202,6 +202,37 @@ function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
   );
 }
 
+const linkifyHtml = (html) => {
+  if (!html) return "";
+  try {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    const urlRegex = /(https?:\/\/[^\s<]+[^.,;!?'"()\[\]\s<])/gi;
+
+    const walk = (node) => {
+      if (node.nodeType === 3) { // Node.TEXT_NODE
+        const text = node.nodeValue;
+        if (urlRegex.test(text)) {
+          const span = document.createElement('span');
+          span.innerHTML = text.replace(urlRegex, (url) => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all font-bold">${url}</a>`;
+          });
+          node.parentNode.replaceChild(span, node);
+        }
+      } else if (node.nodeType === 1 && node.tagName !== 'A' && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+        const children = Array.from(node.childNodes);
+        children.forEach(walk);
+      }
+    };
+
+    Array.from(tempDiv.childNodes).forEach(walk);
+    return tempDiv.innerHTML;
+  } catch (e) {
+    return html;
+  }
+};
+
 export default function NoticeManagementApp({ onNavigateBack }) {
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
@@ -938,7 +969,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   <div className="flex-1 overflow-y-auto pr-1">
                     <div 
                       className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
-                      dangerouslySetInnerHTML={{ __html: selectedNotice.content.replace(/\n/g, '<br />') }}
+                      dangerouslySetInnerHTML={{ __html: linkifyHtml(selectedNotice.content).replace(/\n/g, '<br />') }}
                       onClick={(e) => {
                         const parentA = e.target.closest('a');
                         if (parentA && parentA.querySelector('img')) {
