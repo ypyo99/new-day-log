@@ -2452,7 +2452,7 @@ export default function MainApp({
                             }}
                             onBlur={handleInputBlur}
                             disabled={isDataLoading}
-                            className={`flex-[1.5] min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+                            className={`flex-[1.5] min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                           />
                           <input
                             type="text"
@@ -2461,7 +2461,7 @@ export default function MainApp({
                             onChange={(e) => handleLogChange(index, 'location', e.target.value)}
                             onBlur={handleInputBlur}
                             disabled={isDataLoading}
-                            className={`flex-1 min-w-0 ${isCompact ? 'py-1 sm:py-1.5' : 'py-1.5 sm:py-2 md:py-2.5'} px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+                            className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                           />
                         </div>
 
@@ -2535,7 +2535,7 @@ export default function MainApp({
                             onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
                             onBlur={handleInputBlur}
                             disabled={isDataLoading || isInfoMissing}
-                            className={`flex-1 min-w-0 ${isCompact ? 'py-1.5 sm:py-2' : 'py-2 sm:py-2.5 md:py-3'} px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none`}
+                            className={`flex-1 min-w-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none`}
                           />
                         </div>
                       </div>
