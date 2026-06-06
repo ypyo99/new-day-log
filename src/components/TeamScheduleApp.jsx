@@ -1185,6 +1185,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                   if (weightA !== weightB) return weightA - weightB;
 
                   if (a.teacher !== b.teacher) {
+                    const tWeightA = getTeacherSortWeight(currentTeam, a.teacher);
+                    const tWeightB = getTeacherSortWeight(currentTeam, b.teacher);
+                    if (tWeightA !== tWeightB) return tWeightA - tWeightB;
                     return a.teacher.localeCompare(b.teacher);
                   }
 
