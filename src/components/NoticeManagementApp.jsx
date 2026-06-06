@@ -993,7 +993,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         <span className="font-bold text-gray-500 mr-1 select-none">형광펜:</span>
                         <div className="flex items-center gap-1.5">
                           <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-4 h-4 rounded-full bg-white border border-gray-400 text-[9px] flex items-center justify-center font-bold active:scale-90 transition-transform" title="지우기">❌</button>
-                          <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-4 h-4 rounded-full bg-yellow-250 border border-gray-400 active:scale-90 transition-transform" title="노란색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#fef9c3')} className="w-4 h-4 rounded-full border border-gray-400 active:scale-90 transition-transform" style={{backgroundColor: '#fef9c3'}} title="옅은 노란색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-4 h-4 rounded-full border border-gray-400 active:scale-90 transition-transform" style={{backgroundColor: '#fef08a'}} title="노란색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-4 h-4 rounded-full border border-gray-400 active:scale-90 transition-transform" style={{backgroundColor: '#dcfce7'}} title="옅은 초록색 배경" />
                           <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-4 h-4 rounded-full bg-red-100 border border-gray-400 active:scale-90 transition-transform" title="연빨간색 배경" />
                           <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-4 h-4 rounded-full bg-blue-100 border border-gray-400 active:scale-90 transition-transform" title="연파란색 배경" />
                         </div>
