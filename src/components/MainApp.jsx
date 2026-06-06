@@ -1169,7 +1169,6 @@ export default function MainApp({
     setIsLoggedIn(false);
     setRecords([]);
     window.localStorage.removeItem('sungdong_admin_logged_in');
-    setCurrentUser("");
   };
   const handleSubmit = async (e) => { e.preventDefault(); await performAutoSave(); };
 
