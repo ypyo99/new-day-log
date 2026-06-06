@@ -2377,11 +2377,10 @@ export default function MainApp({
 
                   const isFutureOrToday = date >= getLocalDateString(new Date());
                   const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
-                  const isCompact = isFutureOrToday && !hasAttendance;
-
+                  
                   return (
-                    <div key={index} id={`log-card-${index}`} className={`${isCompact ? 'p-2.5 sm:p-3 md:p-4' : 'p-4 sm:p-5 md:p-6'} border rounded-xl shadow-md ${cardColorClass}`}>
-                      <div className={`flex justify-between items-center w-full ${isCompact ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
+                    <div key={index} id={`log-card-${index}`} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
+                      <div className={`flex justify-between items-center w-full mb-2 sm:mb-3 transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
                         <div className="flex items-center text-blue-700 font-bold text-lg sm:text-xl flex-wrap gap-y-1">
                           <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" />
                           <span className="shrink-0">
@@ -2430,7 +2429,7 @@ export default function MainApp({
                         )}
                       </div>
 
-                      <div className={isCompact ? "space-y-2" : "space-y-4"}>
+                      <div className="space-y-4">
                         <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
                           <input
                             type="text"
@@ -2483,7 +2482,7 @@ export default function MainApp({
                                         onClick={() => toggleTag(index, sIdx, tag)}
                                         disabled={isDataLoading || isInfoMissing || isBlurTarget}
                                         className={
-                                          "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 " + (isCompact ? "py-0.5" : "py-0.5 sm:py-1 md:py-1.5") + " rounded-xl " +
+                                          "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
                                           fontSizeClass +
                                           " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
                                           (isBlurTarget
