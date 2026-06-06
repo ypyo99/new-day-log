@@ -25,6 +25,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [supabaseRecords, setSupabaseRecords] = useState([]);
+  const [dbHolidays, setDbHolidays] = useState([]);
   const [noDataMessage, setNoDataMessage] = useState("");
   const [teamLeader, setTeamLeader] = useState(null);
 
@@ -153,6 +154,13 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         const { data, error } = await query;
         if (error) throw error;
         setSupabaseRecords(data || []);
+
+        const { data: holidayData, error: holidayError } = await supabaseClient
+          .from('holidays')
+          .select('*');
+        if (!holidayError && holidayData) {
+          setDbHolidays(holidayData);
+        }
       } catch (e) {
         console.error("주간 Supabase 데이터 로드 실패:", e);
       }
@@ -165,12 +173,24 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   useEffect(() => {
     if (!teacher || !currentWeekStart) return;
 
-    // 팀장의 스케줄을 확인하여 specialDays(공휴일/간담회/소양교육) 설정
+    // 휴무일(holidays DB) 및 팀장의 스케줄을 확인하여 specialDays(공휴일/간담회/소양교육) 설정
     const newSpecialDays = {};
-    if (teamLeader) {
-      const days = getCurrentWeekDays();
-      days.forEach(day => {
-        const dateStr = getLocalDateString(day);
+    const days = getCurrentWeekDays();
+    days.forEach(day => {
+      const dateStr = getLocalDateString(day);
+      const monthDayStr = dateStr.substring(5); // MM-DD 형식
+      
+      const matchedHoliday = dbHolidays.find(h => h.date === monthDayStr);
+      if (matchedHoliday) {
+        newSpecialDays[dateStr] = {
+          student: matchedHoliday.name || "공휴일",
+          location: matchedHoliday.content1 || "",
+          memo: matchedHoliday.content2 || ""
+        };
+        return; // DB에 공휴일이 있으면 우선 적용
+      }
+
+      if (teamLeader) {
         const leaderRecords = supabaseRecords.filter(r => r.log_date === dateStr && r.teacher === teamLeader);
         const specialRec = leaderRecords.find(r => {
           const content = (r.student || "") + " " + (r.location || "");
@@ -183,8 +203,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
             memo: specialRec.status || ""
           };
         }
-      });
-    }
+      }
+    });
     setSpecialDays(newSpecialDays);
 
     const defaultSlots = teacher && teacher !== "__ALL__"
@@ -245,7 +265,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
     });
 
     setScheduleData(parsedData);
-  }, [teacher, currentWeekStart, supabaseRecords, teamLeader]);
+  }, [teacher, currentWeekStart, supabaseRecords, teamLeader, dbHolidays]);
 
   const getStatusColorClass = (statusStr) => {
     if (!statusStr) return "text-gray-800";

@@ -447,7 +447,7 @@ export default function MainApp({
             .eq('team', selectedTeam)
             .range(start, start + limit - 1)
             .order('log_date', { ascending: false });
-            
+
           if (chunkErr) throw chunkErr;
 
           if (chunk && chunk.length > 0) {
@@ -501,7 +501,7 @@ export default function MainApp({
         if (!Array.isArray(list)) list = [{ teacher: currentUser, ...list }];
         // 내 기록 찾기
         const myRecord = list.find(r => (r.teacher || "").trim() === currentUser.trim()) || {};
-        
+
         let loadedStudent = (myRecord.student === undefined || myRecord.student === null) ? "" : myRecord.student;
         let loadedLocation = (myRecord.location === undefined || myRecord.location === null) ? "" : myRecord.location;
         let statusStr = formatStatusIfDate(myRecord.status) || "";
@@ -509,7 +509,7 @@ export default function MainApp({
         // 조건 검사: 내 출결상태(statusStr)와 메모가 모두 비어있는 경우
         // 같은 날짜, 같은 시간대, 같은 학생이 나와 같은 조의 다른 선생님에게 기록이 있고 이미 출결 상태가 입력되어 있다면 연동
         const hasMyStatusOrMemo = statusStr.trim() !== "";
-        
+
         if (!hasMyStatusOrMemo && loadedStudent.trim() !== "") {
           const cleanMyStudent = loadedStudent.trim();
           // 나와 같은 조의 다른 선생님의 기록 중, 학생 이름이 같고 출결(status) 기록이 존재하는 레코드 탐색
@@ -519,7 +519,7 @@ export default function MainApp({
             // 같은 조인지 확인
             const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
             if (siblingGroup !== myGroup) return false;
-            
+
             // 출결 기록이 존재하는지 여부 확인
             const siblingStatus = formatStatusIfDate(r.status) || "";
             return siblingStatus.trim() !== "";
@@ -617,7 +617,7 @@ export default function MainApp({
     });
   }, [date, allScheduleData, selectedTeam, currentUser, dbTeachers, shifts]);
 
-  
+
   const getMyOriginalRecord = (d, shiftTime) => {
     const dayData = allScheduleData[d] || {};
     const shiftData = dayData[shiftTime] || [];
@@ -1347,7 +1347,7 @@ export default function MainApp({
           if (!newData[record.date]) newData[record.date] = {};
           const shiftData = newData[record.date][record.shift] || [];
           let shiftArr = Array.isArray(shiftData) ? [...shiftData] : [{ teacher: currentUser, ...shiftData }];
-          
+
           const existingIdx = shiftArr.findIndex(r => r.teacher === currentUser);
           if (existingIdx !== -1) {
             shiftArr[existingIdx] = {
@@ -1586,7 +1586,7 @@ export default function MainApp({
           if (!newData[record.date]) newData[record.date] = {};
           const shiftData = newData[record.date][record.shift] || [];
           let shiftArr = Array.isArray(shiftData) ? [...shiftData] : [{ teacher: currentUser, ...shiftData }];
-          
+
           const existingIdx = shiftArr.findIndex(r => r.teacher === currentUser);
           if (existingIdx !== -1) {
             shiftArr[existingIdx] = {
@@ -1751,21 +1751,21 @@ export default function MainApp({
   const syncSiblingStatus = (index, newStudentName) => {
     const cleanMyStudent = newStudentName.trim();
     if (!cleanMyStudent) return;
-    
+
     setLogs(prev => {
       const currentLog = prev[index] || {};
       const currentTags = currentLog.selectedTags || [[]];
       const currentMemo = currentLog.memo || "";
       const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
       const hasMemo = currentMemo.trim() !== "";
-      
+
       if (hasAnyTag || hasMemo) return prev;
-      
+
       const shift = shifts[index];
       const todaysData = allScheduleData[date] || {};
       const list = todaysData[shift] || [];
       const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
-      
+
       const siblingRecord = list.find(r => {
         if (r.teacher === currentUser) return false;
         if ((r.student || "").trim() !== cleanMyStudent) return false;
@@ -1774,13 +1774,13 @@ export default function MainApp({
         const siblingStatus = formatStatusIfDate(r.status) || "";
         return siblingStatus.trim() !== "";
       });
-      
+
       if (siblingRecord) {
         const statusStr = formatStatusIfDate(siblingRecord.status) || "";
         const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
         const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
         const isKyungrodang = cleanMyStudent.includes("경로당");
-        
+
         let tagParts = [];
         let memoParts = [];
         let isMemoStarted = false;
@@ -1850,12 +1850,12 @@ export default function MainApp({
         if (loadedHeadcount) {
           newLogs[index].headcount = loadedHeadcount;
         }
-        
+
         if (loadedMemo.trim() !== "") {
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
           window.localStorage.setItem(backupKey, loadedMemo);
         }
-        
+
         return newLogs;
       }
       return prev;
@@ -2163,7 +2163,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260606-notice
+            v260606-copy
           </div>
         </div>
       </div>
