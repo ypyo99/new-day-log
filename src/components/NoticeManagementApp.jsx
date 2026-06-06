@@ -998,6 +998,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-4 h-4 rounded-full bg-blue-100 border border-gray-400 active:scale-90 transition-transform" title="연파란색 배경" />
                         </div>
                       </div>
+                    </div>
 
                     <div className="relative flex-1 flex flex-col min-h-[200px]">
                       {selectedImg && isEditing && (
