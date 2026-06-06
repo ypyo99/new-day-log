@@ -140,17 +140,7 @@ export default function MainApp({
     }
   }, [date]);
 
-  useEffect(() => {
-    if (todayNotices.length > 0) {
-      try {
-        if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-          window.navigator.vibrate([150, 100, 150]);
-        }
-      } catch (e) {
-        console.error("Vibration failed:", e);
-      }
-    }
-  }, [todayNotices]);
+
 
   const [dbTeachers, setDbTeachers] = useState(() => {
     try {
