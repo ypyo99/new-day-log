@@ -731,7 +731,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
                       <th className="py-2.5 px-3 border-b-2 border-blue-400 rounded-tl-lg" style={{ backgroundColor: '#dbeafe' }}>제목</th>
-                      <th className="py-2.5 px-3 border-b-2 border-blue-400 text-right w-20 rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>작성일자</th>
+                      <th className="py-2.5 px-3 border-b-2 border-blue-400 text-right w-24 whitespace-nowrap rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>작성일자</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -755,7 +755,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             <span className="line-clamp-2 break-all pr-1">{notice.title}</span>
                           </div>
                         </td>
-                        <td className="py-3 pr-2 text-right text-sm sm:text-base text-gray-500 whitespace-nowrap w-20">
+                        <td className="py-3 pr-2 text-right text-sm sm:text-base text-gray-500 whitespace-nowrap w-24">
                           {notice.created_at ? notice.created_at.substring(5) : ''}
                         </td>
                       </tr>
