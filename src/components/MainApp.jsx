@@ -1827,7 +1827,7 @@ export default function MainApp({
           <div className="flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
             {todayNotices.length > 0 && (
               <div className="animate-fadeIn w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]" onClick={onNavigateToNoticeManagement}>
-                <div className="bg-red-100 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
+                <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
                   <div className="flex items-start gap-2 sm:gap-3 w-full">
                     <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0 mt-0.5">
                       <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
