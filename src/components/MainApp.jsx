@@ -2376,7 +2376,7 @@ export default function MainApp({
                   const cardColorClass = isSpecialDay ? 'bg-red-200 border-red-400' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
 
                   const isFutureOrToday = date >= getLocalDateString(new Date());
-                  const hasAttendance = logs[index].tags && logs[index].tags.some(tArray => tArray && tArray.length > 0);
+                  const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
                   const isCompact = isFutureOrToday && !hasAttendance;
 
                   return (
