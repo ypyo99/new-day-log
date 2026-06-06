@@ -1129,11 +1129,24 @@ export default function MainApp({
         if (!newData[date]) newData[date] = {};
 
         finalValidRecords.forEach(record => {
-          newData[date][record.shift] = {
-            ...logs[record.index],
+          const existingShiftData = newData[date][record.shift] || [];
+          let shiftArr = Array.isArray(existingShiftData) ? [...existingShiftData] : [{ teacher: currentUser, ...existingShiftData }];
+          const existingIdx = shiftArr.findIndex(r => r.teacher === currentUser);
+          const newRecord = {
+            teacher: currentUser,
+            student: logs[record.index].student || "",
             location: record.location,
-            status: record.status
+            status: record.status,
+            selectedTags: logs[record.index].selectedTags,
+            memo: logs[record.index].memo,
+            headcount: logs[record.index].headcount
           };
+          if (existingIdx !== -1) {
+            shiftArr[existingIdx] = { ...shiftArr[existingIdx], ...newRecord };
+          } else {
+            shiftArr.push(newRecord);
+          }
+          newData[date][record.shift] = shiftArr;
         });
 
         deletedShiftsList.forEach(shift => {
@@ -1768,7 +1781,8 @@ export default function MainApp({
 
       const shift = shifts[index];
       const todaysData = allScheduleData[date] || {};
-      const list = todaysData[shift] || [];
+      const rawList = todaysData[shift] || [];
+      const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
       const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
 
       const siblingRecord = list.find(r => {
