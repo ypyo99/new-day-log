@@ -268,6 +268,14 @@ export default function NoticeManagementApp({ onNavigateBack }) {
   const [selectedImgWidth, setSelectedImgWidth] = useState(100);
   const prevSelectedImgRef = useRef(null);
 
+  const execFormat = (command, value = null) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      document.execCommand(command, false, value);
+      setContent(editorRef.current.innerHTML);
+    }
+  };
+
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.innerHTML = selectedNotice ? selectedNotice.content : "";
@@ -876,45 +884,89 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             min="10"
                             max="100"
                             value={selectedImgWidth}
-                            onChange={handleImageResize}
-                            className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
+                                           <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="image-file-input"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading || saving}
+                            className="hidden"
                           />
-                          <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
-                        </div>
-                        <div className="flex gap-1 shrink-0 w-full sm:w-auto">
-                          {[25, 50, 75, 100].map(pct => (
-                            <button
-                              key={pct}
-                              type="button"
-                              onClick={() => applyQuickResize(pct)}
-                              className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
-                            >
-                              {pct}%
-                            </button>
-                          ))}
+                          <label
+                            htmlFor="image-file-input"
+                            className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            {uploading ? '그림 올리는 중...' : '그림(이미지) 추가'}
+                          </label>
                         </div>
                       </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <label className="text-sm font-bold text-gray-600">내용</label>
-                      <div className="relative">
-                        <input
-                          type="file"
-                          id="image-file-input"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploading || saving}
-                          className="hidden"
-                        />
-                        <label
-                          htmlFor="image-file-input"
-                          className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+
+                      {/* 서식 지정 툴바 */}
+                      <div className="flex flex-wrap items-center gap-1.5 bg-white p-2 rounded-lg border border-gray-200 shadow-sm text-xs sm:text-sm">
+                        {/* 기본 스타일 */}
+                        <button type="button" onClick={() => execFormat('bold')} className="p-1 px-2 bg-gray-100 hover:bg-gray-200 border rounded font-bold text-gray-800" title="굵게">B</button>
+                        <button type="button" onClick={() => execFormat('italic')} className="p-1 px-2.5 bg-gray-100 hover:bg-gray-200 border rounded italic text-gray-800" title="기울임">I</button>
+                        <button type="button" onClick={() => execFormat('underline')} className="p-1 px-2 bg-gray-100 hover:bg-gray-200 border rounded underline text-gray-800" title="밑줄">U</button>
+                        <button type="button" onClick={() => execFormat('strikeThrough')} className="p-1 px-2 bg-gray-100 hover:bg-gray-200 border rounded line-through text-gray-800" title="취소선">S</button>
+                        
+                        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+                        {/* 글자 크기 */}
+                        <select 
+                          onChange={(e) => execFormat('fontSize', e.target.value)} 
+                          className="p-1 border rounded bg-white font-semibold text-gray-850 outline-none"
+                          defaultValue="3"
+                          title="글자 크기"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                          {uploading ? '그림 올리는 중...' : '그림(이미지) 추가'}
-                        </label>
+                          <option value="1">매우 작게</option>
+                          <option value="2">작게</option>
+                          <option value="3">보통</option>
+                          <option value="4">크게</option>
+                          <option value="5">매우 크게</option>
+                          <option value="6">최대 크기</option>
+                        </select>
+
+                        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+                        {/* 정렬 */}
+                        <button type="button" onClick={() => execFormat('justifyLeft')} className="p-1 px-1.5 bg-gray-100 hover:bg-gray-200 border rounded font-bold" title="왼쪽 정렬">◀</button>
+                        <button type="button" onClick={() => execFormat('justifyCenter')} className="p-1 px-1.5 bg-gray-100 hover:bg-gray-200 border rounded font-bold" title="가운데 정렬">■</button>
+                        <button type="button" onClick={() => execFormat('justifyRight')} className="p-1 px-1.5 bg-gray-100 hover:bg-gray-200 border rounded font-bold" title="오른쪽 정렬">▶</button>
+
+                        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+                        {/* 글자 색상 선택 */}
+                        <span className="font-bold text-gray-500 mr-1 select-none">글자색:</span>
+                        <div className="flex items-center gap-1.5">
+                          <button type="button" onClick={() => execFormat('foreColor', '#000000')} className="w-4 h-4 rounded-full bg-black border border-gray-400 active:scale-90 transition-transform" title="검정색" />
+                          <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-4 h-4 rounded-full bg-red-500 border border-gray-400 active:scale-90 transition-transform" title="빨간색" />
+                          <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-4 h-4 rounded-full bg-blue-500 border border-gray-400 active:scale-90 transition-transform" title="파란색" />
+                          <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-4 h-4 rounded-full bg-green-500 border border-gray-400 active:scale-90 transition-transform" title="초록색" />
+                          <input 
+                            type="color" 
+                            onChange={(e) => execFormat('foreColor', e.target.value)} 
+                            className="w-5 h-5 p-0 border-0 bg-transparent cursor-pointer rounded" 
+                            title="사용자 지정 색상"
+                          />
+                        </div>
+
+                        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+                        {/* 형광펜(배경색) 선택 */}
+                        <span className="font-bold text-gray-500 mr-1 select-none">형광펜:</span>
+                        <div className="flex items-center gap-1.5">
+                          <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-4 h-4 rounded-full bg-white border border-gray-400 text-[9px] flex items-center justify-center font-bold active:scale-90 transition-transform" title="지우기">❌</button>
+                          <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-4 h-4 rounded-full bg-yellow-250 border border-gray-400 active:scale-90 transition-transform" title="노란색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-4 h-4 rounded-full bg-red-100 border border-gray-400 active:scale-90 transition-transform" title="연빨간색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-4 h-4 rounded-full bg-blue-100 border border-gray-400 active:scale-90 transition-transform" title="연파란색 배경" />
+                        </div>
                       </div>
-                    </div>
+
                     <div className="relative flex-1 flex flex-col min-h-[200px]">
                       {selectedImg && isEditing && (
                         <ImageResizer
