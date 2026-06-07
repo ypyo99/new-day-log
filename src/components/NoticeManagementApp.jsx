@@ -261,6 +261,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const [selectedImg, setSelectedImg] = useState(null);
   const [selectedImgWidth, setSelectedImgWidth] = useState(100);
   const prevSelectedImgRef = useRef(null);
+  const detailsRef = useRef(null);
 
   const execFormat = (command, value = null) => {
     if (editorRef.current) {
@@ -411,6 +412,22 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       handleSelectNotice(initialNotice);
     }
   }, [initialNotice, isAdmin]);
+
+  useEffect(() => {
+    if (initialNotice && notices.length > 0 && detailsRef.current) {
+      setTimeout(() => {
+        const header = document.querySelector('header');
+        const headerOffset = header ? header.offsetHeight : 116;
+        const elementPosition = detailsRef.current.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset - 10; // add 10px padding
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }, 300);
+    }
+  }, [initialNotice, notices]);
 
   const handleNewNotice = () => {
     setSelectedNotice(null);
@@ -634,7 +651,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
         }
       `}</style>
       {/* 헤더 영역 */}
-      <header className="bg-blue-600 text-white px-4 pt-4 pb-12 shadow-lg z-40 flex justify-between items-start relative shrink-0 min-h-[116px]">
+      <header className="bg-blue-600 text-white px-4 pt-4 pb-12 shadow-lg z-50 flex justify-between items-start sticky top-0 shrink-0 min-h-[116px]">
         <div className="flex items-center">
           <div className="flex flex-col">
             <div className="flex items-center mb-1">
@@ -812,7 +829,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
           {/* 우측: 상세 조회 또는 편집 */}
           {(selectedNotice || isEditing) && (
-            <section className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350">
+            <section ref={detailsRef} className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350">
               {isEditing ? (
                 /* 편집 및 작성 폼 */
                 <form onSubmit={handleSave} className="flex flex-col gap-4 flex-1">
