@@ -423,9 +423,9 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
         
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'smooth'
+          behavior: 'auto'
         });
-      }, 300);
+      }, 50);
     }
   }, [initialNotice, notices]);
 
