@@ -431,11 +431,14 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   };
 
+  const appliedNoticeIdRef = useRef(null);
+
   useEffect(() => {
-    if (initialNotice) {
+    if (initialNotice && initialNotice.id !== appliedNoticeIdRef.current) {
       handleSelectNotice(initialNotice);
+      appliedNoticeIdRef.current = initialNotice.id;
     }
-  }, [initialNotice, isAdmin]);
+  }, [initialNotice?.id]);
 
   useEffect(() => {
     if (selectedNotice && detailsRef.current) {
@@ -629,6 +632,15 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       alert("공지사항이 삭제되었습니다.");
       setIsEditing(false);
       setSelectedNotice(null);
+      setTitle("");
+      setContent("");
+      setIsTop(false);
+      setStartDate(getFullTodayString());
+      setEndDate("");
+      setCreatedAt(getTodayString());
+      if (editorRef.current) {
+        editorRef.current.innerHTML = "";
+      }
       loadNotices();
     } catch (err) {
       console.error(err);
