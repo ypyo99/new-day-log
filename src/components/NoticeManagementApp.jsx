@@ -1127,6 +1127,24 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
         </div>
       </main>
 
+      {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (메인화면에서 바로 넘어왔을 때만 표시) */}
+      {initialNotice && selectedNotice?.id === initialNotice.id && (
+        <div 
+          className="fixed top-[170px] right-5 sm:right-8 z-[60] flex flex-col items-center animate-bounce cursor-pointer touch-manipulation"
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          title="공지사항 목록 보기"
+        >
+          <div className="bg-gray-500/70 hover:bg-gray-500/90 text-white w-[56px] h-[56px] rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center backdrop-blur-md border border-white/30 animate-pulse transition-all">
+            <svg className="w-6 h-6 -mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7" />
+            </svg>
+            <span className="text-[12px] font-black tracking-widest mt-0.5">목록</span>
+          </div>
+        </div>
+      )}
+
       {/* 담당자 암호 입력 모달 */}
       {showPwdModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4 backdrop-blur-sm">
