@@ -16,10 +16,10 @@ const isValidMMDD = (value) => {
   if (!/^\d{2}-\d{2}$/.test(value)) return false;
   const [mm, dd] = value.split('-').map(Number);
   if (mm < 1 || mm > 12) return false;
-  
+
   const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   if (dd < 1 || dd > daysInMonth[mm - 1]) return false;
-  
+
   return true;
 };
 
@@ -46,7 +46,7 @@ function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
 
   useEffect(() => {
     updatePosition();
-    
+
     const editor = editorRef.current;
     if (editor) {
       editor.addEventListener('scroll', updatePosition);
@@ -85,7 +85,7 @@ function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
       const editorWidth = editorRef.current.clientWidth - 24; // 패딩 등 여백 고려
 
       let newWidth = dragStart.current.width;
-      
+
       if (dragStart.current.direction.includes('right')) {
         newWidth = dragStart.current.width + deltaX;
       } else if (dragStart.current.direction.includes('left')) {
@@ -95,14 +95,14 @@ function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
       // 최소 너비 40px, 최대 에디터 너비
       newWidth = Math.max(40, Math.min(newWidth, editorWidth));
       const pctWidth = Math.round((newWidth / editorWidth) * 100);
-      
+
       selectedImg.style.width = `${pctWidth}%`;
       selectedImg.style.height = 'auto';
-      
+
       if (onResize) {
         onResize(pctWidth);
       }
-      
+
       updatePosition();
     };
 
@@ -298,13 +298,13 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       try {
         prevSelectedImgRef.current.style.outline = "";
         prevSelectedImgRef.current.style.boxShadow = "";
-      } catch (e) {}
+      } catch (e) { }
     }
     if (selectedImg) {
       try {
         selectedImg.style.outline = "3px solid #3b82f6";
         selectedImg.style.boxShadow = "0 0 12px rgba(59, 130, 246, 0.4)";
-      } catch (e) {}
+      } catch (e) { }
     }
     prevSelectedImgRef.current = selectedImg;
   }, [selectedImg]);
@@ -358,10 +358,10 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           const dateB = b.start_date ? new Date(b.start_date) : new Date('1970-01-01');
           dateA.setHours(0, 0, 0, 0);
           dateB.setHours(0, 0, 0, 0);
-          
+
           const diffA = Math.abs(dateA - today);
           const diffB = Math.abs(dateB - today);
-          
+
           if (diffA === diffB) {
             return dateB - dateA; // if distance is same, put newer date first
           }
@@ -386,8 +386,8 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     if (isAdmin) {
       if (isEditing && title.trim() && content.trim() && startDate && endDate) {
         try {
-          await handleSave({ preventDefault: () => {} });
-        } catch (e) {}
+          await handleSave({ preventDefault: () => { } });
+        } catch (e) { }
       }
       setIsAdmin(false);
       window.localStorage.removeItem('sungdong_admin_logged_in');
@@ -429,6 +429,20 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     } else {
       setIsEditing(false);
     }
+
+    setTimeout(() => {
+      if (detailsRef.current) {
+        const header = document.querySelector('header');
+        const headerOffset = header ? header.offsetHeight : 116;
+        const elementPosition = detailsRef.current.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset - 2;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 50);
   };
 
   const appliedNoticeIdRef = useRef(null);
@@ -440,21 +454,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   }, [initialNotice?.id]);
 
-  useEffect(() => {
-    if (selectedNotice && detailsRef.current) {
-      setTimeout(() => {
-        const header = document.querySelector('header');
-        const headerOffset = header ? header.offsetHeight : 116;
-        const elementPosition = detailsRef.current.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset - 10;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }, 100);
-    }
-  }, [selectedNotice?.id]);
 
   const handleNewNotice = () => {
     setSelectedNotice(null);
@@ -563,14 +562,14 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       return;
     }
 
-    const currentYear = selectedNotice 
+    const currentYear = selectedNotice
       ? selectedNotice.created_at.split('-')[0]
       : new Date().getFullYear().toString();
 
     const fullStartDate = startDate;
     const fullEndDate = endDate;
-    const fullCreatedAt = selectedNotice 
-      ? selectedNotice.created_at 
+    const fullCreatedAt = selectedNotice
+      ? selectedNotice.created_at
       : `${currentYear}-${createdAt}`;
 
     if (new Date(fullStartDate) > new Date(fullEndDate)) {
@@ -744,7 +743,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
       {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 px-3 sm:px-6 md:px-8 pt-4 pb-12 w-full max-w-7xl mx-auto flex flex-col gap-6">
-        
+
         {/* Supabase 테이블 부재 경고 */}
         {supabaseTableMissing && (
           <div className="bg-amber-50 text-amber-900 rounded-xl border border-amber-300 shadow-sm p-4 text-xs sm:text-sm flex flex-col gap-2 text-left">
@@ -843,7 +842,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
                       <th className="py-2.5 px-2 border-b-2 border-blue-400 rounded-tl-lg" style={{ backgroundColor: '#dbeafe' }}>제목</th>
-                      <th className="py-2.5 px-1 border-b-2 border-blue-400 text-right w-16 whitespace-nowrap rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>시작일자</th>
+                      <th className="py-2.5 px-1 border-b-2 border-blue-400 text-right w-16 whitespace-nowrap rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>게시시작</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1044,12 +1043,12 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           <button type="button" onClick={() => execFormat('italic')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded italic text-gray-800 shadow-sm active:scale-95 transition-all" title="기울임">I</button>
                           <button type="button" onClick={() => execFormat('underline')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded underline text-gray-800 shadow-sm active:scale-95 transition-all" title="밑줄">U</button>
                           <button type="button" onClick={() => execFormat('strikeThrough')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded line-through text-gray-800 shadow-sm active:scale-95 transition-all" title="취소선">S</button>
-                          
+
                           <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
 
                           {/* 글자 크기 */}
-                          <select 
-                            onChange={(e) => execFormat('fontSize', e.target.value)} 
+                          <select
+                            onChange={(e) => execFormat('fontSize', e.target.value)}
                             className="h-8 px-1.5 border rounded bg-white font-semibold text-gray-850 outline-none shadow-sm cursor-pointer"
                             defaultValue="3"
                             title="글자 크기"
@@ -1080,10 +1079,10 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색" />
                             <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색" />
                             <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-6 h-6 rounded-full bg-green-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="초록색" />
-                            <input 
-                              type="color" 
-                              onChange={(e) => execFormat('foreColor', e.target.value)} 
-                              className="w-7 h-7 p-0 border-0 bg-transparent cursor-pointer rounded ml-0.5 shadow-sm active:scale-95 transition-transform" 
+                            <input
+                              type="color"
+                              onChange={(e) => execFormat('foreColor', e.target.value)}
+                              className="w-7 h-7 p-0 border-0 bg-transparent cursor-pointer rounded ml-0.5 shadow-sm active:scale-95 transition-transform"
                               title="사용자 지정 색상"
                             />
                           </div>
@@ -1096,9 +1095,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">형광펜:</span>
                           <div className="flex items-center gap-2">
                             <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 text-[10px] flex items-center justify-center font-bold active:scale-90 transition-transform shadow-sm" title="지우기">❌</button>
-                            <button type="button" onClick={() => execFormat('backColor', '#fef9c3')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{backgroundColor: '#fef9c3'}} title="옅은 노란색 배경" />
-                            <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{backgroundColor: '#fef08a'}} title="노란색 배경" />
-                            <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{backgroundColor: '#dcfce7'}} title="옅은 초록색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#fef9c3')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef9c3' }} title="옅은 노란색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef08a' }} title="노란색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#dcfce7' }} title="옅은 초록색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-6 h-6 rounded-full bg-red-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연빨간색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-6 h-6 rounded-full bg-blue-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연파란색 배경" />
                           </div>
@@ -1170,7 +1169,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   </div>
 
                   <div className="flex-1 overflow-y-auto pr-1">
-                    <div 
+                    <div
                       className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
                       dangerouslySetInnerHTML={{ __html: linkifyHtml(selectedNotice.content).replace(/\n/g, '<br />') }}
                       onClick={(e) => {
@@ -1190,7 +1189,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
       {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (메인화면에서 바로 넘어왔을 때만 표시) */}
       {initialNotice && selectedNotice?.id === initialNotice.id && !isListVisible && (
-        <div 
+        <div
           className="fixed top-[170px] right-5 sm:right-8 z-[60] flex flex-col items-center animate-bounce cursor-pointer touch-manipulation"
           onClick={() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
