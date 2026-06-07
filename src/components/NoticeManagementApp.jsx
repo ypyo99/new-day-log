@@ -279,6 +279,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   }, []);
 
   const execFormat = (command, value = null) => {
+    if (navigator.vibrate) navigator.vibrate(30);
     if (editorRef.current) {
       editorRef.current.focus();
       document.execCommand(command, false, value);
@@ -997,19 +998,19 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       </div>
 
                       {/* 서식 지정 툴바 */}
-                      <div className="flex flex-wrap items-center gap-1.5 bg-white p-2 rounded-lg border border-gray-200 shadow-sm text-xs sm:text-sm">
+                      <div className="flex flex-wrap items-center gap-2 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm text-sm">
                         {/* 기본 스타일 */}
-                        <button type="button" onClick={() => execFormat('bold')} className="p-1 px-2 bg-gray-100 hover:bg-gray-200 border rounded font-bold text-gray-800" title="굵게">B</button>
-                        <button type="button" onClick={() => execFormat('italic')} className="p-1 px-2.5 bg-gray-100 hover:bg-gray-200 border rounded italic text-gray-800" title="기울임">I</button>
-                        <button type="button" onClick={() => execFormat('underline')} className="p-1 px-2 bg-gray-100 hover:bg-gray-200 border rounded underline text-gray-800" title="밑줄">U</button>
-                        <button type="button" onClick={() => execFormat('strikeThrough')} className="p-1 px-2 bg-gray-100 hover:bg-gray-200 border rounded line-through text-gray-800" title="취소선">S</button>
+                        <button type="button" onClick={() => execFormat('bold')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold text-gray-800 shadow-sm active:scale-95 transition-all" title="굵게">B</button>
+                        <button type="button" onClick={() => execFormat('italic')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded italic text-gray-800 shadow-sm active:scale-95 transition-all" title="기울임">I</button>
+                        <button type="button" onClick={() => execFormat('underline')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded underline text-gray-800 shadow-sm active:scale-95 transition-all" title="밑줄">U</button>
+                        <button type="button" onClick={() => execFormat('strikeThrough')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded line-through text-gray-800 shadow-sm active:scale-95 transition-all" title="취소선">S</button>
                         
-                        <div className="w-px h-5 bg-gray-300 mx-1" />
+                        <div className="w-px h-6 bg-gray-300 mx-1" />
 
                         {/* 글자 크기 */}
                         <select 
                           onChange={(e) => execFormat('fontSize', e.target.value)} 
-                          className="p-1 border rounded bg-white font-semibold text-gray-850 outline-none"
+                          className="h-8 px-1.5 border rounded bg-white font-semibold text-gray-850 outline-none shadow-sm cursor-pointer"
                           defaultValue="3"
                           title="글자 크기"
                         >
@@ -1021,41 +1022,41 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           <option value="6">최대 크기</option>
                         </select>
 
-                        <div className="w-px h-5 bg-gray-300 mx-1" />
+                        <div className="w-px h-6 bg-gray-300 mx-1" />
 
                         {/* 정렬 */}
-                        <button type="button" onClick={() => execFormat('justifyLeft')} className="p-1 px-1.5 bg-gray-100 hover:bg-gray-200 border rounded font-bold" title="왼쪽 정렬">◀</button>
-                        <button type="button" onClick={() => execFormat('justifyCenter')} className="p-1 px-1.5 bg-gray-100 hover:bg-gray-200 border rounded font-bold" title="가운데 정렬">■</button>
-                        <button type="button" onClick={() => execFormat('justifyRight')} className="p-1 px-1.5 bg-gray-100 hover:bg-gray-200 border rounded font-bold" title="오른쪽 정렬">▶</button>
+                        <button type="button" onClick={() => execFormat('justifyLeft')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="왼쪽 정렬">◀</button>
+                        <button type="button" onClick={() => execFormat('justifyCenter')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="가운데 정렬">■</button>
+                        <button type="button" onClick={() => execFormat('justifyRight')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="오른쪽 정렬">▶</button>
 
-                        <div className="w-px h-5 bg-gray-300 mx-1" />
+                        <div className="w-px h-6 bg-gray-300 mx-1" />
 
                         {/* 글자 색상 선택 */}
                         <span className="font-bold text-gray-500 mr-1 select-none">글자색:</span>
-                        <div className="flex items-center gap-1.5">
-                          <button type="button" onClick={() => execFormat('foreColor', '#000000')} className="w-4 h-4 rounded-full bg-black border border-gray-400 active:scale-90 transition-transform" title="검정색" />
-                          <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-4 h-4 rounded-full bg-red-500 border border-gray-400 active:scale-90 transition-transform" title="빨간색" />
-                          <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-4 h-4 rounded-full bg-blue-500 border border-gray-400 active:scale-90 transition-transform" title="파란색" />
-                          <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-4 h-4 rounded-full bg-green-500 border border-gray-400 active:scale-90 transition-transform" title="초록색" />
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => execFormat('foreColor', '#000000')} className="w-6 h-6 rounded-full bg-black border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="검정색" />
+                          <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색" />
+                          <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색" />
+                          <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-6 h-6 rounded-full bg-green-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="초록색" />
                           <input 
                             type="color" 
                             onChange={(e) => execFormat('foreColor', e.target.value)} 
-                            className="w-5 h-5 p-0 border-0 bg-transparent cursor-pointer rounded" 
+                            className="w-7 h-7 p-0 border-0 bg-transparent cursor-pointer rounded ml-0.5 shadow-sm active:scale-95 transition-transform" 
                             title="사용자 지정 색상"
                           />
                         </div>
 
-                        <div className="w-px h-5 bg-gray-300 mx-1" />
+                        <div className="w-px h-6 bg-gray-300 mx-1" />
 
                         {/* 형광펜(배경색) 선택 */}
                         <span className="font-bold text-gray-500 mr-1 select-none">형광펜:</span>
-                        <div className="flex items-center gap-1.5">
-                          <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-4 h-4 rounded-full bg-white border border-gray-400 text-[9px] flex items-center justify-center font-bold active:scale-90 transition-transform" title="지우기">❌</button>
-                          <button type="button" onClick={() => execFormat('backColor', '#fef9c3')} className="w-4 h-4 rounded-full border border-gray-400 active:scale-90 transition-transform" style={{backgroundColor: '#fef9c3'}} title="옅은 노란색 배경" />
-                          <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-4 h-4 rounded-full border border-gray-400 active:scale-90 transition-transform" style={{backgroundColor: '#fef08a'}} title="노란색 배경" />
-                          <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-4 h-4 rounded-full border border-gray-400 active:scale-90 transition-transform" style={{backgroundColor: '#dcfce7'}} title="옅은 초록색 배경" />
-                          <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-4 h-4 rounded-full bg-red-100 border border-gray-400 active:scale-90 transition-transform" title="연빨간색 배경" />
-                          <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-4 h-4 rounded-full bg-blue-100 border border-gray-400 active:scale-90 transition-transform" title="연파란색 배경" />
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 text-[10px] flex items-center justify-center font-bold active:scale-90 transition-transform shadow-sm" title="지우기">❌</button>
+                          <button type="button" onClick={() => execFormat('backColor', '#fef9c3')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{backgroundColor: '#fef9c3'}} title="옅은 노란색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{backgroundColor: '#fef08a'}} title="노란색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{backgroundColor: '#dcfce7'}} title="옅은 초록색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-6 h-6 rounded-full bg-red-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연빨간색 배경" />
+                          <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-6 h-6 rounded-full bg-blue-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연파란색 배경" />
                         </div>
                       </div>
                     </div>
