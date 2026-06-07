@@ -263,14 +263,14 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const prevSelectedImgRef = useRef(null);
   const detailsRef = useRef(null);
   const listRef = useRef(null);
-  const [isListVisible, setIsListVisible] = useState(true);
+  const [isListVisible, setIsListVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsListVisible(entry.isIntersecting);
       },
-      { rootMargin: "-116px 0px 0px 0px", threshold: 0 }
+      { rootMargin: "-200px 0px 0px 0px", threshold: 0 }
     );
     if (listRef.current) {
       observer.observe(listRef.current);
