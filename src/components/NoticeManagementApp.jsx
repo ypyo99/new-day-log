@@ -262,6 +262,21 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const [selectedImgWidth, setSelectedImgWidth] = useState(100);
   const prevSelectedImgRef = useRef(null);
   const detailsRef = useRef(null);
+  const listRef = useRef(null);
+  const [isListVisible, setIsListVisible] = useState(true);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsListVisible(entry.isIntersecting);
+      },
+      { rootMargin: "-116px 0px 0px 0px", threshold: 0 }
+    );
+    if (listRef.current) {
+      observer.observe(listRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   const execFormat = (command, value = null) => {
     if (editorRef.current) {
@@ -776,7 +791,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
         <div className="grid grid-cols-1 gap-3 content-start items-start flex-1">
           {/* 좌측: 공지사항 목록 */}
-          <section className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[500px] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
+          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[500px] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
@@ -1128,7 +1143,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
       </main>
 
       {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (메인화면에서 바로 넘어왔을 때만 표시) */}
-      {initialNotice && selectedNotice?.id === initialNotice.id && (
+      {initialNotice && selectedNotice?.id === initialNotice.id && !isListVisible && (
         <div 
           className="fixed top-[170px] right-5 sm:right-8 z-[60] flex flex-col items-center animate-bounce cursor-pointer touch-manipulation"
           onClick={() => {
