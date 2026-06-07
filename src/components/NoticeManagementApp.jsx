@@ -1187,8 +1187,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
         </div>
       </main>
 
-      {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (메인화면에서 바로 넘어왔을 때만 표시) */}
-      {initialNotice && selectedNotice?.id === initialNotice.id && !isListVisible && (
+      {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (게시물 상세 보기 중 목록이 안 보일 때 표시) */}
+      {(selectedNotice || isEditing) && !isListVisible && (
         <div
           className="fixed top-[170px] right-5 sm:right-8 z-[60] flex flex-col items-center animate-bounce cursor-pointer touch-manipulation"
           onClick={() => {
