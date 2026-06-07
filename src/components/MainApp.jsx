@@ -112,6 +112,9 @@ export default function MainApp({
           .gte('end_date', date);
 
         if (!error && data) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
           const sorted = [...data].sort((a, b) => {
             const isTopA = a.is_top || false;
             const isTopB = b.is_top || false;
@@ -120,7 +123,16 @@ export default function MainApp({
             }
             const dateA = a.start_date ? new Date(a.start_date) : new Date('1970-01-01');
             const dateB = b.start_date ? new Date(b.start_date) : new Date('1970-01-01');
-            return dateB - dateA;
+            dateA.setHours(0, 0, 0, 0);
+            dateB.setHours(0, 0, 0, 0);
+            
+            const diffA = Math.abs(dateA - today);
+            const diffB = Math.abs(dateB - today);
+            
+            if (diffA === diffB) {
+              return dateB - dateA;
+            }
+            return diffA - diffB;
           });
           setTodayNotices(sorted.slice(0, 5));
         } else {

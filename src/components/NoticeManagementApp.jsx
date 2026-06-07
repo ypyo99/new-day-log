@@ -345,6 +345,9 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           setErrorMsg("데이터 로드 실패: " + error.message);
         }
       } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const sortedData = (data || []).sort((a, b) => {
           const isTopA = a.is_top || false;
           const isTopB = b.is_top || false;
@@ -353,7 +356,16 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           }
           const dateA = a.start_date ? new Date(a.start_date) : new Date('1970-01-01');
           const dateB = b.start_date ? new Date(b.start_date) : new Date('1970-01-01');
-          return dateB - dateA;
+          dateA.setHours(0, 0, 0, 0);
+          dateB.setHours(0, 0, 0, 0);
+          
+          const diffA = Math.abs(dateA - today);
+          const diffB = Math.abs(dateB - today);
+          
+          if (diffA === diffB) {
+            return dateB - dateA; // if distance is same, put newer date first
+          }
+          return diffA - diffB;
         });
         setNotices(sortedData);
         setSupabaseTableMissing(false);
@@ -426,20 +438,20 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   }, [initialNotice, isAdmin]);
 
   useEffect(() => {
-    if (initialNotice && notices.length > 0 && detailsRef.current) {
+    if (selectedNotice && detailsRef.current) {
       setTimeout(() => {
         const header = document.querySelector('header');
         const headerOffset = header ? header.offsetHeight : 116;
         const elementPosition = detailsRef.current.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset - 10; // add 10px padding
+        const offsetPosition = elementPosition + window.scrollY - headerOffset - 10;
         
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'auto'
+          behavior: 'smooth'
         });
-      }, 50);
+      }, 100);
     }
-  }, [initialNotice, notices]);
+  }, [selectedNotice?.id]);
 
   const handleNewNotice = () => {
     setSelectedNotice(null);
@@ -803,7 +815,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
         <div className="grid grid-cols-1 gap-3 content-start items-start flex-1">
           {/* 좌측: 공지사항 목록 */}
-          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[500px] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
+          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[75vh] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
@@ -814,12 +826,12 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 등록된 공지사항이 없습니다.
               </div>
             ) : (
-              <div className="overflow-y-auto pr-1 max-h-[300px] md:max-h-[60vh]">
+              <div className="overflow-y-auto pr-1 flex-1 max-h-[65vh] md:max-h-[75vh]">
                 <table className="w-full text-left" style={{ borderSpacing: 0, tableLayout: 'fixed' }}>
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
                       <th className="py-2.5 px-2 border-b-2 border-blue-400 rounded-tl-lg" style={{ backgroundColor: '#dbeafe' }}>제목</th>
-                      <th className="py-2.5 px-1 border-b-2 border-blue-400 text-right w-16 whitespace-nowrap rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>작성일자</th>
+                      <th className="py-2.5 px-1 border-b-2 border-blue-400 text-right w-16 whitespace-nowrap rounded-tr-lg" style={{ backgroundColor: '#dbeafe' }}>시작일자</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -848,7 +860,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           </div>
                         </td>
                         <td className="py-3 pr-1 text-right text-sm sm:text-base text-gray-500 whitespace-nowrap w-16">
-                          {notice.created_at ? notice.created_at.substring(5) : ''}
+                          {notice.start_date ? notice.start_date.substring(5) : ''}
                         </td>
                       </tr>
                     ))}
