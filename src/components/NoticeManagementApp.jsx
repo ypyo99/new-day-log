@@ -593,7 +593,9 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
       alert("공지사항이 성공적으로 저장되었습니다.");
       setIsEditing(false);
-      setSelectedNotice(null);
+      if (data && data.length > 0) {
+        setSelectedNotice(data[0]);
+      }
       setSelectedImg(null);
       loadNotices();
     } catch (err) {
