@@ -118,16 +118,11 @@ export default function MainApp({
             if (isTopA !== isTopB) {
               return isTopB ? 1 : -1;
             }
-            if (isTopA && isTopB) {
-              const dateA = a.end_date ? new Date(a.end_date) : new Date('9999-12-31');
-              const dateB = b.end_date ? new Date(b.end_date) : new Date('9999-12-31');
-              return dateA - dateB;
-            }
-            const dateA = a.created_at ? new Date(a.created_at) : new Date('1970-01-01');
-            const dateB = b.created_at ? new Date(b.created_at) : new Date('1970-01-01');
+            const dateA = a.start_date ? new Date(a.start_date) : new Date('1970-01-01');
+            const dateB = b.start_date ? new Date(b.start_date) : new Date('1970-01-01');
             return dateB - dateA;
           });
-          setTodayNotices(sorted);
+          setTodayNotices(sorted.slice(0, 5));
         } else {
           setTodayNotices([]);
         }
@@ -2026,6 +2021,30 @@ export default function MainApp({
           </div>
 
           <div className="flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
+            <style>{`
+              @keyframes shineText {
+                0% { background-position: 100% 0; }
+                100% { background-position: 0% 0; }
+              }
+              .shine-text-normal {
+                background: linear-gradient(120deg, #b91c1c 40%, #ffaaaa 50%, #b91c1c 60%);
+                background-size: 300% 100%;
+                color: transparent !important;
+                -webkit-background-clip: text;
+                background-clip: text;
+                animation: shineText 2.5s linear infinite;
+                display: inline;
+              }
+              .shine-text-top {
+                background: linear-gradient(120deg, #7f1d1d 40%, #ffaaaa 50%, #7f1d1d 60%);
+                background-size: 300% 100%;
+                color: transparent !important;
+                -webkit-background-clip: text;
+                background-clip: text;
+                animation: shineText 2.5s linear infinite;
+                display: inline;
+              }
+            `}</style>
             {todayNotices.length > 0 && (
               <div className="animate-fadeIn w-full">
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
@@ -2040,22 +2059,28 @@ export default function MainApp({
                         </svg>
                       </div>
                       <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight text-red-800 m-0">
-                        오늘의 공지사항
+                        공지사항
                       </h4>
                     </div>
                     <div className="space-y-1 sm:space-y-1.5 w-full min-w-0">
-                      {todayNotices.map((notice, idx) => (
-                        <p
-                          key={idx}
-                          className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'text-red-900 bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : 'text-red-700'}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onNavigateToNoticeManagement(notice);
-                          }}
-                        >
-                          {notice.is_top ? '📌 ' : '• '} {notice.title}
-                        </p>
-                      ))}
+                      {todayNotices.map((notice, idx) => {
+                        const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
+                        const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-red-700');
+                        return (
+                          <p
+                            key={idx}
+                            className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNavigateToNoticeManagement(notice);
+                            }}
+                          >
+                            <span className={shineClass}>
+                              {notice.is_top ? '📌 ' : '• '} {notice.title}
+                            </span>
+                          </p>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

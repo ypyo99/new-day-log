@@ -351,13 +351,8 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           if (isTopA !== isTopB) {
             return isTopB ? 1 : -1;
           }
-          if (isTopA && isTopB) {
-            const dateA = a.end_date ? new Date(a.end_date) : new Date('9999-12-31');
-            const dateB = b.end_date ? new Date(b.end_date) : new Date('9999-12-31');
-            return dateA - dateB;
-          }
-          const dateA = a.created_at ? new Date(a.created_at) : new Date('1970-01-01');
-          const dateB = b.created_at ? new Date(b.created_at) : new Date('1970-01-01');
+          const dateA = a.start_date ? new Date(a.start_date) : new Date('1970-01-01');
+          const dateB = b.start_date ? new Date(b.start_date) : new Date('1970-01-01');
           return dateB - dateA;
         });
         setNotices(sortedData);
@@ -634,6 +629,19 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
       <style>{`
+        @keyframes shineText {
+          0% { background-position: 100% 0; }
+          100% { background-position: 0% 0; }
+        }
+        .shine-text-normal {
+          background: linear-gradient(120deg, #111827 40%, #ffaaaa 50%, #111827 60%);
+          background-size: 300% 100%;
+          color: transparent !important;
+          -webkit-background-clip: text;
+          background-clip: text;
+          animation: shineText 2.5s linear infinite;
+          display: inline;
+        }
         .rich-editor:empty:before {
           content: attr(placeholder);
           color: #9ca3af;
@@ -821,7 +829,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         onClick={() => handleSelectNotice(notice)}
                         className={`border-b cursor-pointer transition-colors ${notice.is_top ? 'bg-orange-50/50 hover:bg-orange-100/60' : 'hover:bg-blue-50/50'} ${selectedNotice?.id === notice.id ? '!bg-blue-50 font-semibold' : ''}`}
                       >
-                        <td className="py-3 px-1 text-base sm:text-lg text-gray-800">
+                        <td className="py-3 px-1 text-base sm:text-lg text-gray-900">
                           <div className="flex items-start">
                             {notice.is_top ? (
                               <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-red-100 border border-red-200 text-red-600 text-xs font-bold mr-2 mt-0.5 shrink-0 shadow-sm animate-pulse">
@@ -832,7 +840,11 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                                 <svg className="w-3 h-3 translate-x-[0.5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                               </span>
                             )}
-                            <span className="line-clamp-2 break-all pr-1">{notice.title}</span>
+                            <span className="line-clamp-2 break-all pr-1">
+                              <span className={notice.start_date && notice.start_date.substring(0, 10) === getFullTodayString() ? 'shine-text-normal' : ''}>
+                                {notice.title}
+                              </span>
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 pr-1 text-right text-sm sm:text-base text-gray-500 whitespace-nowrap w-16">
@@ -861,7 +873,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         type="button"
                         onClick={handleDelete}
                         disabled={saving}
-                        className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold text-xs transition-colors active:scale-95"
+                        className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold text-sm transition-colors active:scale-95"
                       >
                         삭제
                       </button>
