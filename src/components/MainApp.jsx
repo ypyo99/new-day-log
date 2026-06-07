@@ -2030,7 +2030,7 @@ export default function MainApp({
               <div className="animate-fadeIn w-full">
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
                   <div className="flex flex-col gap-1.5 sm:gap-2 w-full min-w-0">
-                    <div 
+                    <div
                       className="flex items-center gap-2 sm:gap-3 w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]"
                       onClick={() => onNavigateToNoticeManagement()}
                     >
@@ -2045,8 +2045,8 @@ export default function MainApp({
                     </div>
                     <div className="space-y-1 sm:space-y-1.5 w-full min-w-0">
                       {todayNotices.map((notice, idx) => (
-                        <p 
-                          key={idx} 
+                        <p
+                          key={idx}
                           className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'text-red-900 bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : 'text-red-700'}`}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2153,7 +2153,7 @@ export default function MainApp({
             </button>
 
             <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-              <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 지하1층 사용 보기
+              <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 평생교육실2 사용 보기
             </button>
 
             <button onClick={() => { handleLogout(); onNavigateToNangmanStudio(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
@@ -2377,7 +2377,7 @@ export default function MainApp({
 
                   const isFutureOrToday = date >= getLocalDateString(new Date());
                   const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
-                  
+
                   return (
                     <div key={index} id={`log-card-${index}`} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
                       <div className={`flex justify-between items-center w-full mb-2 sm:mb-3 transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
