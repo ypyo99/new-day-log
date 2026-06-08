@@ -2093,11 +2093,6 @@ export default function MainApp({
                           </p>
                         );
                       })}
-                      <div className="flex items-center justify-center py-1.5 opacity-60 mt-1 pointer-events-none">
-                        <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
-                        <span className="mx-2 text-red-400 text-xs">✿</span>
-                        <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
-                      </div>
                     </div>
                   </div>
                 </div>
