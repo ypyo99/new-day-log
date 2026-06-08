@@ -125,10 +125,10 @@ export default function MainApp({
             const dateB = b.start_date ? new Date(b.start_date) : new Date('1970-01-01');
             dateA.setHours(0, 0, 0, 0);
             dateB.setHours(0, 0, 0, 0);
-            
+
             const diffA = Math.abs(dateA - today);
             const diffB = Math.abs(dateB - today);
-            
+
             if (diffA === diffB) {
               return dateB - dateA;
             }
@@ -1491,7 +1491,7 @@ export default function MainApp({
       return;
     }
 
-    if (window.confirm(`이 시간대(${shifts[index]})의 일정을 이후 동일한 요일의 미래 일정들에 복제하시겠습니까?`)) {
+    if (window.confirm(`이 시간대(${shifts[index]})의 일정을 이후 동일한 요일의 미래 일정들에 정말 복제하시겠습니까?`)) {
       // 현재 선택한 시간대의 정보가 기존 저장된 정보와 다른지 확인 후 저장
       const original = getMyOriginalRecord(date, shifts[index]);
       const log = logs[index];
@@ -2166,7 +2166,7 @@ export default function MainApp({
             <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToDailySchedule(selectedTeam || '1팀'); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀별 오늘 일정 보기
             </button>
-            
+
             <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToTeamSchedule(selectedTeam || '1팀'); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
               <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
             </button>
@@ -2692,7 +2692,7 @@ export default function MainApp({
             <div className="p-6">
               <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-3 text-center leading-relaxed">
                 아래 <span className="text-indigo-600 text-[18px] sm:text-[20px]">{repeatTargetDates.length}</span>일 동안의 스케줄에<br />
-                [학생이름]과 [장소]를<br />복제할까요?
+                [학생이름]과 [장소]를<br />정말 복제할까요?
               </p>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 max-h-[25vh] overflow-y-auto">
                 {repeatTargetDates.map(d => (
