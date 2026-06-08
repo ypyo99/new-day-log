@@ -316,6 +316,8 @@ export default function MainApp({
     4: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" },
     5: { student: "", status: "", location: "", selectedTags: [[]], memo: "", headcount: "" }
   });
+  const [logsDate, setLogsDate] = useState(date);
+
 
   const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
   const RENDER_TAGS = ['1', '결석', '취소', '선생님휴가'];
@@ -617,6 +619,7 @@ export default function MainApp({
       });
       return newLogs;
     });
+    setLogsDate(date);
   }, [date, allScheduleData, selectedTeam, currentUser, dbTeachers, shifts]);
 
 
@@ -2443,7 +2446,7 @@ export default function MainApp({
                           ) : null}
                         </div>
 
-                        {shouldRepeatPerShift[index] && (
+                        {shouldRepeatPerShift[index] && logsDate === date && (
                           <button
                             type="button"
                             onClick={() => handleRepeatScheduleForShift(index)}
