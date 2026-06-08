@@ -2056,13 +2056,6 @@ export default function MainApp({
                 animation: shineText 2.5s linear infinite;
                 display: inline;
               }
-              @keyframes slideUpSeamless {
-                0% { transform: translateY(0); }
-                100% { transform: translateY(-50%); }
-              }
-              .animate-slide-up {
-                animation: slideUpSeamless 18s linear infinite;
-              }
             `}</style>
             {todayNotices.length > 0 && (
               <div className="animate-fadeIn w-full">
@@ -2081,59 +2074,29 @@ export default function MainApp({
                         공지사항
                       </h4>
                     </div>
-                    <div className="relative w-full h-[110px] sm:h-[130px] overflow-hidden mt-1 sm:mt-1.5">
-                      <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: 'linear-gradient(to bottom, #fef2f2 0%, transparent 15%, transparent 85%, #fef2f2 100%)' }}></div>
-                      <div className="flex flex-col animate-slide-up hover:[animation-play-state:paused] w-full">
-                        <div className="flex flex-col gap-1 sm:gap-1.5 min-h-[110px] sm:min-h-[130px] justify-center w-full pb-1">
-                          {todayNotices.map((notice, idx) => {
-                            const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
-                            const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
-                            return (
-                              <p
-                                key={`orig-${idx}`}
-                                className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNavigateToNoticeManagement(notice);
-                                }}
-                              >
-                                <span className={shineClass}>
-                                  {notice.is_top ? '📌 ' : '• '} {notice.title}
-                                </span>
-                              </p>
-                            );
-                          })}
-                          <div className="flex items-center justify-center py-1.5 opacity-60 mt-1 pointer-events-none">
-                            <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
-                            <span className="mx-2 text-red-400 text-xs">✿</span>
-                            <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1 sm:gap-1.5 min-h-[110px] sm:min-h-[130px] justify-center w-full pb-1" aria-hidden="true">
-                          {todayNotices.map((notice, idx) => {
-                            const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
-                            const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
-                            return (
-                              <p
-                                key={`dup-${idx}`}
-                                className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNavigateToNoticeManagement(notice);
-                                }}
-                              >
-                                <span className={shineClass}>
-                                  {notice.is_top ? '📌 ' : '• '} {notice.title}
-                                </span>
-                              </p>
-                            );
-                          })}
-                          <div className="flex items-center justify-center py-1.5 opacity-60 mt-1 pointer-events-none">
-                            <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
-                            <span className="mx-2 text-red-400 text-xs">✿</span>
-                            <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
-                          </div>
-                        </div>
+                    <div className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1">
+                      {todayNotices.map((notice, idx) => {
+                        const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
+                        const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
+                        return (
+                          <p
+                            key={idx}
+                            className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNavigateToNoticeManagement(notice);
+                            }}
+                          >
+                            <span className={shineClass}>
+                              {notice.is_top ? '📌 ' : '• '} {notice.title}
+                            </span>
+                          </p>
+                        );
+                      })}
+                      <div className="flex items-center justify-center py-1.5 opacity-60 mt-1 pointer-events-none">
+                        <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
+                        <span className="mx-2 text-red-400 text-xs">✿</span>
+                        <div className="h-[1.5px] bg-gradient-to-r from-transparent via-red-300 to-transparent w-12"></div>
                       </div>
                     </div>
                   </div>
