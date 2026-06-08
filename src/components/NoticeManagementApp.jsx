@@ -264,6 +264,26 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const detailsRef = useRef(null);
   const listRef = useRef(null);
   const [isListVisible, setIsListVisible] = useState(false);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
+
+  useEffect(() => {
+    if ((selectedNotice || isEditing) && !loading && detailsRef.current && scrollTrigger > 0) {
+      const timer = setTimeout(() => {
+        if (detailsRef.current) {
+          const header = document.querySelector('header');
+          const headerOffset = header ? header.offsetHeight : 116;
+          const elementPosition = detailsRef.current.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.scrollY - headerOffset - 2;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollTrigger, loading, selectedNotice, isEditing]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -430,19 +450,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       setIsEditing(false);
     }
 
-    setTimeout(() => {
-      if (detailsRef.current) {
-        const header = document.querySelector('header');
-        const headerOffset = header ? header.offsetHeight : 116;
-        const elementPosition = detailsRef.current.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset - 2;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }
-    }, 50);
+    setScrollTrigger(prev => prev + 1);
   };
 
   const appliedNoticeIdRef = useRef(null);
@@ -468,6 +476,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     if (editorRef.current) {
       editorRef.current.innerHTML = "";
     }
+    setScrollTrigger(prev => prev + 1);
   };
 
   const handleImageUpload = async (e) => {
