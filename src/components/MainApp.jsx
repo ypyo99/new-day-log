@@ -2061,7 +2061,7 @@ export default function MainApp({
                 100% { transform: translateY(-50%); }
               }
               .animate-slide-up {
-                animation: slideUpSeamless 25s linear infinite;
+                animation: slideUpSeamless 18s linear infinite;
               }
             `}</style>
             {todayNotices.length > 0 && (
