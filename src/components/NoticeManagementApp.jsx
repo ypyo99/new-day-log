@@ -727,7 +727,22 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-bold text-gray-600">제목</label>
+                    <div className="flex justify-between items-end">
+                      <label className="text-sm font-bold text-gray-600 mb-0.5">제목</label>
+                      <div className="flex items-center gap-1.5 bg-blue-50/40 px-2 py-1 rounded-lg border border-blue-100 mb-1">
+                        <input
+                          type="checkbox"
+                          id="isTopCheckbox"
+                          checked={isTop}
+                          onChange={(e) => setIsTop(e.target.checked)}
+                          disabled={saving}
+                          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="isTopCheckbox" className="text-xs font-bold text-blue-900 cursor-pointer select-none">
+                          📌 이 공지사항을 목록 상단에 고정
+                        </label>
+                      </div>
+                    </div>
                     <input
                       type="text"
                       required
@@ -737,20 +752,6 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       placeholder="공지사항 제목을 입력해 주세요"
                       className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base bg-gray-200"
                     />
-                  </div>
-
-                  <div className="flex items-center gap-2 bg-blue-50/40 p-2.5 rounded-xl border border-blue-100">
-                    <input
-                      type="checkbox"
-                      id="isTopCheckbox"
-                      checked={isTop}
-                      onChange={(e) => setIsTop(e.target.checked)}
-                      disabled={saving}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                    />
-                    <label htmlFor="isTopCheckbox" className="text-sm font-bold text-blue-900 cursor-pointer select-none">
-                      📌 이 공지사항을 목록 상단에 고정
-                    </label>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2.5">
@@ -901,6 +902,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">글자색:</span>
                           <div className="flex items-center gap-2">
                             <button type="button" onClick={() => execFormat('foreColor', '#000000')} className="w-6 h-6 rounded-full bg-black border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="검정색" />
+                            <button type="button" onClick={() => execFormat('foreColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="흰색" />
                             <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색" />
                             <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색" />
                             <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-6 h-6 rounded-full bg-green-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="초록색" />
@@ -924,7 +926,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef08a' }} title="노란색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#dcfce7' }} title="옅은 초록색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-6 h-6 rounded-full bg-red-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연빨간색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-6 h-6 rounded-full bg-blue-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연파란색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색 배경" />
                           </div>
                         </div>
                       </div>
