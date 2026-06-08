@@ -2016,7 +2016,7 @@ export default function MainApp({
             transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none'
           }}
         >
-          <div className="text-center mb-5 sm:mb-8 shrink-0 mt-2 sm:mt-0">
+          <div className="text-center mb-2 sm:mb-3.5 shrink-0 mt-2 sm:mt-0">
             <div className="flex justify-center mb-2 sm:mb-4">
               <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-[42px] sm:h-[52px] object-contain" onError={(e) => e.target.style.display = 'none'} />
             </div>
