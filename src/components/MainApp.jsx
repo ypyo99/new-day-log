@@ -2039,7 +2039,7 @@ export default function MainApp({
                 100% { background-position: 0% 0; }
               }
               .shine-text-normal {
-                background: linear-gradient(120deg, #b91c1c 40%, #ffaaaa 50%, #b91c1c 60%);
+                background: linear-gradient(120deg, #4338ca 40%, #a5b4fc 50%, #4338ca 60%);
                 background-size: 300% 100%;
                 color: transparent !important;
                 -webkit-background-clip: text;
@@ -2077,7 +2077,7 @@ export default function MainApp({
                     <div className="space-y-1 sm:space-y-1.5 w-full min-w-0">
                       {todayNotices.map((notice, idx) => {
                         const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
-                        const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-red-700');
+                        const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
                         return (
                           <p
                             key={idx}
