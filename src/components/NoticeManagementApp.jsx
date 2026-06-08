@@ -23,184 +23,6 @@ const isValidMMDD = (value) => {
   return true;
 };
 
-function ImageResizer({ selectedImg, editorRef, onResize, onResizeEnd }) {
-  const [style, setStyle] = useState({ left: 0, top: 0, width: 0, height: 0 });
-  const isResizing = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0, width: 0, height: 0, direction: '' });
-
-  const updatePosition = () => {
-    if (!selectedImg || !editorRef.current) return;
-    const imgRect = selectedImg.getBoundingClientRect();
-    const editorRect = editorRef.current.getBoundingClientRect();
-
-    const scrollTop = editorRef.current.scrollTop;
-    const scrollLeft = editorRef.current.scrollLeft;
-
-    setStyle({
-      left: imgRect.left - editorRect.left + scrollLeft,
-      top: imgRect.top - editorRect.top + scrollTop,
-      width: imgRect.width,
-      height: imgRect.height
-    });
-  };
-
-  useEffect(() => {
-    updatePosition();
-
-    const editor = editorRef.current;
-    if (editor) {
-      editor.addEventListener('scroll', updatePosition);
-    }
-    window.addEventListener('resize', updatePosition);
-
-    const observer = new MutationObserver(updatePosition);
-    if (editor) {
-      observer.observe(editor, { attributes: true, childList: true, subtree: true });
-    }
-
-    return () => {
-      if (editor) {
-        editor.removeEventListener('scroll', updatePosition);
-      }
-      window.removeEventListener('resize', updatePosition);
-      observer.disconnect();
-    };
-  }, [selectedImg]);
-
-  const handleMouseDown = (e, direction) => {
-    e.preventDefault();
-    e.stopPropagation();
-    isResizing.current = true;
-    dragStart.current = {
-      x: e.clientX,
-      y: e.clientY,
-      width: selectedImg.offsetWidth,
-      height: selectedImg.offsetHeight,
-      direction
-    };
-
-    const handleMouseMove = (moveEvent) => {
-      if (!isResizing.current) return;
-      const deltaX = moveEvent.clientX - dragStart.current.x;
-      const editorWidth = editorRef.current.clientWidth - 24; // 패딩 등 여백 고려
-
-      let newWidth = dragStart.current.width;
-
-      if (dragStart.current.direction.includes('right')) {
-        newWidth = dragStart.current.width + deltaX;
-      } else if (dragStart.current.direction.includes('left')) {
-        newWidth = dragStart.current.width - deltaX;
-      }
-
-      // 최소 너비 40px, 최대 에디터 너비
-      newWidth = Math.max(40, Math.min(newWidth, editorWidth));
-      const pctWidth = Math.round((newWidth / editorWidth) * 100);
-
-      selectedImg.style.width = `${pctWidth}%`;
-      selectedImg.style.height = 'auto';
-
-      if (onResize) {
-        onResize(pctWidth);
-      }
-
-      updatePosition();
-    };
-
-    const handleMouseUp = () => {
-      isResizing.current = false;
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      if (onResizeEnd) {
-        onResizeEnd();
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  if (!selectedImg) return null;
-
-  const handleStyle = {
-    position: 'absolute',
-    width: '12px',
-    height: '12px',
-    background: '#3b82f6',
-    border: '2px solid #ffffff',
-    borderRadius: '50%',
-    zIndex: 50,
-  };
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: `${style.left}px`,
-        top: `${style.top}px`,
-        width: `${style.width}px`,
-        height: `${style.height}px`,
-        pointerEvents: 'none',
-        zIndex: 40,
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          border: '2px dashed #3b82f6',
-          boxSizing: 'border-box',
-          position: 'absolute',
-          left: 0,
-          top: 0
-        }}
-      />
-      {/* 우하단 */}
-      <div
-        style={{
-          ...handleStyle,
-          right: '-6px',
-          bottom: '-6px',
-          cursor: 'se-resize',
-          pointerEvents: 'auto',
-        }}
-        onMouseDown={(e) => handleMouseDown(e, 'bottom-right')}
-      />
-      {/* 좌하단 */}
-      <div
-        style={{
-          ...handleStyle,
-          left: '-6px',
-          bottom: '-6px',
-          cursor: 'sw-resize',
-          pointerEvents: 'auto',
-        }}
-        onMouseDown={(e) => handleMouseDown(e, 'bottom-left')}
-      />
-      {/* 우상단 */}
-      <div
-        style={{
-          ...handleStyle,
-          right: '-6px',
-          top: '-6px',
-          cursor: 'ne-resize',
-          pointerEvents: 'auto',
-        }}
-        onMouseDown={(e) => handleMouseDown(e, 'top-right')}
-      />
-      {/* 좌상단 */}
-      <div
-        style={{
-          ...handleStyle,
-          left: '-6px',
-          top: '-6px',
-          cursor: 'nw-resize',
-          pointerEvents: 'auto',
-        }}
-        onMouseDown={(e) => handleMouseDown(e, 'top-left')}
-      />
-    </div>
-  );
-}
 
 const linkifyHtml = (html) => {
   if (!html) return "";
@@ -246,7 +68,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [supabaseTableMissing, setSupabaseTableMissing] = useState(false);
 
@@ -258,13 +79,31 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const [endDate, setEndDate] = useState("");
   const [createdAt, setCreatedAt] = useState("");
   const editorRef = useRef(null);
-  const [selectedImg, setSelectedImg] = useState(null);
-  const [selectedImgWidth, setSelectedImgWidth] = useState(100);
-  const prevSelectedImgRef = useRef(null);
   const detailsRef = useRef(null);
   const listRef = useRef(null);
   const [isListVisible, setIsListVisible] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+
+  const [uploading, setUploading] = useState(false);
+  const [selectedImg, setSelectedImg] = useState(null);
+  const [selectedImgWidth, setSelectedImgWidth] = useState(100);
+  const prevSelectedImgRef = useRef(null);
+
+  useEffect(() => {
+    if (prevSelectedImgRef.current) {
+      try {
+        prevSelectedImgRef.current.style.outline = "none";
+        prevSelectedImgRef.current.style.boxShadow = "none";
+      } catch (e) {}
+    }
+    if (selectedImg) {
+      try {
+        selectedImg.style.outline = "3px solid #3b82f6";
+        selectedImg.style.boxShadow = "0 0 12px rgba(59, 130, 246, 0.4)";
+      } catch (e) {}
+    }
+    prevSelectedImgRef.current = selectedImg;
+  }, [selectedImg]);
 
   useEffect(() => {
     if ((selectedNotice || isEditing) && !loading && detailsRef.current && scrollTrigger > 0) {
@@ -312,22 +151,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       editorRef.current.innerHTML = selectedNotice ? selectedNotice.content : "";
     }
   }, [isEditing, selectedNotice]);
-
-  useEffect(() => {
-    if (prevSelectedImgRef.current) {
-      try {
-        prevSelectedImgRef.current.style.outline = "";
-        prevSelectedImgRef.current.style.boxShadow = "";
-      } catch (e) { }
-    }
-    if (selectedImg) {
-      try {
-        selectedImg.style.outline = "3px solid #3b82f6";
-        selectedImg.style.boxShadow = "0 0 12px rgba(59, 130, 246, 0.4)";
-      } catch (e) { }
-    }
-    prevSelectedImgRef.current = selectedImg;
-  }, [selectedImg]);
 
   const getTodayString = () => {
     const d = new Date();
@@ -413,6 +236,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       window.localStorage.removeItem('sungdong_admin_logged_in');
       setIsEditing(false);
       setSelectedNotice(null);
+      setSelectedImg(null);
     } else {
       setShowPwdModal(true);
       setPwdInput("");
@@ -498,7 +322,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       const { data: publicUrlData } = supabaseClient.storage.from('signatures').getPublicUrl(fileName);
       const imageUrl = publicUrlData.publicUrl;
 
-      const imgHtml = `<img src="${imageUrl}" alt="첨부 이미지" style="max-width: 100%; height: auto; display: block; margin: 12px 0; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
+      const imgHtml = `<img src="${imageUrl}" alt="첨부 이미지" style="max-width: 100%; height: auto; display: block; margin: 12px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`;
 
       if (editorRef.current) {
         editorRef.current.focus();
@@ -521,10 +345,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   };
 
   const handleEditorClick = (e) => {
-    const parentA = e.target.closest('a');
-    if (parentA && parentA.querySelector('img')) {
-      e.preventDefault();
-    }
     if (e.target.tagName === 'IMG') {
       setSelectedImg(e.target);
       const currentWidthStr = e.target.style.width || "";
@@ -611,11 +431,11 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
       alert("공지사항이 성공적으로 저장되었습니다.");
       setIsEditing(false);
+      setSelectedImg(null);
       if (data && data.length > 0) {
         setSelectedNotice(data[0]);
       }
-      setSelectedImg(null);
-      loadNotices();
+        loadNotices();
     } catch (err) {
       console.error(err);
       alert("저장 실패: " + err.message);
@@ -678,12 +498,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           content: attr(placeholder);
           color: #9ca3af;
           font-weight: 500;
-        }
-        .rich-editor img, .prose img {
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: outline 0.15s ease, box-shadow 0.15s ease;
         }
         .rich-editor img:hover {
           outline: 2px solid #3b82f6;
@@ -980,48 +794,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
-                    {selectedImg && (
-                      <div className="bg-sky-50 border border-sky-200 rounded-xl p-2.5 flex flex-col sm:flex-row items-center gap-3 animate-fadeIn text-xs sm:text-sm">
-                        <span className="font-bold text-sky-850 shrink-0">선택된 이미지 크기:</span>
-                        <div className="flex items-center gap-2 flex-1 w-full">
-                          <input
-                            type="range"
-                            min="10"
-                            max="100"
-                            value={selectedImgWidth}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value, 10);
-                              setSelectedImgWidth(val);
-                              if (selectedImg) {
-                                selectedImg.style.width = val + '%';
-                                selectedImg.style.height = 'auto';
-                              }
-                            }}
-                            className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
-                          />
-                          <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
-                        </div>
-                        <div className="flex gap-1 shrink-0 w-full sm:w-auto">
-                          {[25, 50, 75, 100].map(pct => (
-                            <button
-                              key={pct}
-                              type="button"
-                              onClick={() => {
-                                setSelectedImgWidth(pct);
-                                if (selectedImg) {
-                                  selectedImg.style.width = pct + '%';
-                                  selectedImg.style.height = 'auto';
-                                }
-                              }}
-                              className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
-                            >
-                              {pct}%
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+<div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
                     <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
                       <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
@@ -1039,10 +812,53 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                             className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            {uploading ? '그림 올리는 중...' : '그림(이미지) 추가'}
+                            {uploading ? '그림 처리중...' : '그림(이미지) 추가'}
                           </label>
                         </div>
                       </div>
+
+                      {selectedImg && (
+                        <div className="flex flex-col gap-2 p-2.5 bg-sky-50 border border-sky-200 rounded-lg animate-fade-in mt-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-sky-800 flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                              선택된 이미지 크기 조절
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedImg(null)}
+                              className="text-xs text-sky-600 hover:text-sky-800 font-bold px-2 py-0.5 rounded hover:bg-sky-100"
+                            >
+                              선택 해제
+                            </button>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-center gap-3">
+                            <div className="flex items-center gap-2 flex-1 w-full">
+                              <input
+                                type="range"
+                                min="10"
+                                max="100"
+                                value={selectedImgWidth}
+                                onChange={handleImageResize}
+                                className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
+                            </div>
+                            <div className="flex gap-1 shrink-0 w-full sm:w-auto">
+                              {[25, 50, 75, 100].map(pct => (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  onClick={() => applyQuickResize(pct)}
+                                  className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
+                                >
+                                  {pct}%
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* 서식 지정 툴바 */}
                       <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm text-sm">
@@ -1115,24 +931,12 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
 
                     <div className="relative flex-1 flex flex-col min-h-[200px]">
-                      {selectedImg && isEditing && (
-                        <ImageResizer
-                          selectedImg={selectedImg}
-                          editorRef={editorRef}
-                          onResize={(pct) => setSelectedImgWidth(pct)}
-                          onResizeEnd={() => {
-                            if (editorRef.current) {
-                              setContent(editorRef.current.innerHTML);
-                            }
-                          }}
-                        />
-                      )}
                       <div
                         ref={editorRef}
                         contentEditable
                         onInput={(e) => setContent(e.currentTarget.innerHTML)}
                         onClick={handleEditorClick}
-                        placeholder="공지사항 내용을 작성해 주세요 (그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
+                        placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
                         className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
                         style={{ minHeight: '200px' }}
                       />
@@ -1146,7 +950,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         setIsEditing(false);
                         setSelectedNotice(null);
                         setSelectedImg(null);
-                      }}
+                                          }}
                       disabled={saving}
                       className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm sm:text-base transition-colors"
                     >
