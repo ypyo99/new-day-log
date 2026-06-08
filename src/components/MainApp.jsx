@@ -134,7 +134,7 @@ export default function MainApp({
             }
             return diffA - diffB;
           });
-          setTodayNotices(sorted.slice(0, 5));
+          setTodayNotices(sorted);
         } else {
           setTodayNotices([]);
         }
@@ -2077,7 +2077,13 @@ export default function MainApp({
                         공지사항
                       </h4>
                     </div>
-                    <div className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1">
+                    <div 
+                      className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[145px] sm:max-h-[160px] overflow-y-auto overscroll-contain touch-pan-y pr-1"
+                      style={{ scrollbarWidth: 'thin', scrollbarColor: '#fca5a5 transparent' }}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                    >
                       {todayNotices.map((notice, idx) => {
                         const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
                         const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
