@@ -486,9 +486,9 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                             cellContent = null;
                           }
                         } else if (isAvailable) {
-                          cellContent = <span>사용가능</span>;
+                          cellContent = <span>사용<br />가능</span>;
                         } else {
-                          cellContent = <span>사용불가</span>;
+                          cellContent = <span>사용<br />불가</span>;
                         }
 
                         return (
@@ -526,7 +526,7 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                 }}
                 readOnly={!isManagerMode}
                 placeholder={isManagerMode ? "모든 선생님 화면에 실시간으로 보입니다." : "담당자 모드에서만 작성 가능합니다."}
-                className={`w-full p-3 md:p-4 border rounded-xl font-bold h-24 md:h-32 outline-none transition-all text-sm landscape:text-[20px] md:text-[22px] text-black bg-white ${isManagerMode ? 'border-blue-300' : 'border-gray-300'}`}
+                className={`w-full p-3 md:p-4 border rounded-xl font-bold h-24 md:h-32 outline-none transition-all text-sm landscape:text-[20px] md:text-[22px] leading-relaxed text-black bg-white ${isManagerMode ? 'border-blue-300' : 'border-gray-300'}`}
               />
               {isTyping && <div className="text-[10px] text-blue-500 mt-1 font-bold animate-pulse text-right">자동 저장 중...</div>}
             </div>
