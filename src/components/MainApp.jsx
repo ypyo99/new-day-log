@@ -2076,7 +2076,7 @@ export default function MainApp({
                       </h4>
                     </div>
                     <div 
-                      className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[118px] sm:max-h-[135px] overflow-y-auto overscroll-contain touch-pan-y pr-1"
+                      className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[126px] sm:max-h-[144px] overflow-y-auto overscroll-contain touch-pan-y pr-1"
                       style={{ scrollbarWidth: 'thin', scrollbarColor: '#fca5a5 transparent' }}
                       onTouchStart={(e) => e.stopPropagation()}
                       onTouchMove={(e) => e.stopPropagation()}
