@@ -114,10 +114,21 @@ export default function MainApp({
           today.setHours(0, 0, 0, 0);
 
           const validNotices = data.filter(notice => {
-            if (!notice.end_date) return true;
-            const endDate = new Date(notice.end_date);
-            endDate.setHours(0, 0, 0, 0);
-            return endDate >= today;
+            let isValid = true;
+            
+            if (notice.start_date) {
+              const startDate = new Date(notice.start_date);
+              startDate.setHours(0, 0, 0, 0);
+              if (today < startDate) isValid = false;
+            }
+            
+            if (notice.end_date) {
+              const endDate = new Date(notice.end_date);
+              endDate.setHours(0, 0, 0, 0);
+              if (today > endDate) isValid = false;
+            }
+            
+            return isValid;
           });
 
           const sorted = [...validNotices].sort((a, b) => {
