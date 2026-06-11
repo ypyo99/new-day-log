@@ -100,14 +100,23 @@ export default function MainApp({
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
-  const [todayNotices, setTodayNotices] = useState([]);
+  const [todayNotices, setTodayNotices] = useState(() => {
+    try {
+      const cached = window.localStorage.getItem('sungdong_today_notices');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
 
   useEffect(() => {
     const fetchTodayNotices = async () => {
       try {
         const { data, error } = await supabaseClient
           .from('notices')
-          .select('*');
+          .select('id, title, is_top, start_date, end_date');
 
         if (!error && data) {
           const today = new Date();
@@ -151,6 +160,7 @@ export default function MainApp({
             return diffA - diffB;
           });
           setTodayNotices(sorted);
+          try { window.localStorage.setItem('sungdong_today_notices', JSON.stringify(sorted)); } catch(e) {}
         } else {
           setTodayNotices([]);
         }
@@ -158,9 +168,26 @@ export default function MainApp({
         setTodayNotices([]);
       }
     };
+    
     if (date) {
       fetchTodayNotices();
     }
+
+    let lastRefreshedHour = new Date().getMinutes() === 0 ? new Date().getHours() : -1;
+
+    const intervalId = setInterval(() => {
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const targets = [9, 10, 11, 12, 13, 14, 15, 16];
+      
+      if (targets.includes(h) && m === 0 && lastRefreshedHour !== h) {
+        lastRefreshedHour = h;
+        if (date) fetchTodayNotices();
+      }
+    }, 20000);
+
+    return () => clearInterval(intervalId);
   }, [date]);
 
 
@@ -2107,9 +2134,10 @@ export default function MainApp({
                           <p
                             key={idx}
                             className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              onNavigateToNoticeManagement(notice);
+                              const { data } = await supabaseClient.from('notices').select('*').eq('id', notice.id).single();
+                              onNavigateToNoticeManagement(data || notice);
                             }}
                           >
                             <span className={shineClass}>
