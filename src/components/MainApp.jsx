@@ -107,7 +107,7 @@ export default function MainApp({
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) return parsed;
       }
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
 
@@ -124,19 +124,19 @@ export default function MainApp({
 
           const validNotices = data.filter(notice => {
             let isValid = true;
-            
+
             if (notice.start_date) {
               const startDate = new Date(notice.start_date);
               startDate.setHours(0, 0, 0, 0);
               if (today < startDate) isValid = false;
             }
-            
+
             if (notice.end_date) {
               const endDate = new Date(notice.end_date);
               endDate.setHours(0, 0, 0, 0);
               if (today > endDate) isValid = false;
             }
-            
+
             return isValid;
           });
 
@@ -160,7 +160,7 @@ export default function MainApp({
             return diffA - diffB;
           });
           setTodayNotices(sorted);
-          try { window.localStorage.setItem('sungdong_today_notices', JSON.stringify(sorted)); } catch(e) {}
+          try { window.localStorage.setItem('sungdong_today_notices', JSON.stringify(sorted)); } catch (e) { }
         } else {
           setTodayNotices([]);
         }
@@ -168,7 +168,7 @@ export default function MainApp({
         setTodayNotices([]);
       }
     };
-    
+
     if (date) {
       fetchTodayNotices();
     }
@@ -180,7 +180,7 @@ export default function MainApp({
       const h = now.getHours();
       const m = now.getMinutes();
       const targets = [9, 10, 11, 12, 13, 14, 15, 16];
-      
+
       if (targets.includes(h) && m === 0 && lastRefreshedHour !== h) {
         lastRefreshedHour = h;
         if (date) fetchTodayNotices();
@@ -1218,7 +1218,17 @@ export default function MainApp({
     }, 50);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (hasChanges) {
+      const wantsToSave = window.confirm("변경된 근무일지가 저장되지 않았습니다. 저장하시겠습니까?");
+      if (wantsToSave) {
+        const saved = await performAutoSave();
+        if (!saved) {
+          return; // 저장 실패 시 중단
+        }
+        return; // 저장 성공 시 기존 저장화면(팝업)을 볼 수 있도록 로그아웃 처리를 중단함
+      }
+    }
     setIsLoggedIn(false);
     setRecords([]);
     window.localStorage.removeItem('sungdong_admin_logged_in');
@@ -2120,7 +2130,7 @@ export default function MainApp({
                         공지사항
                       </h4>
                     </div>
-                    <div 
+                    <div
                       className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[126px] sm:max-h-[144px] overflow-y-auto overscroll-contain touch-pan-y pr-1"
                       style={{ scrollbarWidth: 'thin', scrollbarColor: '#fca5a5 transparent' }}
                       onTouchStart={(e) => e.stopPropagation()}
