@@ -430,7 +430,9 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       if (error) throw error;
 
       alert("공지사항이 성공적으로 저장되었습니다.");
-      setIsEditing(false);
+      if (!isAdmin) {
+        setIsEditing(false);
+      }
       setSelectedImg(null);
       if (data && data.length > 0) {
         setSelectedNotice(data[0]);
