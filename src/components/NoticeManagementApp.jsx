@@ -726,7 +726,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                               </span>
                             )}
                             <span className="line-clamp-2 break-all pr-1">
-                              <span className={`${notice.start_date && notice.start_date.substring(0, 10) === getFullTodayString() ? 'shine-text-normal ' : ''}${notice.title === '작성 중인 공지사항' ? 'text-red-600 font-bold' : ''}`}>
+                              <span className={`${notice.start_date && notice.start_date.substring(0, 10) === getFullTodayString() ? 'shine-text-normal ' : ''}${notice.title === '작성 중인 공지사항' ? 'text-red-600 font-bold ' : (notice.is_top ? 'font-bold ' : '')}`}>
                                 {notice.title}
                               </span>
                             </span>
