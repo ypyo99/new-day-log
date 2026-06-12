@@ -94,13 +94,13 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       try {
         prevSelectedImgRef.current.style.outline = "none";
         prevSelectedImgRef.current.style.boxShadow = "none";
-      } catch (e) {}
+      } catch (e) { }
     }
     if (selectedImg) {
       try {
         selectedImg.style.outline = "3px solid #3b82f6";
         selectedImg.style.boxShadow = "0 0 12px rgba(59, 130, 246, 0.4)";
-      } catch (e) {}
+      } catch (e) { }
     }
     prevSelectedImgRef.current = selectedImg;
   }, [selectedImg]);
@@ -190,6 +190,28 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       } else {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const now = new Date();
+
+        const expiredIds = [];
+        (data || []).forEach(notice => {
+          if (notice.is_top && notice.end_date) {
+            const endDate = new Date(notice.end_date);
+            endDate.setHours(23, 59, 59, 999);
+            if (endDate < now) {
+              notice.is_top = false;
+              expiredIds.push(notice.id);
+            }
+          }
+        });
+
+        if (expiredIds.length > 0) {
+          supabaseClient.from('notices')
+            .update({ is_top: false })
+            .in('id', expiredIds)
+            .then(({ error }) => {
+              if (error) console.error("Expired notices unpin failed:", error);
+            });
+        }
 
         const sortedData = (data || []).sort((a, b) => {
           const isTopA = a.is_top || false;
@@ -227,9 +249,12 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
   const handleAdminClick = async () => {
     if (isAdmin) {
-      if (isEditing && title.trim() && content.trim() && startDate && endDate) {
+      if (isEditing && title.trim() && content.trim()) {
         try {
-          await handleSave({ preventDefault: () => { } });
+          const success = await handleSave({ preventDefault: () => { } }, true);
+          if (success) {
+            alert("공지사항이 성공적으로 저장되었습니다.");
+          }
         } catch (e) { }
       }
       setIsAdmin(false);
@@ -380,30 +405,34 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const handleSave = async (e, silent = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!title.trim() || !content.trim()) {
-      alert("제목과 내용을 입력해 주세요.");
-      return;
+      if (!silent) alert("제목과 내용을 입력해 주세요.");
+      return false;
     }
-    if (!startDate || !endDate) {
+
+    const effectiveStartDate = startDate || getFullTodayString();
+    const effectiveEndDate = endDate || effectiveStartDate;
+
+    if (!silent && (!startDate || !endDate)) {
       alert("게시시작일과 게시종료일을 입력해 주세요.");
-      return;
+      return false;
     }
 
     const currentYear = selectedNotice
       ? selectedNotice.created_at.split('-')[0]
       : new Date().getFullYear().toString();
 
-    const fullStartDate = startDate;
-    const fullEndDate = endDate;
+    const fullStartDate = effectiveStartDate;
+    const fullEndDate = effectiveEndDate;
     const fullCreatedAt = selectedNotice
       ? selectedNotice.created_at
       : `${currentYear}-${createdAt}`;
 
     if (new Date(fullStartDate) > new Date(fullEndDate)) {
-      alert("게시시작일은 게시종료일보다 빠르거나 같아야 합니다.");
-      return;
+      if (!silent) alert("게시시작일은 게시종료일보다 빠르거나 같아야 합니다.");
+      return false;
     }
 
     setSaving(true);
@@ -429,7 +458,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
       if (error) throw error;
 
-      alert("공지사항이 성공적으로 저장되었습니다.");
+      if (!silent) alert("공지사항이 성공적으로 저장되었습니다.");
       if (!isAdmin) {
         setIsEditing(false);
       }
@@ -437,10 +466,12 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       if (data && data.length > 0) {
         setSelectedNotice(data[0]);
       }
-        loadNotices();
+      loadNotices();
+      return true;
     } catch (err) {
       console.error(err);
-      alert("저장 실패: " + err.message);
+      if (!silent) alert("저장 실패: " + err.message);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -797,7 +828,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
                   </div>
 
-<div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
+                  <div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
                     <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
                       <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
@@ -956,7 +987,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         setIsEditing(false);
                         setSelectedNotice(null);
                         setSelectedImg(null);
-                                          }}
+                      }}
                       disabled={saving}
                       className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm sm:text-base transition-colors"
                     >
