@@ -140,7 +140,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const execFormat = (command, value = null) => {
     if (navigator.vibrate) navigator.vibrate(30);
     if (editorRef.current) {
-      editorRef.current.focus();
+      editorRef.current.focus({ preventScroll: true });
       document.execCommand(command, false, value);
       setContent(editorRef.current.innerHTML);
     }
@@ -955,12 +955,10 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                           <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">형광펜:</span>
                           <div className="flex items-center gap-2">
                             <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 text-[10px] flex items-center justify-center font-bold active:scale-90 transition-transform shadow-sm" title="지우기">❌</button>
-                            <button type="button" onClick={() => execFormat('backColor', '#fef9c3')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef9c3' }} title="옅은 노란색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef08a' }} title="노란색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#dcfce7' }} title="옅은 초록색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-6 h-6 rounded-full bg-red-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연빨간색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색 배경" />
-                            <button type="button" onClick={() => execFormat('backColor', '#dbeafe')} className="w-6 h-6 rounded-full bg-blue-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연파란색 배경" />
                             <button type="button" onClick={() => execFormat('backColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색 배경" />
                           </div>
                         </div>
