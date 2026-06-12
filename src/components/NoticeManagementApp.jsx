@@ -249,13 +249,16 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
   const handleAdminClick = async () => {
     if (isAdmin) {
-      if (isEditing && title.trim() && content.trim()) {
-        try {
-          const success = await handleSave({ preventDefault: () => { } }, true);
-          if (success) {
-            alert("공지사항이 성공적으로 저장되었습니다.");
-          }
-        } catch (e) { }
+      if (isEditing && (title.trim() || content.trim())) {
+        const wantsToSave = window.confirm("작성중이던 공지사항을 저장하시겠습니까?");
+        if (wantsToSave) {
+          try {
+            const success = await handleSave({ preventDefault: () => { } }, true);
+            if (success) {
+              alert("공지사항이 성공적으로 저장되었습니다.");
+            }
+          } catch (e) { }
+        }
       }
       setIsAdmin(false);
       window.localStorage.removeItem('sungdong_admin_logged_in');
@@ -407,7 +410,10 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
   const handleSave = async (e, silent = false) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!title.trim() || !content.trim()) {
+
+    const effectiveTitle = title.trim() ? title.trim() : (silent ? '작성 중인 공지사항' : '');
+
+    if (!effectiveTitle || !content.trim()) {
       if (!silent) alert("제목과 내용을 입력해 주세요.");
       return false;
     }
@@ -438,7 +444,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     setSaving(true);
     try {
       const payload = {
-        title: title.trim(),
+        title: effectiveTitle,
         content: content.trim(),
         is_top: isTop,
         created_at: fullCreatedAt,
@@ -720,7 +726,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                               </span>
                             )}
                             <span className="line-clamp-2 break-all pr-1">
-                              <span className={notice.start_date && notice.start_date.substring(0, 10) === getFullTodayString() ? 'shine-text-normal' : ''}>
+                              <span className={`${notice.start_date && notice.start_date.substring(0, 10) === getFullTodayString() ? 'shine-text-normal ' : ''}${notice.title === '작성 중인 공지사항' ? 'text-red-600 font-bold' : ''}`}>
                                 {notice.title}
                               </span>
                             </span>
