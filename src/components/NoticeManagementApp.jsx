@@ -614,6 +614,10 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           color: #9ca3af;
           font-weight: 500;
         }
+        .rich-editor img, .prose img {
+          max-width: 100% !important;
+          height: auto !important;
+        }
         .rich-editor img:hover {
           outline: 2px solid #3b82f6;
         }
@@ -762,9 +766,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 content-start items-start flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 content-start items-start flex-1 min-w-0">
           {/* 좌측: 공지사항 목록 */}
-          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
+          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 min-w-0 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
@@ -821,10 +825,10 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
           {/* 우측: 상세 조회 또는 편집 */}
           {(selectedNotice || isEditing) && (
-            <section ref={detailsRef} className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350">
+            <section ref={detailsRef} className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 min-w-0">
               {isEditing ? (
                 /* 편집 및 작성 폼 */
-                <form onSubmit={handleSave} className="flex flex-col gap-4 flex-1">
+                <form onSubmit={handleSave} className="flex flex-col gap-4 flex-1 min-w-0">
                   <div className="flex justify-between items-center border-b pb-2 mb-1">
                     <h2 className="text-base sm:text-lg font-bold text-blue-700">
                       {selectedNotice ? '공지사항 수정' : '공지사항 새로 작성'}
@@ -910,8 +914,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 flex-1 min-h-[200px]">
-                    <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+                  <div className="flex flex-col gap-1.5 flex-1 min-h-[200px] min-w-0">
+                    <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200 sticky top-2 z-30 shadow-sm">
                       <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
                         <div className="relative">
@@ -1047,7 +1051,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       </div>
                     </div>
 
-                    <div className="relative flex-1 flex flex-col min-h-[200px]">
+                    <div className="relative flex-1 flex flex-col min-h-[200px] min-w-0 overflow-x-hidden">
                       {editorNode}
                     </div>
                   </div>
@@ -1077,8 +1081,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 </form>
               ) : (
                 /* 공지사항 상세 조회 */
-                <div className="flex flex-col gap-4 flex-1">
-                  <div className="border-b pb-3 shrink-0">
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
+                  <div className="border-b pb-3 shrink-0 min-w-0">
                     <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight">
                       {selectedNotice.title}
                     </h2>
@@ -1090,7 +1094,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
                   </div>
 
-                  <div className="flex-1 pr-1">
+                  <div className="flex-1 pr-1 min-w-0 overflow-x-hidden">
                     <div
                       className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
                       dangerouslySetInnerHTML={{ __html: linkifyHtml(selectedNotice.content).replace(/\n/g, '<br />') }}
