@@ -458,7 +458,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       onClick={handleEditorClick}
       onTouchEnd={handleEditorTouchEnd}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base flex-1 bg-white rich-editor w-full"
+      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base flex-1 bg-white rich-editor w-full min-w-0"
       style={{ minHeight: '400px' }}
     />
   ), [handleEditorClick, handleEditorTouchEnd]);
@@ -828,7 +828,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
             <section ref={detailsRef} className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 min-w-0">
               {isEditing ? (
                 /* 편집 및 작성 폼 */
-                <form onSubmit={handleSave} className="flex flex-col gap-4 flex-1 min-w-0">
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
                   <div className="flex justify-between items-center border-b pb-2 mb-1">
                     <h2 className="text-base sm:text-lg font-bold text-blue-700">
                       {selectedNotice ? '공지사항 수정' : '공지사항 새로 작성'}
@@ -944,13 +944,28 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
                               선택된 이미지 크기 조절
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedImg(null)}
-                              className="text-xs text-sky-600 hover:text-sky-800 font-bold px-2 py-0.5 rounded hover:bg-sky-100"
-                            >
-                              선택 해제
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedImg) {
+                                    selectedImg.remove();
+                                    if (editorRef.current) setContent(editorRef.current.innerHTML);
+                                    setSelectedImg(null);
+                                  }
+                                }}
+                                className="text-xs text-red-600 hover:text-red-800 font-bold px-2 py-0.5 rounded hover:bg-red-50"
+                              >
+                                삭제
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedImg(null)}
+                                className="text-xs text-sky-600 hover:text-sky-800 font-bold px-2 py-0.5 rounded hover:bg-sky-100"
+                              >
+                                닫기
+                              </button>
+                            </div>
                           </div>
                           <div className="flex flex-col sm:flex-row items-center gap-3">
                             <div className="flex items-center gap-2 flex-1 w-full">
@@ -1070,7 +1085,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       취소
                     </button>
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleSave}
                       disabled={saving}
                       className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2"
                     >
@@ -1078,7 +1094,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       {saving ? '저장 중...' : '작성 완료'}
                     </button>
                   </div>
-                </form>
+                </div>
               ) : (
                 /* 공지사항 상세 조회 */
                 <div className="flex flex-col gap-4 flex-1 min-w-0">
@@ -1096,7 +1112,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
                   <div className="flex-1 pr-1 min-w-0 overflow-x-hidden">
                     <div
-                      className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
+                      className="prose max-w-none w-full min-w-0 text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
                       dangerouslySetInnerHTML={{ __html: linkifyHtml(selectedNotice.content).replace(/\n/g, '<br />') }}
                       onClick={(e) => {
                         const parentA = e.target.closest('a');
