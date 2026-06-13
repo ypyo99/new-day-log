@@ -193,6 +193,30 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  const hasChanges = useMemo(() => {
+    if (!isEditing) return false;
+    if (selectedNotice) {
+      const currentTitle = title.trim();
+      const originalTitle = selectedNotice.title || "";
+      const currentContent = content.trim();
+      const originalContent = selectedNotice.content || "";
+      const effectiveStartDate = startDate || getFullTodayString();
+      const originalStartDate = selectedNotice.start_date || "";
+      const effectiveEndDate = endDate || effectiveStartDate;
+      const originalEndDate = selectedNotice.end_date || "";
+      
+      return (
+        currentTitle !== originalTitle ||
+        currentContent !== originalContent ||
+        isTop !== selectedNotice.is_top ||
+        effectiveStartDate !== originalStartDate ||
+        effectiveEndDate !== originalEndDate
+      );
+    } else {
+      return title.trim() !== "" || content.trim() !== "";
+    }
+  }, [isEditing, selectedNotice, title, content, isTop, startDate, endDate]);
+
   useEffect(() => {
     if (showPwdModal && pwdInputRef.current) {
       pwdInputRef.current.focus();
@@ -275,30 +299,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
   const handleAdminClick = async () => {
     if (isAdmin) {
-      let hasChanges = false;
-      if (isEditing) {
-        if (selectedNotice) {
-          const currentTitle = title.trim();
-          const originalTitle = selectedNotice.title || "";
-          const currentContent = content.trim();
-          const originalContent = selectedNotice.content || "";
-          const effectiveStartDate = startDate || getFullTodayString();
-          const originalStartDate = selectedNotice.start_date || "";
-          const effectiveEndDate = endDate || effectiveStartDate;
-          const originalEndDate = selectedNotice.end_date || "";
-          
-          hasChanges = (
-            currentTitle !== originalTitle ||
-            currentContent !== originalContent ||
-            isTop !== selectedNotice.is_top ||
-            effectiveStartDate !== originalStartDate ||
-            effectiveEndDate !== originalEndDate
-          );
-        } else {
-          hasChanges = title.trim() !== "" || content.trim() !== "";
-        }
-      }
-
       if (hasChanges) {
         const wantsToSave = window.confirm("작성 중이던 공지사항 내용이 변경되었습니다. 저장하시겠습니까?");
         if (wantsToSave) {
@@ -1117,10 +1117,10 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     <button
                       type="button"
                       onClick={handleSave}
-                      disabled={saving}
-                      className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2"
+                      disabled={saving || !hasChanges}
+                      className={`flex-1 py-3 rounded-xl font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2 ${(saving || !hasChanges) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                     >
-                      {saving && <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
+                      {saving && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
                       {saving ? '저장 중...' : '작성 완료'}
                     </button>
                   </div>
