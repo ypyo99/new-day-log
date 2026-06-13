@@ -409,6 +409,19 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   }, []);
 
+  const editorNode = useMemo(() => (
+    <div
+      ref={editorRef}
+      contentEditable
+      suppressContentEditableWarning={true}
+      onInput={(e) => setContent(e.currentTarget.innerHTML)}
+      onClick={handleEditorClick}
+      placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
+      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
+      style={{ minHeight: '200px' }}
+    />
+  ), [handleEditorClick]);
+
   const handleImageResize = (e) => {
     const val = parseInt(e.target.value);
     setSelectedImgWidth(val);
@@ -994,18 +1007,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
 
                     <div className="relative flex-1 flex flex-col min-h-[200px]">
-                      {useMemo(() => (
-                        <div
-                          ref={editorRef}
-                          contentEditable
-                          suppressContentEditableWarning={true}
-                          onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                          onClick={handleEditorClick}
-                          placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-                          className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
-                          style={{ minHeight: '200px' }}
-                        />
-                      ), [handleEditorClick])}
+                      {editorNode}
                     </div>
                   </div>
 
