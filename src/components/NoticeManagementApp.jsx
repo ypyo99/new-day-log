@@ -639,7 +639,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
         }
       `}</style>
       {/* 헤더 영역 */}
-      <header className="bg-blue-600 text-white px-4 pt-4 pb-12 shadow-lg z-50 flex justify-between items-start sticky top-0 shrink-0 min-h-[116px]">
+      <header className="bg-blue-600 text-white px-4 pt-4 pb-12 shadow-md z-20 relative flex justify-between items-start shrink-0 min-h-[116px]">
         <div className="flex items-center">
           <div className="flex flex-col">
             <div className="flex items-center mb-1">

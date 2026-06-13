@@ -2281,7 +2281,7 @@ export default function MainApp({
 
   return (
     <div className="min-h-[100dvh] bg-transparent font-sans pb-6">
-      <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-lg z-40 flex justify-between items-center relative">
+      <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-md z-20 relative flex justify-between items-center shrink-0 min-h-[70px]">
         <div className="flex items-center">
           <div className="flex flex-col">
             <div className="flex items-center mb-1">
