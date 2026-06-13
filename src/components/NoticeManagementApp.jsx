@@ -98,6 +98,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const [pwdInput, setPwdInput] = useState("");
   const [pwdError, setPwdError] = useState(false);
   const pwdInputRef = useRef(null);
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   const [notices, setNotices] = useState([]);
   const [selectedNotice, setSelectedNotice] = useState(null);
@@ -614,9 +615,14 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           color: #9ca3af;
           font-weight: 500;
         }
+        .rich-editor *, .prose * {
+          max-width: 100% !important;
+        }
         .rich-editor img, .prose img {
           max-width: 100% !important;
           height: auto !important;
+          object-fit: contain;
+          cursor: pointer;
         }
         .rich-editor img:hover {
           outline: 2px solid #3b82f6;
@@ -1119,6 +1125,9 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                         if (parentA && parentA.querySelector('img')) {
                           e.preventDefault();
                         }
+                        if (e.target.tagName === 'IMG') {
+                          setLightboxImg(e.target.src);
+                        }
                       }}
                     />
                   </div>
@@ -1176,6 +1185,30 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 이미지 라이트박스 (크게 보기) */}
+      {lightboxImg && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/90 flex flex-col items-center justify-center p-2 sm:p-4 cursor-pointer animate-fade-in touch-manipulation"
+          onClick={() => setLightboxImg(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-colors z-[210]"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxImg(null);
+            }}
+          >
+            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <img 
+            src={lightboxImg} 
+            alt="원본 이미지 크게보기" 
+            className="max-w-full max-h-[90vh] object-contain rounded shadow-2xl" 
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
