@@ -275,8 +275,32 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
   const handleAdminClick = async () => {
     if (isAdmin) {
-      if (isEditing && (title.trim() || content.trim())) {
-        const wantsToSave = window.confirm("작성중이던 공지사항을 저장하시겠습니까?");
+      let hasChanges = false;
+      if (isEditing) {
+        if (selectedNotice) {
+          const currentTitle = title.trim();
+          const originalTitle = selectedNotice.title || "";
+          const currentContent = content.trim();
+          const originalContent = selectedNotice.content || "";
+          const effectiveStartDate = startDate || getFullTodayString();
+          const originalStartDate = selectedNotice.start_date || "";
+          const effectiveEndDate = endDate || effectiveStartDate;
+          const originalEndDate = selectedNotice.end_date || "";
+          
+          hasChanges = (
+            currentTitle !== originalTitle ||
+            currentContent !== originalContent ||
+            isTop !== selectedNotice.is_top ||
+            effectiveStartDate !== originalStartDate ||
+            effectiveEndDate !== originalEndDate
+          );
+        } else {
+          hasChanges = title.trim() !== "" || content.trim() !== "";
+        }
+      }
+
+      if (hasChanges) {
+        const wantsToSave = window.confirm("작성 중이던 공지사항 내용이 변경되었습니다. 저장하시겠습니까?");
         if (wantsToSave) {
           try {
             const success = await handleSave({ preventDefault: () => { } }, true);
