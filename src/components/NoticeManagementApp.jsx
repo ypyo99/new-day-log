@@ -458,8 +458,8 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       onClick={handleEditorClick}
       onTouchEnd={handleEditorTouchEnd}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
-      style={{ minHeight: '200px' }}
+      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base flex-1 bg-white rich-editor w-full"
+      style={{ minHeight: '400px' }}
     />
   ), [handleEditorClick, handleEditorTouchEnd]);
 
@@ -764,7 +764,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
         <div className="grid grid-cols-1 gap-3 content-start items-start flex-1">
           {/* 좌측: 공지사항 목록 */}
-          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col max-h-[75vh] md:max-h-none overflow-hidden transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
+          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
@@ -775,7 +775,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 등록된 공지사항이 없습니다.
               </div>
             ) : (
-              <div className="overflow-y-auto pr-1 flex-1 max-h-[65vh] md:max-h-[75vh]">
+              <div className="pr-1 flex-1">
                 <table className="w-full text-left" style={{ borderSpacing: 0, tableLayout: 'fixed' }}>
                   <thead>
                     <tr className="text-sm font-bold text-blue-900 uppercase tracking-wider">
@@ -1077,7 +1077,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 </form>
               ) : (
                 /* 공지사항 상세 조회 */
-                <div className="flex flex-col gap-4 flex-1 h-full overflow-hidden">
+                <div className="flex flex-col gap-4 flex-1">
                   <div className="border-b pb-3 shrink-0">
                     <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight">
                       {selectedNotice.title}
@@ -1090,7 +1090,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto pr-1">
+                  <div className="flex-1 pr-1">
                     <div
                       className="prose max-w-none text-gray-800 leading-relaxed font-medium break-all text-sm sm:text-base"
                       dangerouslySetInnerHTML={{ __html: linkifyHtml(selectedNotice.content).replace(/\n/g, '<br />') }}
