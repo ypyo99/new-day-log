@@ -119,6 +119,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const listRef = useRef(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const lastScrolledTriggerRef = useRef(0);
+  const editorScrollSaveRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
@@ -411,14 +412,35 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   }, []);
 
+  const handleEditorTouchStart = useCallback(() => {
+    // 포커스 발생 전에 스크롤 위치를 미리 저장
+    editorScrollSaveRef.current = window.scrollY;
+  }, []);
+
   const handleEditorFocus = useCallback(() => {
     // 모바일 브라우저가 contentEditable 포커스 시 자동 스크롤하는 것을 방지
-    const scrollY = window.scrollY;
-    requestAnimationFrame(() => {
-      if (Math.abs(window.scrollY - scrollY) > 10) {
-        window.scrollTo(0, scrollY);
+    // touchstart에서 저장한 위치를 사용하고, 일정 시간 동안 scroll 이벤트를 감시하여 복원
+    const savedY = editorScrollSaveRef.current ?? window.scrollY;
+    let isRestoring = false;
+    let active = true;
+
+    const onScroll = () => {
+      if (isRestoring || !active) return;
+      // 위로 튜는 스크롤 점프만 방지 (아래로는 키보드 회피 등에 필요)
+      if (window.scrollY < savedY - 10) {
+        isRestoring = true;
+        window.scrollTo(0, savedY);
+        requestAnimationFrame(() => { isRestoring = false; });
       }
-    });
+    };
+
+    window.addEventListener('scroll', onScroll);
+
+    // 키보드 애니메이션이 완료될 때까지 감시
+    setTimeout(() => {
+      active = false;
+      window.removeEventListener('scroll', onScroll);
+    }, 400);
   }, []);
 
   const editorNode = useMemo(() => (
@@ -428,12 +450,13 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       suppressContentEditableWarning={true}
       onInput={(e) => setContent(e.currentTarget.innerHTML)}
       onClick={handleEditorClick}
+      onTouchStart={handleEditorTouchStart}
       onFocus={handleEditorFocus}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
       className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
       style={{ minHeight: '200px' }}
     />
-  ), [handleEditorClick, handleEditorFocus]);
+  ), [handleEditorClick, handleEditorTouchStart, handleEditorFocus]);
 
   const handleImageResize = (e) => {
     const val = parseInt(e.target.value);
