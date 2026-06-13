@@ -569,6 +569,7 @@ export default function MainApp({
 
             // 출결 기록이 존재하는지 여부 확인
             const siblingStatus = formatStatusIfDate(r.status) || "";
+            if (siblingStatus.includes("선생님휴가")) return false;
             return siblingStatus.trim() !== "";
           });
 
@@ -1844,6 +1845,7 @@ export default function MainApp({
         const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
         if (siblingGroup !== myGroup) return false;
         const siblingStatus = formatStatusIfDate(r.status) || "";
+        if (siblingStatus.includes("선생님휴가")) return false;
         return siblingStatus.trim() !== "";
       });
 
