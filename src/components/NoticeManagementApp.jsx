@@ -1,6 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { Home, LucideCalendar } from './Icons';
+
+const FloatingScrollButton = ({ listRef, show }) => {
+  const [isListVisible, setIsListVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsListVisible(entry.isIntersecting);
+      },
+      { rootMargin: "-200px 0px 0px 0px", threshold: 0 }
+    );
+    if (listRef.current) {
+      observer.observe(listRef.current);
+    }
+    return () => observer.disconnect();
+  }, [listRef]);
+
+  if (!show || isListVisible) return null;
+
+  return (
+    <div
+      className="fixed top-[170px] right-5 sm:right-8 z-[60] flex flex-col items-center animate-bounce cursor-pointer touch-manipulation"
+      onClick={() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      title="공지사항 목록 보기"
+    >
+      <div className="bg-gray-500/70 hover:bg-gray-500/90 text-white w-[56px] h-[56px] rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center backdrop-blur-md border border-white/30 animate-pulse transition-all">
+        <svg className="w-6 h-6 -mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7" />
+        </svg>
+        <span className="text-[12px] font-black tracking-widest mt-0.5">목록</span>
+      </div>
+    </div>
+  );
+};
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
 
@@ -81,7 +117,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const editorRef = useRef(null);
   const detailsRef = useRef(null);
   const listRef = useRef(null);
-  const [isListVisible, setIsListVisible] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
 
   const [uploading, setUploading] = useState(false);
@@ -123,19 +158,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       return () => clearTimeout(timer);
     }
   }, [scrollTrigger, loading, selectedNotice, isEditing]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsListVisible(entry.isIntersecting);
-      },
-      { rootMargin: "-200px 0px 0px 0px", threshold: 0 }
-    );
-    if (listRef.current) {
-      observer.observe(listRef.current);
-    }
-    return () => observer.disconnect();
-  }, []);
 
   const execFormat = (command, value = null) => {
     if (navigator.vibrate) navigator.vibrate(30);
@@ -255,7 +277,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
           try {
             const success = await handleSave({ preventDefault: () => { } }, true);
             if (success) {
-              alert("공지사항이 성공적으로 저장되었습니다.");
+              alert("공지사항을 저장하였습니다.");
             }
           } catch (e) { }
         }
@@ -372,7 +394,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   };
 
-  const handleEditorClick = (e) => {
+  const handleEditorClick = useCallback((e) => {
     if (e.target.tagName === 'IMG') {
       setSelectedImg(e.target);
       const currentWidthStr = e.target.style.width || "";
@@ -385,7 +407,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     } else {
       setSelectedImg(null);
     }
-  };
+  }, []);
 
   const handleImageResize = (e) => {
     const val = parseInt(e.target.value);
@@ -464,7 +486,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
       if (error) throw error;
 
-      if (!silent) alert("공지사항이 성공적으로 저장되었습니다.");
+      if (!silent) alert("공지사항을 저장하였습니다.");
       if (!isAdmin) {
         setIsEditing(false);
       }
@@ -972,15 +994,18 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                     </div>
 
                     <div className="relative flex-1 flex flex-col min-h-[200px]">
-                      <div
-                        ref={editorRef}
-                        contentEditable
-                        onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                        onClick={handleEditorClick}
-                        placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-                        className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
-                        style={{ minHeight: '200px' }}
-                      />
+                      {useMemo(() => (
+                        <div
+                          ref={editorRef}
+                          contentEditable
+                          suppressContentEditableWarning={true}
+                          onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                          onClick={handleEditorClick}
+                          placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
+                          className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
+                          style={{ minHeight: '200px' }}
+                        />
+                      ), [handleEditorClick])}
                     </div>
                   </div>
 
@@ -1042,22 +1067,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
       </main>
 
       {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (게시물 상세 보기 중 목록이 안 보일 때 표시) */}
-      {(selectedNotice || isEditing) && !isListVisible && (
-        <div
-          className="fixed top-[170px] right-5 sm:right-8 z-[60] flex flex-col items-center animate-bounce cursor-pointer touch-manipulation"
-          onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          title="공지사항 목록 보기"
-        >
-          <div className="bg-gray-500/70 hover:bg-gray-500/90 text-white w-[56px] h-[56px] rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center backdrop-blur-md border border-white/30 animate-pulse transition-all">
-            <svg className="w-6 h-6 -mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7" />
-            </svg>
-            <span className="text-[12px] font-black tracking-widest mt-0.5">목록</span>
-          </div>
-        </div>
-      )}
+      <FloatingScrollButton listRef={listRef} show={!!(selectedNotice || isEditing)} />
 
       {/* 담당자 암호 입력 모달 */}
       {showPwdModal && (
