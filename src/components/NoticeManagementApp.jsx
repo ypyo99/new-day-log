@@ -118,6 +118,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const detailsRef = useRef(null);
   const listRef = useRef(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+  const lastScrolledTriggerRef = useRef(0);
 
   const [uploading, setUploading] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
@@ -141,7 +142,8 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   }, [selectedImg]);
 
   useEffect(() => {
-    if ((selectedNotice || isEditing) && !loading && detailsRef.current && scrollTrigger > 0) {
+    if (scrollTrigger > 0 && scrollTrigger !== lastScrolledTriggerRef.current && !loading && detailsRef.current) {
+      lastScrolledTriggerRef.current = scrollTrigger;
       const timer = setTimeout(() => {
         if (detailsRef.current) {
           const header = document.querySelector('header');
@@ -157,7 +159,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       }, 400);
       return () => clearTimeout(timer);
     }
-  }, [scrollTrigger, loading, selectedNotice, isEditing]);
+  }, [scrollTrigger, loading]);
 
   const execFormat = (command, value = null) => {
     if (navigator.vibrate) navigator.vibrate(30);
@@ -409,6 +411,16 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   }, []);
 
+  const handleEditorFocus = useCallback(() => {
+    // 모바일 브라우저가 contentEditable 포커스 시 자동 스크롤하는 것을 방지
+    const scrollY = window.scrollY;
+    requestAnimationFrame(() => {
+      if (Math.abs(window.scrollY - scrollY) > 10) {
+        window.scrollTo(0, scrollY);
+      }
+    });
+  }, []);
+
   const editorNode = useMemo(() => (
     <div
       ref={editorRef}
@@ -416,11 +428,12 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       suppressContentEditableWarning={true}
       onInput={(e) => setContent(e.currentTarget.innerHTML)}
       onClick={handleEditorClick}
+      onFocus={handleEditorFocus}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
       className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base overflow-y-auto flex-1 bg-white rich-editor max-h-[400px] md:max-h-none w-full"
       style={{ minHeight: '200px' }}
     />
-  ), [handleEditorClick]);
+  ), [handleEditorClick, handleEditorFocus]);
 
   const handleImageResize = (e) => {
     const val = parseInt(e.target.value);
