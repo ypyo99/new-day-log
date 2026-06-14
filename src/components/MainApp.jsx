@@ -2356,7 +2356,7 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (
+                ) : (date >= getLocalDateString(new Date()) && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
@@ -2372,7 +2372,7 @@ export default function MainApp({
                   >
                     <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
                   </button>
-                )}
+                ))}
               </div>
             </h2>
             <div className="flex flex-col">
@@ -2538,7 +2538,7 @@ export default function MainApp({
                           ) : null}
                         </div>
 
-                        {shouldRepeatPerShift[index] && logsDate === date && (
+                        {shouldRepeatPerShift[index] && logsDate === date && isFutureOrToday && (
                           <button
                             type="button"
                             onClick={() => handleRepeatScheduleForShift(index)}
