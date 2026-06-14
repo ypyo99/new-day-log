@@ -437,43 +437,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   }, []);
 
-  const handleEditorTouchEnd = useCallback((e) => {
-    // 브라우저의 native focus (scroll-into-view 포함)를 가로채서
-    // preventScroll:true 옵션으로 스크롤 없이 수동 포커스
-    e.preventDefault();
-
-    const touch = e.changedTouches[0];
-    const target = editorRef.current;
-    if (!target) return;
-
-    // 이미 포커스된 경우 캐럿만 이동
-    target.focus({ preventScroll: true });
-
-    // 터치 좌표로 캐럿 위치 지정 (iOS / Android 공통)
-    if (document.caretRangeFromPoint) {
-      const range = document.caretRangeFromPoint(touch.clientX, touch.clientY);
-      if (range) {
-        const sel = window.getSelection();
-        if (sel) {
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-      }
-    } else if (document.caretPositionFromPoint) {
-      const pos = document.caretPositionFromPoint(touch.clientX, touch.clientY);
-      if (pos) {
-        const range = document.createRange();
-        range.setStart(pos.offsetNode, pos.offset);
-        range.collapse(true);
-        const sel = window.getSelection();
-        if (sel) {
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-      }
-    }
-  }, []);
-
   const editorNode = useMemo(() => (
     <div
       ref={editorRef}
@@ -481,12 +444,11 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       suppressContentEditableWarning={true}
       onInput={(e) => setContent(e.currentTarget.innerHTML)}
       onClick={handleEditorClick}
-      onTouchEnd={handleEditorTouchEnd}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
       className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base flex-1 bg-white rich-editor w-full min-w-0"
       style={{ minHeight: '400px' }}
     />
-  ), [handleEditorClick, handleEditorTouchEnd]);
+  ), [handleEditorClick]);
 
   const handleImageResize = (e) => {
     const val = parseInt(e.target.value);
