@@ -775,7 +775,6 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                     setDraftRecords([]);
                     setScheduleTemplates({});
                     setPreviewFilter("ALL");
-                    setTriggerAnalyze(true);
                   }}
                   className="w-full p-1.5 sm:p-2.5 text-[16px] sm:text-[21px] border border-sky-300 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-sky-100 shadow-sm"
                 >
