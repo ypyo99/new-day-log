@@ -492,7 +492,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       onTouchStart={handleEditorTouchStart}
       onTouchEnd={handleEditorTouchEnd}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
-      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base flex-1 bg-white rich-editor w-full min-w-0"
+      className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base w-full block bg-white rich-editor min-w-0"
       style={{ minHeight: '400px', WebkitUserSelect: 'text' }}
     />
   ), [handleEditorClick, handleEditorTouchStart, handleEditorTouchEnd]);
@@ -1105,7 +1105,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       </div>
                     </div>
 
-                    <div className="relative flex-1 flex flex-col min-h-[200px] min-w-0 overflow-x-hidden">
+                    <div className="relative w-full min-h-[300px] min-w-0 overflow-x-hidden">
                       {editorNode}
                     </div>
                   </div>
