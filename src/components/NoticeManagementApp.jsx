@@ -446,7 +446,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       onClick={handleEditorClick}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
       className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base w-full block bg-white rich-editor min-w-0"
-      style={{ minHeight: '150px', maxHeight: '40vh', overflowY: 'auto', WebkitUserSelect: 'text' }}
+      style={{ minHeight: '300px', WebkitUserSelect: 'text' }}
     />
   ), [handleEditorClick]);
 
