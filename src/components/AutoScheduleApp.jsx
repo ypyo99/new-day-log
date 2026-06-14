@@ -113,28 +113,24 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   useEffect(() => { setSavedItem('sungdong_auto_endDate', endDate); }, [endDate]);
   useEffect(() => { setSavedItem('sungdong_auto_team', team); }, [team]);
 
-  const getPrevMonthLastWeek = (startDateStr) => {
-    const date = new Date(startDateStr);
-    date.setMonth(date.getMonth() - 1);
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  const getPrevWeekDays = (startDateStr) => {
+    const d = new Date(startDateStr);
+    d.setDate(d.getDate() - 7);
+    
+    const day = d.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diffToMonday);
 
     const weekdays = [];
-    let d = new Date(year, month + 1, 0);
-    while (weekdays.length < 5) {
-      const day = d.getDay();
-      if (day !== 0 && day !== 6) {
-        weekdays.push(new Date(d));
-      }
-      d.setDate(d.getDate() - 1);
+    for (let i = 0; i < 5; i++) {
+      const current = new Date(d);
+      current.setDate(d.getDate() + i);
+      const yyyy = current.getFullYear();
+      const mm = String(current.getMonth() + 1).padStart(2, '0');
+      const dd = String(current.getDate()).padStart(2, '0');
+      weekdays.push(`${yyyy}-${mm}-${dd}`);
     }
-    weekdays.sort((a, b) => a - b);
-    return weekdays.map(d => {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    });
+    return weekdays;
   };
 
   const getWeekdaysInRange = (startStr, endStr) => {
@@ -234,7 +230,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       };
 
       const teacherNames = teacherList.map(t => t.name.trim());
-      const baseDates = getPrevMonthLastWeek(startDate);
+      const baseDates = getPrevWeekDays(startDate);
       setBaseWeekDates(baseDates);
 
       setProgressMsg("기준 주간의 수업 기록 분석 중...");
@@ -286,39 +282,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           let targetRecords = dayRecords;
 
           if (!hasReal) {
-            let fallbackDate = baseDate;
-            let foundReal = false;
-            for (let attempt = 1; attempt <= 5; attempt++) {
-              const d = new Date(fallbackDate);
-              d.setDate(d.getDate() - 7);
-
-              const yyyy = d.getFullYear();
-              const mm = String(d.getMonth() + 1).padStart(2, '0');
-              const dd = String(d.getDate()).padStart(2, '0');
-              fallbackDate = `${yyyy}-${mm}-${dd}`;
-
-              const { data: fbRecords, error: fbErr } = await supabaseClient
-                .from('daily_logs')
-                .select('*')
-                .eq('team', team)
-                .eq('teacher', teacherName)
-                .eq('log_date', fallbackDate);
-
-              if (!fbErr && fbRecords && fbRecords.length > 0) {
-                const fbHasReal = fbRecords.some(r => {
-                  const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
-                  return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
-                });
-                if (fbHasReal) {
-                  targetRecords = fbRecords;
-                  foundReal = true;
-                  break;
-                }
-              }
-            }
-            if (!foundReal) {
-              targetRecords = []; // 과거 일정에서도 정상 근무를 못 찾으면 공휴일 텍스트를 그대로 쓰지 않도록 빈 배열로 초기화
-            }
+            targetRecords = []; // 정상 수업이 없는 경우 과거 기록을 추적하지 않고 템플릿을 비움
           }
 
           shifts.forEach(shift => {
