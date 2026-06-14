@@ -326,6 +326,9 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const targetDates = getWeekdaysInRange(startDate, endDate);
       const drafts = [];
 
+      // 월별 전역 평일(근무일) 카운트 초기화
+      const globalWorkDaysCount = {};
+
       // 교사별 '월별' 근무일수 카운트 초기화 (월을 키값으로 사용)
       const teacherWorkDaysCount = {};
       teacherNames.forEach(name => {
@@ -339,6 +342,13 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         const holidayObj = getHolidayObj(dateStr);
         const monthKey = dateStr.substring(0, 7); // 예: "2026-06"
 
+        // 전역 근무일수 계산
+        if (globalWorkDaysCount[monthKey] === undefined) {
+          globalWorkDaysCount[monthKey] = 0;
+        }
+        globalWorkDaysCount[monthKey] += 1;
+        const isGlobalOver20 = globalWorkDaysCount[monthKey] > 20;
+
         teacherList.forEach(t => {
           const teacherName = t.name.trim();
           const shifts = [t.shift1, t.shift2, t.shift3].map(s => (s || "").trim()).filter(Boolean);
@@ -351,8 +361,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           // 이 교사가 원래 이 요일에 근무하는 교사인가?
           const isMyWorkingDay = workingDaysOfWeek[teacherName]?.has(dayOfWeek);
 
-          if (isMyWorkingDay) {
-            // 주말은 이미 제외되었으므로, 근무 요일이면 근무일수 증가 (공휴일 포함)
+          // 공휴일이거나 본인의 근무 요일이면 근무일수(1일) 증가
+          if (isMyWorkingDay || isHol) {
             teacherWorkDaysCount[teacherName][monthKey] += 1;
           }
 
@@ -364,26 +374,24 @@ export default function AutoScheduleApp({ onNavigateBack }) {
             let location = "";
             let status = "";
 
-            if (isMyWorkingDay) {
-              if (isOver20) {
-                // 해당 월 20일 초과: 학생이름, 장소, 메모(status)를 흰색 바탕에 블랭크 데이터로 채움
-                student = "";
-                location = "";
-                status = "";
-              } else if (isHol) {
-                // 20일 이내이면서 공휴일/간담회: 공휴일 정보 입력
-                student = holidayObj ? holidayObj.name : "공휴일";
-                location = holidayObj ? holidayObj.content1 : "";
-                status = holidayObj ? holidayObj.content2 : "";
-              } else {
-                // 20일 이내이면서 정상 수업일: 기존 수업 데이터
-                const temp = templates[teacherName][dayOfWeek]?.[shift];
-                student = temp ? temp.student : "";
-                const loc = temp ? temp.location : "";
-                const isUrl = loc.startsWith("http");
-                location = isUrl ? "" : (loc.trim() || "복지관");
-                status = "";
-              }
+            if (isGlobalOver20 || isOver20) {
+              // 전역 근무일 20일 초과이거나 개인 근무일 20일 초과: 모두 블랭크 처리
+              student = "";
+              location = "";
+              status = "";
+            } else if (isHol) {
+              // 20일 이내이면서 공휴일/간담회: 요일 무관하게 공휴일 정보 입력
+              student = holidayObj ? holidayObj.name : "공휴일";
+              location = holidayObj ? holidayObj.content1 : "";
+              status = holidayObj ? holidayObj.content2 : "";
+            } else if (isMyWorkingDay) {
+              // 20일 이내이면서 정상 수업일: 기존 수업 데이터
+              const temp = templates[teacherName][dayOfWeek]?.[shift];
+              student = temp ? temp.student : "";
+              const loc = temp ? temp.location : "";
+              const isUrl = loc.startsWith("http");
+              location = isUrl ? "" : (loc.trim() || "복지관");
+              status = "";
             } else {
               // 원래 근무 요일이 아닌 경우: 블랭크 데이터
               student = "";
@@ -517,6 +525,19 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       }
       setLastBackupId(backupId);
 
+      setProgressMsg("기존 일정 삭제 중...");
+      const { error: deleteErr } = await supabaseClient
+        .from('daily_logs')
+        .delete()
+        .eq('team', team)
+        .gte('log_date', startDate)
+        .lte('log_date', endDate);
+        
+      if (deleteErr) {
+        console.error("Delete Error:", deleteErr);
+        throw new Error("기존 데이터를 삭제하는 중 오류가 발생했습니다.");
+      }
+
       const chunkSize = 500;
       let saved = 0;
       for (let i = 0; i < draftRecords.length; i += chunkSize) {
@@ -536,73 +557,9 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         if (error) throw error;
       }
 
-      // 공휴일 데이터를 시간표에 적용하기 과정 자동 수행
-      setProgressMsg("공휴일 데이터 적용 중...");
-      const { data: holidaysList, error: hErr } = await supabaseClient
-        .from('holidays')
-        .select('*');
-
-      if (hErr) {
-        console.warn("Holidays fetch error on save:", hErr);
-      }
-
-      let totalHolidayUpdated = 0;
-      if (holidaysList && holidaysList.length > 0) {
-        const targetDates = getWeekdaysInRange(startDate, endDate);
-        
-        for (const holiday of holidaysList) {
-          let formattedMonthDay = holiday.date;
-          if (holiday.date.includes('/')) {
-            const [m, d] = holiday.date.split('/');
-            formattedMonthDay = `${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-          } else if (holiday.date.includes('-')) {
-            const parts = holiday.date.split('-');
-            if (parts.length === 3) {
-              formattedMonthDay = `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-            } else {
-              formattedMonthDay = `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-            }
-          }
-
-          // 대상 기간 내에서 해당 공휴일의 날짜 매칭
-          const matched = targetDates.filter(dStr => dStr.endsWith(`-${formattedMonthDay}`));
-
-          for (const fullDate of matched) {
-            // 현재 저장한 팀의 해당 날짜의 daily_logs 조회
-            const { data: logsData, error: fetchError } = await supabaseClient
-              .from('daily_logs')
-              .select('*')
-              .eq('team', team)
-              .eq('log_date', fullDate);
-
-            if (fetchError) throw fetchError;
-
-            if (logsData && logsData.length > 0) {
-              const updatedLogs = logsData.map(log => ({
-                ...log,
-                student: holiday.name,
-                location: holiday.content1,
-                status: holiday.content2
-              }));
-
-              const { error: upsertError } = await supabaseClient
-                .from('daily_logs')
-                .upsert(updatedLogs, { onConflict: 'team,log_date,teacher,shift' });
-
-              if (upsertError) throw upsertError;
-              totalHolidayUpdated += logsData.length;
-            }
-          }
-        }
-      }
-
       setProgressMsg("저장 완료!");
       setSaving(false);
-      setSuccessMessage(
-        totalHolidayUpdated > 0
-          ? `${team}의 시간표가 성공적으로 저장되었습니다.\n\n[공휴일 자동 적용]\n- 적용 일자 내 총 ${totalHolidayUpdated}건의 공휴일 일정이 적용되었습니다.`
-          : `${team}의 시간표가 성공적으로 저장되었습니다.`
-      );
+      setSuccessMessage(`${team}의 시간표가 성공적으로 저장되었습니다.`);
       setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
