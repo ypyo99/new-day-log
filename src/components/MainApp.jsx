@@ -515,7 +515,8 @@ export default function MainApp({
               teacher: row.teacher || "",
               student: row.student || "",
               location: row.signature_url || row.location || "",
-              status: row.status || ""
+              status: row.status || "",
+              is_20days: row.is_20days
             });
           });
         }
@@ -1254,8 +1255,12 @@ export default function MainApp({
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
-      if (selectedTeam === '취업팀') return true;
       const targetData = allScheduleData[d] || {};
+      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+        Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
+      );
+      if (hasFalse20Days) return false;
+      if (selectedTeam === '취업팀') return true;
       return Object.keys(targetData).some(shiftTime => {
         const original = getMyOriginalRecord(d, shiftTime);
         if (!original || !(original.teacher || "").trim()) return false;
@@ -1457,12 +1462,21 @@ export default function MainApp({
 
   const noNewScheduleToRepeat = useMemo(() => {
     if (isFetchingSchedule || isSyncing || isSubmitting) return null;
+    const currentData = allScheduleData[date] || {};
+    const isCurrentFalse20Days = Object.values(currentData).some(shiftArr => 
+      Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
+    );
+    if (isCurrentFalse20Days) return "current_is_false_20days";
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
-      if (selectedTeam === '취업팀') return true;
       const targetData = allScheduleData[d] || {};
+      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+        Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
+      );
+      if (hasFalse20Days) return false;
+      if (selectedTeam === '취업팀') return true;
       return Object.keys(targetData).some(shiftTime => {
         const original = getMyOriginalRecord(d, shiftTime);
         const student = original?.student || "";
@@ -1485,14 +1499,24 @@ export default function MainApp({
     });
 
     return !hasDifference ? "already_identical" : null;
-  }, [date, availableDates, allScheduleData, logs, selectedTeam, isFetchingSchedule, isSyncing, isSubmitting, shifts]);
+  }, [date, availableDates, allScheduleData, logs, selectedTeam, isFetchingSchedule, isSyncing, isSubmitting, shifts, isHoliday]);
 
   const shouldRepeatPerShift = useMemo(() => {
     if (isFetchingSchedule || isSyncing || isSubmitting) return {};
+    const currentData = allScheduleData[date] || {};
+    const isCurrentFalse20Days = Object.values(currentData).some(shiftArr => 
+      Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
+    );
+    if (isCurrentFalse20Days) return {};
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
+      const targetData = allScheduleData[d] || {};
+      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+        Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
+      );
+      if (hasFalse20Days) return false;
       return true;
     });
 
@@ -1513,7 +1537,7 @@ export default function MainApp({
     });
 
     return result;
-  }, [date, availableDates, allScheduleData, logs, isFetchingSchedule, isSyncing, isSubmitting, shifts]);
+  }, [date, availableDates, allScheduleData, logs, isFetchingSchedule, isSyncing, isSubmitting, shifts, isHoliday]);
 
   const handleRepeatScheduleForShift = async (index) => {
     if (isDataLoading) return;
@@ -1522,6 +1546,11 @@ export default function MainApp({
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
+      const targetData = allScheduleData[d] || {};
+      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+        Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
+      );
+      if (hasFalse20Days) return false;
       return true;
     });
 
@@ -2335,6 +2364,7 @@ export default function MainApp({
                     className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || !!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
                     title={
                       hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." :
+                        noNewScheduleToRepeat === "current_is_false_20days" ? "20일 근무일 이내의 일정만 복제할 수 있습니다." :
                         noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
                           noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
                             "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."

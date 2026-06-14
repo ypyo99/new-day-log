@@ -329,12 +329,6 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       // 월별 전역 평일(근무일) 카운트 초기화
       const globalWorkDaysCount = {};
 
-      // 교사별 '월별' 근무일수 카운트 초기화 (월을 키값으로 사용)
-      const teacherWorkDaysCount = {};
-      teacherNames.forEach(name => {
-        teacherWorkDaysCount[name] = {};
-      });
-
       targetDates.forEach(dateStr => {
         const d = new Date(dateStr);
         const dayOfWeek = d.getDay();
@@ -353,29 +347,16 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           const teacherName = t.name.trim();
           const shifts = [t.shift1, t.shift2, t.shift3].map(s => (s || "").trim()).filter(Boolean);
 
-          // 해당 교사의 해당 월 카운트가 아직 없으면 0으로 초기화
-          if (teacherWorkDaysCount[teacherName][monthKey] === undefined) {
-            teacherWorkDaysCount[teacherName][monthKey] = 0;
-          }
-
           // 이 교사가 원래 이 요일에 근무하는 교사인가?
           const isMyWorkingDay = workingDaysOfWeek[teacherName]?.has(dayOfWeek);
-
-          // 공휴일이거나 본인의 근무 요일이면 근무일수(1일) 증가
-          if (isMyWorkingDay || isHol) {
-            teacherWorkDaysCount[teacherName][monthKey] += 1;
-          }
-
-          // 전체 기간이 아닌 '해당 월'의 누적 근무일수로 20일 초과 여부 확인
-          const isOver20 = teacherWorkDaysCount[teacherName][monthKey] > 20;
 
           shifts.forEach(shift => {
             let student = "";
             let location = "";
             let status = "";
 
-            if (isGlobalOver20 || isOver20) {
-              // 전역 근무일 20일 초과이거나 개인 근무일 20일 초과: 모두 블랭크 처리
+            if (isGlobalOver20) {
+              // 전역 근무일 20일 초과: 모두 블랭크 처리
               student = "";
               location = "";
               status = "";
@@ -399,6 +380,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
               status = "";
             }
 
+            const isValid20Days = !isGlobalOver20;
+
             drafts.push({
               team: team,
               log_date: dateStr,
@@ -407,7 +390,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
               student: student,
               location: location,
               status: status,
-              signature_url: null
+              signature_url: null,
+              is_20days: isValid20Days
             });
           });
         });
