@@ -437,51 +437,6 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     }
   }, []);
 
-  const touchStartRef = useRef(0);
-
-  const handleEditorTouchStart = useCallback((e) => {
-    touchStartRef.current = Date.now();
-  }, []);
-
-  const handleEditorTouchEnd = useCallback((e) => {
-    const touchDuration = Date.now() - touchStartRef.current;
-    
-    // 짧은 터치(탭)일 때만 수동 포커스로 스크롤 튐 방지
-    // 길게 누를 때는 브라우저 기본 텍스트 선택 동작 허용
-    if (touchDuration < 250) {
-      e.preventDefault();
-
-      const touch = e.changedTouches[0];
-      const target = editorRef.current;
-      if (!target) return;
-
-      target.focus({ preventScroll: true });
-
-      if (document.caretRangeFromPoint) {
-        const range = document.caretRangeFromPoint(touch.clientX, touch.clientY);
-        if (range) {
-          const sel = window.getSelection();
-          if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(range);
-          }
-        }
-      } else if (document.caretPositionFromPoint) {
-        const pos = document.caretPositionFromPoint(touch.clientX, touch.clientY);
-        if (pos) {
-          const range = document.createRange();
-          range.setStart(pos.offsetNode, pos.offset);
-          range.collapse(true);
-          const sel = window.getSelection();
-          if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(range);
-          }
-        }
-      }
-    }
-  }, []);
-
   const editorNode = useMemo(() => (
     <div
       ref={editorRef}
@@ -489,13 +444,11 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       suppressContentEditableWarning={true}
       onInput={(e) => setContent(e.currentTarget.innerHTML)}
       onClick={handleEditorClick}
-      onTouchStart={handleEditorTouchStart}
-      onTouchEnd={handleEditorTouchEnd}
       placeholder="공지사항 내용을 작성해 주세요(그림 추가 버튼으로 본문에 이미지를 삽입할 수 있습니다)"
       className="p-3 border rounded-xl outline-none font-medium text-gray-800 focus:border-blue-500 text-sm sm:text-base w-full block bg-white rich-editor min-w-0"
       style={{ minHeight: '150px', maxHeight: '40vh', overflowY: 'auto', WebkitUserSelect: 'text' }}
     />
-  ), [handleEditorClick, handleEditorTouchStart, handleEditorTouchEnd]);
+  ), [handleEditorClick]);
 
   const handleImageResize = (e) => {
     const val = parseInt(e.target.value);
@@ -954,7 +907,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                   </div>
 
                   <div className="flex flex-col gap-1.5 flex-1 min-h-[200px] min-w-0">
-                    <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200 sticky top-2 z-30 shadow-sm">
+                    <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200 shadow-sm relative">
                       <div className="flex justify-between items-center">
                         <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
                         <div className="relative">
