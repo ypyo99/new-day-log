@@ -798,7 +798,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 content-start items-start flex-1 min-w-0">
           {/* 좌측: 공지사항 목록 */}
-          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 min-w-0 ${(!isEditing && selectedNotice) ? 'md:col-span-5' : 'md:col-span-12'}`}>
+          <section ref={listRef} className={`bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 min-w-0 ${(selectedNotice || isEditing) ? 'md:col-span-5' : 'md:col-span-12'}`}>
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 pb-2 border-b">공지사항 목록</h2>
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-gray-400 font-bold">
@@ -853,10 +853,280 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
             )}
           </section>
 
-          {/* 우측: 상세 조회 */}
-          {!isEditing && selectedNotice && (
+          {/* 우측: 상세 조회 또는 편집 */}
+          {(selectedNotice || isEditing) && (
             <section ref={detailsRef} className="md:col-span-7 bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col transition-all duration-350 min-w-0">
-                {/* 공지사항 상세 조회 */}
+              {isEditing ? (
+                /* 편집 및 작성 폼 */
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
+                  <div className="flex justify-between items-center border-b pb-2 mb-1">
+                    <h2 className="text-base sm:text-lg font-bold text-blue-700">
+                      {selectedNotice ? '공지사항 수정' : '공지사항 새로 작성'}
+                    </h2>
+                    {selectedNotice && (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={saving}
+                        className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold text-sm transition-colors active:scale-95"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-end">
+                      <label className="text-sm font-bold text-gray-600 mb-0.5">제목</label>
+                      <div className="flex items-center gap-1.5 bg-blue-50/40 px-2 py-1 rounded-lg border border-blue-100 mb-1">
+                        <input
+                          type="checkbox"
+                          id="isTopCheckbox"
+                          checked={isTop}
+                          onChange={(e) => setIsTop(e.target.checked)}
+                          disabled={saving}
+                          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="isTopCheckbox" className="text-xs font-bold text-blue-900 cursor-pointer select-none">
+                          📌 이 공지사항을 목록 상단에 고정
+                        </label>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      disabled={saving}
+                      placeholder="공지사항 제목을 입력해 주세요"
+                      className="p-2 border rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-sm sm:text-base bg-gray-200"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-600">작성일자</label>
+                      <input
+                        type="text"
+                        readOnly
+                        placeholder="MM-DD"
+                        value={createdAt}
+                        className="p-2 border rounded-xl bg-gray-200 text-gray-600 font-bold outline-none text-xs sm:text-sm text-center"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-600">게시시작일</label>
+                      <div className="relative p-2 border rounded-xl font-bold text-gray-800 focus-within:border-blue-500 text-xs sm:text-sm text-center bg-gray-200 overflow-hidden">
+                        {startDate ? startDate.substring(5) : 'MM-DD'}
+                        <input
+                          type="date"
+                          required
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          disabled={saving}
+                          className="date-input-hidden"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-600">게시종료일</label>
+                      <div className="relative p-2 border rounded-xl font-bold text-gray-800 focus-within:border-blue-500 text-xs sm:text-sm text-center bg-gray-200 overflow-hidden">
+                        {endDate ? endDate.substring(5) : 'MM-DD'}
+                        <input
+                          type="date"
+                          required
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          disabled={saving}
+                          className="date-input-hidden"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 flex-1 min-h-[200px] min-w-0">
+                    <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200 sticky top-2 z-30 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="image-file-input"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading || saving}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="image-file-input"
+                            className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            {uploading ? '그림 처리중...' : '그림(이미지) 추가'}
+                          </label>
+                        </div>
+                      </div>
+
+                      {selectedImg && (
+                        <div className="flex flex-col gap-2 p-2.5 bg-sky-50 border border-sky-200 rounded-lg animate-fade-in mt-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-sky-800 flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                              선택된 이미지 크기 조절
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedImg) {
+                                    selectedImg.remove();
+                                    if (editorRef.current) setContent(editorRef.current.innerHTML);
+                                    setSelectedImg(null);
+                                  }
+                                }}
+                                className="text-xs text-red-600 hover:text-red-800 font-bold px-2 py-0.5 rounded hover:bg-red-50"
+                              >
+                                삭제
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedImg(null)}
+                                className="text-xs text-sky-600 hover:text-sky-800 font-bold px-2 py-0.5 rounded hover:bg-sky-100"
+                              >
+                                닫기
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-center gap-3">
+                            <div className="flex items-center gap-2 flex-1 w-full">
+                              <input
+                                type="range"
+                                min="10"
+                                max="100"
+                                value={selectedImgWidth}
+                                onChange={handleImageResize}
+                                className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
+                            </div>
+                            <div className="flex gap-1 shrink-0 w-full sm:w-auto">
+                              {[25, 50, 75, 100].map(pct => (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  onClick={() => applyQuickResize(pct)}
+                                  className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
+                                >
+                                  {pct}%
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 서식 지정 툴바 */}
+                      <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm text-sm">
+                        {/* 1. 기본 스타일, 크기, 정렬 */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button type="button" onClick={() => execFormat('bold')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold text-gray-800 shadow-sm active:scale-95 transition-all" title="굵게">B</button>
+                          <button type="button" onClick={() => execFormat('italic')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded italic text-gray-800 shadow-sm active:scale-95 transition-all" title="기울임">I</button>
+                          <button type="button" onClick={() => execFormat('underline')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded underline text-gray-800 shadow-sm active:scale-95 transition-all" title="밑줄">U</button>
+                          <button type="button" onClick={() => execFormat('strikeThrough')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded line-through text-gray-800 shadow-sm active:scale-95 transition-all" title="취소선">S</button>
+
+                          <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
+
+                          {/* 글자 크기 */}
+                          <select
+                            onChange={(e) => execFormat('fontSize', e.target.value)}
+                            className="h-8 px-1.5 border rounded bg-white font-semibold text-gray-850 outline-none shadow-sm cursor-pointer"
+                            defaultValue="3"
+                            title="글자 크기"
+                          >
+                            <option value="1">매우 작게</option>
+                            <option value="2">작게</option>
+                            <option value="3">보통</option>
+                            <option value="4">크게</option>
+                            <option value="5">매우 크게</option>
+                            <option value="6">최대 크기</option>
+                          </select>
+
+                          <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
+
+                          {/* 정렬 */}
+                          <button type="button" onClick={() => execFormat('justifyLeft')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="왼쪽 정렬">◀</button>
+                          <button type="button" onClick={() => execFormat('justifyCenter')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="가운데 정렬">■</button>
+                          <button type="button" onClick={() => execFormat('justifyRight')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="오른쪽 정렬">▶</button>
+                        </div>
+
+                        <div className="w-full h-px bg-gray-200 my-0.5" />
+
+                        {/* 2. 글자 색상 선택 */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">글자색:</span>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => execFormat('foreColor', '#000000')} className="w-6 h-6 rounded-full bg-black border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="검정색" />
+                            <button type="button" onClick={() => execFormat('foreColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="흰색" />
+                            <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색" />
+                            <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색" />
+                            <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-6 h-6 rounded-full bg-green-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="초록색" />
+                            <input
+                              type="color"
+                              onChange={(e) => execFormat('foreColor', e.target.value)}
+                              className="w-7 h-7 p-0 border-0 bg-transparent cursor-pointer rounded ml-0.5 shadow-sm active:scale-95 transition-transform"
+                              title="사용자 지정 색상"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="w-full h-px bg-gray-200 my-0.5" />
+
+                        {/* 3. 형광펜(배경색) 선택 */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">형광펜:</span>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 text-[10px] flex items-center justify-center font-bold active:scale-90 transition-transform shadow-sm" title="지우기">❌</button>
+                            <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef08a' }} title="노란색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#dcfce7' }} title="옅은 초록색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-6 h-6 rounded-full bg-red-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연빨간색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색 배경" />
+                            <button type="button" onClick={() => execFormat('backColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색 배경" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative flex-1 flex flex-col min-h-[200px] min-w-0 overflow-x-hidden">
+                      {editorNode}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setSelectedNotice(null);
+                        setSelectedImg(null);
+                      }}
+                      disabled={saving}
+                      className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm sm:text-base transition-colors"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving || !hasChanges}
+                      className={`flex-1 py-3 rounded-xl font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2 ${(saving || !hasChanges) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                    >
+                      {saving && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
+                      {saving ? '저장 중...' : '작성 완료'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* 공지사항 상세 조회 */
                 <div className="flex flex-col gap-4 flex-1 min-w-0">
                   <div className="border-b pb-3 shrink-0 min-w-0">
                     <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight">
@@ -892,286 +1162,8 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
         </div>
       </main>
 
-      
-      {/* 편집 및 작성 폼 (전체화면 모달) */}
-      {isEditing && (
-        <div className="fixed inset-0 z-[100] bg-gray-100 flex flex-col overflow-y-auto w-full h-full">
-          <div className="w-full max-w-6xl mx-auto flex flex-col flex-1 bg-white shadow-2xl min-h-full">
-            {/* 헤더 */}
-            <div className="flex justify-between items-center border-b px-4 py-3 sm:px-6 sm:py-4 bg-white sticky top-0 z-40 shadow-sm">
-              <h2 className="text-lg sm:text-2xl font-bold text-blue-700">
-                {selectedNotice ? '공지사항 수정' : '공지사항 새로 작성'}
-              </h2>
-              <div className="flex gap-2">
-                {selectedNotice && (
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={saving}
-                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-lg font-bold text-sm sm:text-base transition-colors active:scale-95"
-                  >
-                    삭제
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setSelectedNotice(null);
-                    setSelectedImg(null);
-                  }}
-                  disabled={saving}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-sm sm:text-base transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving || !hasChanges}
-                  className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2 ${(saving || !hasChanges) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'}`}
-                >
-                  {saving && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
-                  {saving ? '저장 중...' : '작성 완료'}
-                </button>
-              </div>
-            </div>
-
-            {/* 입력 폼 본문 */}
-            <div className="flex flex-col gap-5 p-4 sm:p-6 flex-1 h-full min-h-[500px]">
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-end">
-                  <label className="text-sm sm:text-base font-bold text-gray-700">제목</label>
-                  <div className="flex items-center gap-1.5 bg-blue-50/40 px-3 py-1.5 rounded-lg border border-blue-100">
-                    <input
-                      type="checkbox"
-                      id="isTopCheckbox"
-                      checked={isTop}
-                      onChange={(e) => setIsTop(e.target.checked)}
-                      disabled={saving}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                    />
-                    <label htmlFor="isTopCheckbox" className="text-sm font-bold text-blue-900 cursor-pointer select-none">
-                      📌 이 공지사항을 목록 상단에 고정
-                    </label>
-                  </div>
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  disabled={saving}
-                  placeholder="공지사항 제목을 입력해 주세요"
-                  className="p-3 sm:p-4 border border-gray-300 rounded-xl outline-none font-bold text-gray-800 focus:border-blue-500 text-base sm:text-lg bg-gray-50 transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-gray-700">작성일자</label>
-                  <input
-                    type="text"
-                    readOnly
-                    placeholder="MM-DD"
-                    value={createdAt}
-                    className="p-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-600 font-bold outline-none text-sm text-center"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-gray-700">게시시작일</label>
-                  <div className="relative p-3 border border-gray-300 rounded-xl font-bold text-gray-800 focus-within:border-blue-500 text-sm text-center bg-white overflow-hidden hover:bg-gray-50 transition-colors">
-                    {startDate ? startDate.substring(5) : 'MM-DD'}
-                    <input
-                      type="date"
-                      required
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      disabled={saving}
-                      className="date-input-hidden"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-gray-700">게시종료일</label>
-                  <div className="relative p-3 border border-gray-300 rounded-xl font-bold text-gray-800 focus-within:border-blue-500 text-sm text-center bg-white overflow-hidden hover:bg-gray-50 transition-colors">
-                    {endDate ? endDate.substring(5) : 'MM-DD'}
-                    <input
-                      type="date"
-                      required
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      disabled={saving}
-                      className="date-input-hidden"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 에디터 본문 (이전 UI 재사용되나 컨테이너를 100% 채우도록 수정) */}
-              <div className="flex flex-col gap-1.5 flex-1 min-h-[400px] min-w-0 bg-white">
-                <div className="flex flex-col gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200 sticky top-[72px] sm:top-[80px] z-30 shadow-sm">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-bold text-gray-700">내용 및 서식 지정</label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="image-file-input"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={uploading || saving}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="image-file-input"
-                        className={`flex items-center gap-1.5 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded font-bold text-xs cursor-pointer select-none active:scale-95 transition-all ${(uploading || saving) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        {uploading ? '그림 처리중...' : '그림(이미지) 추가'}
-                      </label>
-                    </div>
-                  </div>
-
-                  {selectedImg && (
-                    <div className="flex flex-col gap-2 p-2.5 bg-sky-50 border border-sky-200 rounded-lg animate-fade-in mt-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-sky-800 flex items-center gap-1">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                          선택된 이미지 크기 조절
-                        </label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (selectedImg) {
-                                selectedImg.remove();
-                                if (editorRef.current) setContent(editorRef.current.innerHTML);
-                                setSelectedImg(null);
-                              }
-                            }}
-                            className="text-xs text-red-600 hover:text-red-800 font-bold px-2 py-0.5 rounded hover:bg-red-50"
-                          >
-                            삭제
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedImg(null)}
-                            className="text-xs text-sky-600 hover:text-sky-800 font-bold px-2 py-0.5 rounded hover:bg-sky-100"
-                          >
-                            닫기
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-center gap-3">
-                        <div className="flex items-center gap-2 flex-1 w-full">
-                          <input
-                            type="range"
-                            min="10"
-                            max="100"
-                            value={selectedImgWidth}
-                            onChange={handleImageResize}
-                            className="w-full h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer"
-                          />
-                          <span className="font-bold text-sky-700 w-10 text-right">{selectedImgWidth}%</span>
-                        </div>
-                        <div className="flex gap-1 shrink-0 w-full sm:w-auto">
-                          {[25, 50, 75, 100].map(pct => (
-                            <button
-                              key={pct}
-                              type="button"
-                              onClick={() => applyQuickResize(pct)}
-                              className="flex-1 sm:flex-initial px-2.5 py-0.5 bg-white border border-sky-300 rounded text-xs font-bold hover:bg-sky-50 active:scale-95 transition-all text-sky-800"
-                            >
-                              {pct}%
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 서식 지정 툴바 */}
-                  <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm text-sm">
-                    {/* 1. 기본 스타일, 크기, 정렬 */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button type="button" onClick={() => execFormat('bold')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold text-gray-800 shadow-sm active:scale-95 transition-all" title="굵게">B</button>
-                      <button type="button" onClick={() => execFormat('italic')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded italic text-gray-800 shadow-sm active:scale-95 transition-all" title="기울임">I</button>
-                      <button type="button" onClick={() => execFormat('underline')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded underline text-gray-800 shadow-sm active:scale-95 transition-all" title="밑줄">U</button>
-                      <button type="button" onClick={() => execFormat('strikeThrough')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded line-through text-gray-800 shadow-sm active:scale-95 transition-all" title="취소선">S</button>
-
-                      <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
-
-                      {/* 글자 크기 */}
-                      <select
-                        onChange={(e) => execFormat('fontSize', e.target.value)}
-                        className="h-8 px-1.5 border rounded bg-white font-semibold text-gray-850 outline-none shadow-sm cursor-pointer"
-                        defaultValue="3"
-                        title="글자 크기"
-                      >
-                        <option value="1">매우 작게</option>
-                        <option value="2">작게</option>
-                        <option value="3">보통</option>
-                        <option value="4">크게</option>
-                        <option value="5">매우 크게</option>
-                        <option value="6">최대 크기</option>
-                      </select>
-
-                      <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
-
-                      {/* 정렬 */}
-                      <button type="button" onClick={() => execFormat('justifyLeft')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="왼쪽 정렬">◀</button>
-                      <button type="button" onClick={() => execFormat('justifyCenter')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="가운데 정렬">■</button>
-                      <button type="button" onClick={() => execFormat('justifyRight')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold shadow-sm active:scale-95 transition-all" title="오른쪽 정렬">▶</button>
-                    </div>
-
-                    <div className="w-full h-px bg-gray-200 my-0.5" />
-
-                    {/* 2. 글자 색상 선택 */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">글자색:</span>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => execFormat('foreColor', '#000000')} className="w-6 h-6 rounded-full bg-black border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="검정색" />
-                        <button type="button" onClick={() => execFormat('foreColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="흰색" />
-                        <button type="button" onClick={() => execFormat('foreColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색" />
-                        <button type="button" onClick={() => execFormat('foreColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색" />
-                        <button type="button" onClick={() => execFormat('foreColor', '#22c55e')} className="w-6 h-6 rounded-full bg-green-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="초록색" />
-                        <input
-                          type="color"
-                          onChange={(e) => execFormat('foreColor', e.target.value)}
-                          className="w-7 h-7 p-0 border-0 bg-transparent cursor-pointer rounded ml-0.5 shadow-sm active:scale-95 transition-transform"
-                          title="사용자 지정 색상"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="w-full h-px bg-gray-200 my-0.5" />
-
-                    {/* 3. 형광펜(배경색) 선택 */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-gray-600 mr-1 select-none min-w-[50px]">형광펜:</span>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => execFormat('backColor', '#ffffff')} className="w-6 h-6 rounded-full bg-white border-2 border-gray-300 text-[10px] flex items-center justify-center font-bold active:scale-90 transition-transform shadow-sm" title="지우기">❌</button>
-                        <button type="button" onClick={() => execFormat('backColor', '#fef08a')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#fef08a' }} title="노란색 배경" />
-                        <button type="button" onClick={() => execFormat('backColor', '#dcfce7')} className="w-6 h-6 rounded-full border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" style={{ backgroundColor: '#dcfce7' }} title="옅은 초록색 배경" />
-                        <button type="button" onClick={() => execFormat('backColor', '#fee2e2')} className="w-6 h-6 rounded-full bg-red-100 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="연빨간색 배경" />
-                        <button type="button" onClick={() => execFormat('backColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="빨간색 배경" />
-                        <button type="button" onClick={() => execFormat('backColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-gray-300 active:scale-90 transition-transform shadow-sm" title="파란색 배경" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative flex-1 flex flex-col min-h-[300px] min-w-0 overflow-x-hidden">
-                  {editorNode}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (게시물 상세 보기 중 목록이 안 보일 때 표시) */}
-      <FloatingScrollButton listRef={listRef} show={!!(selectedNotice && !isEditing)} />
+      <FloatingScrollButton listRef={listRef} show={!!(selectedNotice || isEditing)} />
 
       {/* 담당자 암호 입력 모달 */}
       {showPwdModal && (
