@@ -734,6 +734,7 @@ export default function MainApp({
 
         if (!isMounted) return;
 
+        const currentUserGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
         const studentDatesMap = {};
         allTeamRecords.forEach(hRow => {
           if (!hRow.student) return;
@@ -750,12 +751,12 @@ export default function MainApp({
             personalStatus = personalStatus.replace(/취소/g, '종료');
             const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("선생님휴가");
             if (!isAbsentOrCanceled) {
-              if (hRow.log_date === date && hRow.teacher === currentUser) return;
+              const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
+              if (hRow.log_date === date && hGroup === currentUserGroup) return;
 
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
               const dParts = hRow.log_date.split('-');
               const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
-              const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
               const hShift = hRow.shift || "";
               
               if (selectedTeam === "취업팀") {
@@ -777,7 +778,6 @@ export default function MainApp({
         
         const todayParts = date.split('-');
         const todayDateObj = new Date(parseInt(todayParts[0], 10), parseInt(todayParts[1], 10) - 1, parseInt(todayParts[2], 10));
-        const currentUserGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
 
         shifts.forEach((shift, index) => {
           const log = logs[index];
