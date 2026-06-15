@@ -2202,13 +2202,13 @@ export default function MainApp({
         </div>
 
         <div
-          className="flex flex-col flex-1 sm:flex-none w-full max-w-md sm:max-w-[600px] md:max-w-[680px] bg-white px-5 pb-8 pt-safe-6 sm:px-8 sm:pb-10 sm:pt-safe-8 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 sm:min-h-[600px] shrink-0 sm:my-auto animate-fadeIn"
+          className="flex flex-col flex-1 sm:flex-none w-full max-w-md sm:max-w-[600px] md:max-w-[680px] bg-white px-5 pb-8 pt-safe-4 sm:px-8 sm:pb-10 sm:pt-safe-5 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 sm:min-h-[600px] shrink-0 sm:my-auto animate-fadeIn"
           style={{
             transform: `translateY(${pullDistance * 0.1}px)`,
             transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none'
           }}
         >
-          <div className="text-center mb-2 sm:mb-3.5 shrink-0 mt-2 sm:mt-0">
+          <div className="text-center mb-2 sm:mb-3.5 shrink-0 mt-0">
             <div className="flex justify-center mb-2 sm:mb-4">
               <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-[42px] sm:h-[52px] object-contain" onError={(e) => e.target.style.display = 'none'} />
             </div>
