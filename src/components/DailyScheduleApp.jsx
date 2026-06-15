@@ -916,7 +916,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                     <span className="whitespace-nowrap text-center mt-0.5 font-medium text-gray-500 text-[1.0em]">({locTextForDisplay})</span>
                                   )}
                                 </div>
-                                <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
+                                <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
                                   {!row.status ? null : row.status.split(/(\d+회차)/g).map((part, i) =>
                                     /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
                                   )}
