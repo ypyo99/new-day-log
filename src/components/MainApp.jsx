@@ -2368,11 +2368,11 @@ export default function MainApp({
                           </span>
                         ) : weatherData.error ? (
                           <span className="text-[13px] sm:text-[14px] text-red-500/80 font-medium ml-auto text-right leading-tight">
-                            날씨 정보 준비 중<br className="sm:hidden" /> ({weatherData.msg})
+                            날씨 정보 준비 중 ({weatherData.msg})
                           </span>
                         ) : (
                           <span className="text-[14px] sm:text-[16px] text-red-700 font-bold ml-auto text-right leading-tight">
-                            {weatherData.weatherDesc}<br className="sm:hidden" /> ({weatherData.minTemp}℃ / {weatherData.maxTemp}℃)
+                            {weatherData.weatherDesc} ({weatherData.minTemp}℃ / {weatherData.maxTemp}℃)
                           </span>
                         )}
                       </div>
