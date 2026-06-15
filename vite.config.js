@@ -8,10 +8,13 @@ export default defineConfig({
     open: true,
     proxy: {
       '/kma-api': {
-        target: 'https://apis.data.go.kr',
+        target: 'http://apis.data.go.kr',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/kma-api/, ''),
         secure: false,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+        },
+        rewrite: (path) => path.replace(/^\/kma-api/, '')
       }
     }
   }
