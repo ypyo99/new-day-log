@@ -719,7 +719,7 @@ export default function MainApp({
 
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
-          .select('log_date, student, status')
+          .select('log_date, student, status, teacher')
           .eq('team', selectedTeam)
           .neq('student', '')
           .not('student', 'is', null)
@@ -749,25 +749,59 @@ export default function MainApp({
             }
             const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
             if (!isAbsentOrCanceled) {
+              if (hRow.log_date === date && hRow.teacher === currentUser) return;
+
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
               const dParts = hRow.log_date.split('-');
               const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
-              const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
-              if (!alreadyHas) studentDatesMap[name].push(dateObj);
+              
+              if (selectedTeam === "취업팀") {
+                studentDatesMap[name].push(dateObj);
+              } else {
+                const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
+                if (!alreadyHas) studentDatesMap[name].push(dateObj);
+              }
             }
           });
         });
 
         const newCounts = {};
+        const currentDatesMap = {};
+        for (const [k, v] of Object.entries(studentDatesMap)) {
+             currentDatesMap[k] = [...v];
+        }
+        
+        const todayParts = date.split('-');
+        const todayDateObj = new Date(parseInt(todayParts[0], 10), parseInt(todayParts[1], 10) - 1, parseInt(todayParts[2], 10));
+
         shifts.forEach((shift, index) => {
           const log = logs[index];
           if (!log || !log.student) return;
           const parsedNames = log.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
           const countsForSlot = [];
-          parsedNames.forEach(name => {
+          parsedNames.forEach((name, nameIdx) => {
             if (excludeKeywords.some(kw => name.includes(kw))) return;
-            const dates = studentDatesMap[name] || [];
-            countsForSlot.push({ name, count: dates.length, dates });
+            
+            let currentStatus = log.status || "";
+            if (currentStatus.includes('/')) {
+               const segments = currentStatus.split('/');
+               if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
+            }
+            const isAbsent = currentStatus.includes("결석") || currentStatus.includes("취소") || currentStatus.includes("선생님휴가");
+            
+            if (!currentDatesMap[name]) currentDatesMap[name] = [];
+            
+            if (!isAbsent) {
+                if (selectedTeam === "취업팀") {
+                    currentDatesMap[name].push(todayDateObj);
+                } else {
+                    const alreadyHas = currentDatesMap[name].some(d => d.getTime() === todayDateObj.getTime());
+                    if (!alreadyHas) currentDatesMap[name].push(todayDateObj);
+                }
+            }
+            
+            const dates = currentDatesMap[name];
+            countsForSlot.push({ name, count: dates.length, dates: [...dates] });
           });
           if (countsForSlot.length > 0) newCounts[index] = countsForSlot;
         });

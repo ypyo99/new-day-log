@@ -470,46 +470,24 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
           const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
           if (!isAbsentOrCanceled) {
+            if (hRow.log_date === dateStr) return; // SKIP TODAY'S RECORDS
+
             if (!studentDatesMap[name]) {
               studentDatesMap[name] = [];
             }
             const dParts = hRow.log_date.split('-');
             const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
 
-            const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
-            if (!alreadyHas) {
+            if (teamName === "취업팀") {
               studentDatesMap[name].push(dateObj);
+            } else {
+              const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
+              if (!alreadyHas) {
+                studentDatesMap[name].push(dateObj);
+              }
             }
           }
         });
-      });
-
-      parsedData.forEach(row => {
-        if (!row.student) {
-          row.sessionCounts = null;
-          return;
-        }
-
-        const names = row.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-        const countsForThisRow = [];
-
-        names.forEach(name => {
-          const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
-          if (excludeKeywords.some(keyword => name.includes(keyword))) return;
-
-          const dates = studentDatesMap[name] || [];
-          countsForThisRow.push({
-            name: name,
-            count: dates.length,
-            dates: dates
-          });
-        });
-
-        if (countsForThisRow.length > 0) {
-          row.sessionCounts = countsForThisRow;
-        } else {
-          row.sessionCounts = null;
-        }
       });
 
       parsedData.sort((a, b) => {
@@ -522,6 +500,62 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         }
 
         return getShiftWeight(a.time) - getShiftWeight(b.time);
+      });
+
+      const currentDatesMap = {};
+      for (const [k, v] of Object.entries(studentDatesMap)) {
+         currentDatesMap[k] = [...v];
+      }
+
+      const todayParts = dateStr.split('-');
+      const todayDateObj = new Date(parseInt(todayParts[0], 10), parseInt(todayParts[1], 10) - 1, parseInt(todayParts[2], 10));
+
+      parsedData.forEach(row => {
+        if (!row.student) {
+          row.sessionCounts = null;
+          return;
+        }
+
+        const names = row.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+        const countsForThisRow = [];
+
+        names.forEach((name, nameIdx) => {
+          const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+          if (excludeKeywords.some(keyword => name.includes(keyword))) return;
+
+          let personalStatus = row.status || "";
+          if (personalStatus.includes('/')) {
+            const segments = personalStatus.split('/');
+            if (segments.length > nameIdx) {
+              personalStatus = segments[nameIdx].trim();
+            }
+          }
+          const isAbsent = personalStatus.includes("결석") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+
+          if (!currentDatesMap[name]) currentDatesMap[name] = [];
+
+          if (!isAbsent) {
+            if (teamName === "취업팀") {
+                currentDatesMap[name].push(todayDateObj);
+            } else {
+                const alreadyHas = currentDatesMap[name].some(d => d.getTime() === todayDateObj.getTime());
+                if (!alreadyHas) currentDatesMap[name].push(todayDateObj);
+            }
+          }
+
+          const dates = currentDatesMap[name];
+          countsForThisRow.push({
+            name: name,
+            count: dates.length,
+            dates: [...dates]
+          });
+        });
+
+        if (countsForThisRow.length > 0) {
+          row.sessionCounts = countsForThisRow;
+        } else {
+          row.sessionCounts = null;
+        }
       });
 
       for (let i = 0; i < parsedData.length; i++) {
