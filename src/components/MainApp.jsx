@@ -771,9 +771,11 @@ export default function MainApp({
               }
               
               if (isNew) {
-                const memoMatch = (hRow.status || "").match(/(\d+)\s*회차/);
-                if (memoMatch) {
-                    const explicitCount = parseInt(memoMatch[1], 10);
+                const textToMatch = (hRow.memo || hRow.status || "");
+                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+                if (memoMatches.length > 0) {
+                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                    const explicitCount = parseInt(matchObj[1], 10);
                     const currentLen = studentDatesMap[name].length;
                     studentOffsetsMap[name] = explicitCount - (currentLen + 1);
                 }
@@ -826,9 +828,11 @@ export default function MainApp({
                 }
                 
                 if (isNew) {
-                    const memoMatch = (log.memo || "").match(/(\d+)\s*회차/);
-                    if (memoMatch) {
-                        const explicitCount = parseInt(memoMatch[1], 10);
+                    const textToMatch = (log.memo || log.status || "");
+                    const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+                    if (memoMatches.length > 0) {
+                        const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                        const explicitCount = parseInt(matchObj[1], 10);
                         const currentLen = currentDatesMap[name].length;
                         currentOffsetsMap[name] = explicitCount - (currentLen + 1);
                     }
@@ -2718,15 +2722,35 @@ export default function MainApp({
                               />
                             );
                           })()}
-                          <textarea
-                            rows="3"
-                            placeholder="메모"
-                            value={logs[index]?.memo || ""}
-                            onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
-                            onBlur={handleInputBlur}
-                            disabled={isDataLoading || isInfoMissing}
-                            className={`flex-1 min-w-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 outline-none font-bold text-gray-900 placeholder-gray-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none caret-black`}
-                          />
+                          <div className="relative flex-1 min-w-0 flex flex-col">
+                            <div
+                              className={`absolute inset-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 font-bold text-gray-900 shadow-sm transition-all text-[18px] md:text-[22px] leading-tight whitespace-pre-wrap overflow-y-auto break-words z-0 pointer-events-none ${(isDataLoading || isInfoMissing) ? 'opacity-50' : ''}`}
+                              aria-hidden="true"
+                            >
+                              {!logs[index]?.memo ? (
+                                <span className="text-gray-500">메모</span>
+                              ) : (
+                                logs[index].memo.split(/(\d+회차)/g).map((part, i) => 
+                                  /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
+                                )
+                              )}
+                              {logs[index]?.memo?.endsWith('\n') && <br />}
+                            </div>
+                            <textarea
+                              rows="3"
+                              value={logs[index]?.memo || ""}
+                              onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
+                              onBlur={handleInputBlur}
+                              onScroll={(e) => {
+                                if (e.target.previousSibling) {
+                                  e.target.previousSibling.scrollTop = e.target.scrollTop;
+                                }
+                              }}
+                              disabled={isDataLoading || isInfoMissing}
+                              className={`block flex-1 w-full py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-transparent rounded-xl bg-transparent outline-none font-bold text-transparent placeholder-transparent shadow-none disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none caret-black z-10 relative m-0`}
+                              spellCheck="false"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

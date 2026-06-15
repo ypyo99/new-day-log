@@ -496,9 +496,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             }
             
             if (isNew) {
-                const memoMatch = (hRow.status || "").match(/(\d+)\s*회차/);
-                if (memoMatch) {
-                    const explicitCount = parseInt(memoMatch[1], 10);
+                const textToMatch = (hRow.status || "");
+                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+                if (memoMatches.length > 0) {
+                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                    const explicitCount = parseInt(matchObj[1], 10);
                     const currentLen = studentDatesMap[name].length;
                     studentOffsetsMap[name] = explicitCount - (currentLen + 1);
                 }
@@ -571,9 +573,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                 }
             }
             if (isNew) {
-                const memoMatch = (row.status || "").match(/(\d+)\s*회차/);
-                if (memoMatch) {
-                    const explicitCount = parseInt(memoMatch[1], 10);
+                const textToMatch = (row.status || "");
+                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+                if (memoMatches.length > 0) {
+                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                    const explicitCount = parseInt(matchObj[1], 10);
                     const currentLen = currentDatesMap[name].length;
                     currentOffsetsMap[name] = explicitCount - (currentLen + 1);
                 }
@@ -913,7 +917,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                   )}
                                 </div>
                                 <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-normal break-words break-keep leading-tight text-center`}>
-                                  {row.status}
+                                  {!row.status ? null : row.status.split(/(\d+회차)/g).map((part, i) =>
+                                    /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
+                                  )}
                                 </div>
 
                                 {(selectedTeam?.trim() === '취업팀' || selectedTeam?.toLowerCase().includes('취업')) && row.location && (row.location.toLowerCase().startsWith('http') || row.location.toLowerCase().startsWith('data:') || row.location.toLowerCase().includes('drive.google.com') || row.location.toLowerCase().startsWith('=image')) && (
