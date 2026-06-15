@@ -102,6 +102,84 @@ export default function MainApp({
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
+  const [weatherData, setWeatherData] = useState(null);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const apiKey = '1dcc5e3c0b79c084c3a779e391b69d90bf46c75579a6889130b84185a14c844a';
+        
+        // 날짜/시간 계산 (기상청 단기예보 Base Time: 0200, 0500, 0800...)
+        const now = new Date();
+        let baseDate = new Date(now);
+        // 새벽 2시 10분 이전이면 어제 23시 데이터를 사용
+        if (now.getHours() < 2 || (now.getHours() === 2 && now.getMinutes() < 10)) {
+          baseDate.setDate(baseDate.getDate() - 1);
+        }
+        
+        const year = baseDate.getFullYear();
+        const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+        const day = String(baseDate.getDate()).padStart(2, '0');
+        const formattedDate = `${year}${month}${day}`;
+        
+        let baseTime = '0200'; // 오늘의 최고/최저 기온(TMX, TMN)이 모두 포함된 02:00 발표 기준
+        if (now.getHours() < 2 || (now.getHours() === 2 && now.getMinutes() < 10)) {
+          baseTime = '2300';
+        }
+        
+        // vite proxy('/kma-api')를 통해 CORS 우회 호출
+        const url = `/kma-api/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${apiKey}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${formattedDate}&base_time=${baseTime}&nx=60&ny=127`;
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.response && data.response.header.resultCode === '00' && data.response.body.items) {
+          const items = data.response.body.items.item;
+          
+          // 오늘 날짜 문자열
+          const targetDateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+          
+          let maxTemp = null;
+          let minTemp = null;
+          let sky = null;
+          let pty = null;
+          
+          items.forEach(item => {
+            // 오늘 날짜의 데이터만 추출
+            if (item.fcstDate === targetDateStr) {
+              if (item.category === 'TMX') maxTemp = parseFloat(item.fcstValue);
+              if (item.category === 'TMN') minTemp = parseFloat(item.fcstValue);
+              
+              // 현재 또는 가까운 미래의 날씨 상태 하나만 추출
+              if (item.category === 'SKY' && sky === null) sky = item.fcstValue;
+              if (item.category === 'PTY' && pty === null) pty = item.fcstValue;
+            }
+          });
+          
+          let weatherDesc = '날씨 정보';
+          if (pty === '0') {
+            if (sky === '1') weatherDesc = '맑음 ☀️';
+            else if (sky === '3') weatherDesc = '구름많음 ⛅';
+            else if (sky === '4') weatherDesc = '흐림 ☁️';
+          } else {
+            if (pty === '1' || pty === '4') weatherDesc = '비 🌧️';
+            else if (pty === '2') weatherDesc = '비/눈 🌨️';
+            else if (pty === '3') weatherDesc = '눈 ❄️';
+          }
+          
+          if (maxTemp !== null && minTemp !== null) {
+            setWeatherData({ minTemp, maxTemp, weatherDesc });
+          }
+        } else {
+          console.error("기상청 API 응답 오류:", data.response?.header?.resultMsg || data);
+        }
+      } catch (e) {
+        console.error("날씨 정보 가져오기 실패:", e);
+      }
+    };
+    fetchWeather();
+  }, []);
+
   const [todayNotices, setTodayNotices] = useState(() => {
     try {
       const cached = window.localStorage.getItem('sungdong_today_notices');
@@ -2251,6 +2329,11 @@ export default function MainApp({
                         <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight text-red-800 m-0 shrink-0">
                           공지사항
                         </h4>
+                        {weatherData && (
+                          <span className="text-[14px] sm:text-[16px] text-red-700 font-bold ml-auto text-right leading-tight">
+                            {weatherData.weatherDesc}<br className="sm:hidden" /> (오늘의 예상 최저기온: {weatherData.minTemp}℃, 오늘의 예상 최고기온: {weatherData.maxTemp}℃)
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div
