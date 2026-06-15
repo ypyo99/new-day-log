@@ -127,8 +127,8 @@ export default function MainApp({
           baseTime = '2300';
         }
 
-        // vite proxy('/kma-api')를 통해 CORS 우회 호출
-        const url = `/kma-api/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${apiKey}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${formattedDate}&base_time=${baseTime}&nx=60&ny=127`;
+        // 기상청 API는 CORS를 허용하므로 프록시를 거치지 않고 직접 호출하여 Vite Proxy 통신 행(hang) 이슈 방지
+        const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${apiKey}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${formattedDate}&base_time=${baseTime}&nx=60&ny=127`;
 
         const res = await fetch(url);
         const text = await res.text();
@@ -142,8 +142,23 @@ export default function MainApp({
         try {
           data = JSON.parse(text);
         } catch (e) {
-          console.error("JSON 파싱 에러:", text);
-          setWeatherData({ error: true, msg: 'API 응답 형식 오류' });
+          console.error("JSON 파싱 에러 (응답 원본):", text);
+          // XML 에러 메시지가 온 경우 추출 (예: <returnReasonCode>22</returnReasonCode> 또는 <errMsg>SERVICE ERROR</errMsg>)
+          let extractedError = '응답 형식 오류';
+          const errMsgMatch = text.match(/<errMsg>(.*?)<\/errMsg>/);
+          const reasonMatch = text.match(/<returnAuthMsg>(.*?)<\/returnAuthMsg>/);
+          
+          if (reasonMatch) {
+            extractedError = reasonMatch[1]; // 예: HTTP_ERROR, SERVICE_KEY_IS_NOT_REGISTERED_ERROR
+          } else if (errMsgMatch) {
+            extractedError = errMsgMatch[1];
+          }
+          
+          if (extractedError.includes('SERVICE_KEY_IS_NOT_REGISTERED_ERROR')) {
+            extractedError = 'API 키 미등록(동기화 중)';
+          }
+          
+          setWeatherData({ error: true, msg: extractedError });
           return;
         }
 
