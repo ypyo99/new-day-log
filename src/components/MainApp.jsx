@@ -96,6 +96,8 @@ export default function MainApp({
 
   const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
   const [repeatTargetDates, setRepeatTargetDates] = useState([]);
+  const [repeatMode, setRepeatMode] = useState('all');
+  const [repeatShiftIndex, setRepeatShiftIndex] = useState(null);
 
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
@@ -107,12 +109,12 @@ export default function MainApp({
       try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo');
         const data = await res.json();
-        
+
         if (data && data.daily) {
           const maxTemp = data.daily.temperature_2m_max[0];
           const minTemp = data.daily.temperature_2m_min[0];
           const code = data.daily.weathercode[0];
-          
+
           let weatherDesc = '맑음 ☀️';
           if (code === 0) weatherDesc = '맑음 ☀️';
           else if ([1, 2].includes(code)) weatherDesc = '구름 조금 🌤️';
@@ -121,7 +123,7 @@ export default function MainApp({
           else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) weatherDesc = '비 🌧️';
           else if ([71, 73, 75, 77, 85, 86].includes(code)) weatherDesc = '눈 ❄️';
           else if ([95, 96, 99].includes(code)) weatherDesc = '뇌우 ⛈️';
-          
+
           setWeatherData({ minTemp, maxTemp, weatherDesc });
         }
       } catch (e) {
@@ -791,7 +793,7 @@ export default function MainApp({
               const dParts = hRow.log_date.split('-');
               const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
               const hShift = hRow.shift || "";
-              
+
               let isNew = false;
               if (selectedTeam === "취업팀") {
                 const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
@@ -800,15 +802,15 @@ export default function MainApp({
                 const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime());
                 if (!alreadyHas) isNew = true;
               }
-              
+
               if (isNew) {
                 const textToMatch = (hRow.memo || hRow.status || "");
                 const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
                 if (memoMatches.length > 0) {
-                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                    const explicitCount = parseInt(matchObj[1], 10);
-                    const currentLen = studentDatesMap[name].length;
-                    studentOffsetsMap[name] = explicitCount - (currentLen + 1);
+                  const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                  const explicitCount = parseInt(matchObj[1], 10);
+                  const currentLen = studentDatesMap[name].length;
+                  studentOffsetsMap[name] = explicitCount - (currentLen + 1);
                 }
                 studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
               }
@@ -820,12 +822,12 @@ export default function MainApp({
         const currentDatesMap = {};
         const currentOffsetsMap = {};
         for (const [k, v] of Object.entries(studentDatesMap)) {
-             currentDatesMap[k] = [...v];
+          currentDatesMap[k] = [...v];
         }
         for (const [k, v] of Object.entries(studentOffsetsMap)) {
-             currentOffsetsMap[k] = v;
+          currentOffsetsMap[k] = v;
         }
-        
+
         const todayParts = date.split('-');
         const todayDateObj = new Date(parseInt(todayParts[0], 10), parseInt(todayParts[1], 10) - 1, parseInt(todayParts[2], 10));
 
@@ -836,41 +838,41 @@ export default function MainApp({
           const countsForSlot = [];
           parsedNames.forEach((name, nameIdx) => {
             if (excludeKeywords.some(kw => name.includes(kw))) return;
-            
+
             let currentStatus = log.status || "";
             if (currentStatus.includes('/')) {
-               const segments = currentStatus.split('/');
-               if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
+              const segments = currentStatus.split('/');
+              if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
             }
             currentStatus = currentStatus.replace(/취소/g, '종료');
             const isAbsent = currentStatus.includes("결석") || currentStatus.includes("종료") || currentStatus.includes("선생님휴가");
-            
+
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
             if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
-            
+
             if (!isAbsent) {
-                let isNew = false;
-                if (selectedTeam === "취업팀") {
-                    const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
-                    if (!alreadyHas) isNew = true;
-                } else {
-                    const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
-                    if (!alreadyHas) isNew = true;
+              let isNew = false;
+              if (selectedTeam === "취업팀") {
+                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
+                if (!alreadyHas) isNew = true;
+              } else {
+                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
+                if (!alreadyHas) isNew = true;
+              }
+
+              if (isNew) {
+                const textToMatch = (log.memo || log.status || "");
+                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+                if (memoMatches.length > 0) {
+                  const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                  const explicitCount = parseInt(matchObj[1], 10);
+                  const currentLen = currentDatesMap[name].length;
+                  currentOffsetsMap[name] = explicitCount - (currentLen + 1);
                 }
-                
-                if (isNew) {
-                    const textToMatch = (log.memo || log.status || "");
-                    const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
-                    if (memoMatches.length > 0) {
-                        const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                        const explicitCount = parseInt(matchObj[1], 10);
-                        const currentLen = currentDatesMap[name].length;
-                        currentOffsetsMap[name] = explicitCount - (currentLen + 1);
-                    }
-                    currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
-                }
+                currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
+              }
             }
-            
+
             const dates = currentDatesMap[name];
             const offset = currentOffsetsMap[name] || 0;
             countsForSlot.push({ name, count: dates.length + offset, dates: [...dates] });
@@ -1362,7 +1364,7 @@ export default function MainApp({
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
       const targetData = allScheduleData[d] || {};
-      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+      const hasFalse20Days = Object.values(targetData).some(shiftArr =>
         Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
       );
       if (hasFalse20Days) return false;
@@ -1383,25 +1385,29 @@ export default function MainApp({
       return;
     }
 
-    const validTargetDates = targetDates.filter(targetDate => {
-      let hasDifference = false;
+    const validTargetDates = targetDates.map(targetDate => {
+      let changedTimes = [];
       shifts.forEach((shiftTime, i) => {
         const log = logs[i];
         const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = (log.student || "") !== (original.student || "");
         const isLocationDiff = (log.location || "") !== (original.location || "");
         if (isStudentDiff || isLocationDiff) {
-          hasDifference = true;
+          changedTimes.push(shiftTime);
         }
       });
-      return hasDifference;
-    });
+      if (changedTimes.length > 0) {
+        return { date: targetDate, times: changedTimes };
+      }
+      return null;
+    }).filter(Boolean);
 
     if (validTargetDates.length === 0) {
       setErrorMessage(<span className="text-lg">⚠️ 이미 동일한 일정이 등록되어 있습니다.</span>);
       setTimeout(() => setErrorMessage(""), 3000);
       return;
     }
+    setRepeatMode('all');
     setRepeatTargetDates(validTargetDates);
     setShowRepeatConfirm(true);
   };
@@ -1414,7 +1420,8 @@ export default function MainApp({
 
     let allTasks = [];
 
-    repeatTargetDates.forEach((targetDate) => {
+    repeatTargetDates.forEach((targetObj) => {
+      const targetDate = targetObj.date;
       if (isHoliday(targetDate)) {
         console.log(`Skipping repeat replication for holiday target date: ${targetDate}`);
         return;
@@ -1569,7 +1576,7 @@ export default function MainApp({
   const noNewScheduleToRepeat = useMemo(() => {
     if (isFetchingSchedule || isSyncing || isSubmitting) return null;
     const currentData = allScheduleData[date] || {};
-    const isCurrentFalse20Days = Object.values(currentData).some(shiftArr => 
+    const isCurrentFalse20Days = Object.values(currentData).some(shiftArr =>
       Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
     );
     if (isCurrentFalse20Days) return "current_is_false_20days";
@@ -1578,7 +1585,7 @@ export default function MainApp({
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
       const targetData = allScheduleData[d] || {};
-      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+      const hasFalse20Days = Object.values(targetData).some(shiftArr =>
         Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
       );
       if (hasFalse20Days) return false;
@@ -1610,7 +1617,7 @@ export default function MainApp({
   const shouldRepeatPerShift = useMemo(() => {
     if (isFetchingSchedule || isSyncing || isSubmitting) return {};
     const currentData = allScheduleData[date] || {};
-    const isCurrentFalse20Days = Object.values(currentData).some(shiftArr => 
+    const isCurrentFalse20Days = Object.values(currentData).some(shiftArr =>
       Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
     );
     if (isCurrentFalse20Days) return {};
@@ -1619,7 +1626,7 @@ export default function MainApp({
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
       const targetData = allScheduleData[d] || {};
-      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+      const hasFalse20Days = Object.values(targetData).some(shiftArr =>
         Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
       );
       if (hasFalse20Days) return false;
@@ -1653,7 +1660,7 @@ export default function MainApp({
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
       if (isHoliday(d)) return false;
       const targetData = allScheduleData[d] || {};
-      const hasFalse20Days = Object.values(targetData).some(shiftArr => 
+      const hasFalse20Days = Object.values(targetData).some(shiftArr =>
         Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
       );
       if (hasFalse20Days) return false;
@@ -1672,7 +1679,7 @@ export default function MainApp({
       const isStudentDiff = (currentLog.student || "").trim() !== (targetOriginal.student || "").trim();
       const isLocationDiff = (currentLog.location || "").trim() !== (targetOriginal.location || "").trim();
       return isStudentDiff || isLocationDiff;
-    });
+    }).map(d => ({ date: d, times: [shifts[index]] }));
 
     if (validTargetDates.length === 0) {
       setErrorMessage(<span>⚠️ 이미 동일한 일정이 등록되어 있습니다.</span>);
@@ -1680,24 +1687,32 @@ export default function MainApp({
       return;
     }
 
-    if (window.confirm(`이 시간대(${shifts[index]})의 일정을 이후 동일한 요일의 미래 일정들에 정말 복제하시겠습니까?`)) {
-      // 현재 선택한 시간대의 정보가 기존 저장된 정보와 다른지 확인 후 저장
-      const original = getMyOriginalRecord(date, shifts[index]);
-      const log = logs[index];
-      const originalStatus = formatStatusIfDate(original.status);
-      const currentStatusStr = buildStatusString(log);
+    setRepeatMode('shift');
+    setRepeatShiftIndex(index);
+    setRepeatTargetDates(validTargetDates);
+    setShowRepeatConfirm(true);
+  };
 
-      const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
-      const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
-      const statusChanged = currentStatusStr !== originalStatus;
+  const executeRepeatScheduleForShiftFromModal = async () => {
+    setShowRepeatConfirm(false);
+    const index = repeatShiftIndex;
+    const datesOnly = repeatTargetDates.map(d => d.date);
 
-      if (studentChanged || locationChanged || statusChanged) {
-        const saved = await performAutoSave();
-        if (!saved) return;
-      }
+    const original = getMyOriginalRecord(date, shifts[index]);
+    const log = logs[index];
+    const originalStatus = formatStatusIfDate(original.status);
+    const currentStatusStr = buildStatusString(log);
 
-      executeRepeatScheduleForShift(index, validTargetDates);
+    const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
+    const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
+    const statusChanged = currentStatusStr !== originalStatus;
+
+    if (studentChanged || locationChanged || statusChanged) {
+      const saved = await performAutoSave();
+      if (!saved) return;
     }
+
+    executeRepeatScheduleForShift(index, datesOnly);
   };
 
   const executeRepeatScheduleForShift = async (index, targetDates) => {
@@ -2478,9 +2493,9 @@ export default function MainApp({
                     title={
                       hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." :
                         noNewScheduleToRepeat === "current_is_false_20days" ? "20일 근무일 이내의 일정만 복제할 수 있습니다." :
-                        noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
-                          noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
-                            "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
+                          noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
+                            noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
+                              "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
                     }
                   >
                     <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
@@ -2768,7 +2783,7 @@ export default function MainApp({
                               {!logs[index]?.memo ? (
                                 <span className="text-gray-500">메모</span>
                               ) : (
-                                logs[index].memo.split(/(\d+회차)/g).map((part, i) => 
+                                logs[index].memo.split(/(\d+회차)/g).map((part, i) =>
                                   /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
                                 )
                               )}
@@ -2917,17 +2932,19 @@ export default function MainApp({
             <div className="p-6">
               <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-3 text-center leading-relaxed">
                 아래 <span className="text-indigo-600 text-[18px] sm:text-[20px]">{repeatTargetDates.length}</span>일 동안의 스케줄에<br />
+                {repeatMode === 'shift' && <span className="text-blue-600">해당 시간대({shifts[repeatShiftIndex]})의<br /></span>}
                 [학생이름]과 [장소]를<br />정말 복제할까요?
               </p>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 max-h-[25vh] overflow-y-auto">
-                {repeatTargetDates.map(d => (
-                  <div key={d} className="text-[18px] sm:text-[20px] font-bold text-blue-600 text-center py-1">
-                    - {d} ({getDayName(d)})
+                {repeatTargetDates.map(obj => (
+                  <div key={obj.date} className="text-[16px] sm:text-[18px] font-bold text-blue-600 text-center py-2 border-b last:border-0 border-gray-200">
+                    <div className="text-indigo-800">- {obj.date} ({getDayName(obj.date)})</div>
+                    <div className="text-sm text-gray-500 font-normal mt-1">{obj.times.join(', ')}</div>
                   </div>
                 ))}
               </div>
               <p className="text-red-600 text-[18px] sm:text-[20px] font-bold mb-6 text-center leading-tight">
-                ※ 주의: 기존에 작성된 출결기록과 메모는<br /> 모두 지워집니다.
+                ※ 주의: 기존의 출결기록과 메모는<br /> 모두 지워집니다.
               </p>
               <div className="flex gap-3">
                 <button
@@ -2937,7 +2954,7 @@ export default function MainApp({
                   취소
                 </button>
                 <button
-                  onClick={executeRepeatSchedule}
+                  onClick={repeatMode === 'shift' ? executeRepeatScheduleForShiftFromModal : executeRepeatSchedule}
                   className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
                 >
                   일정 복제 시작
