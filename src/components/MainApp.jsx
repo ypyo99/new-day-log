@@ -719,7 +719,7 @@ export default function MainApp({
 
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
-          .select('log_date, student, status, teacher')
+          .select('log_date, student, status, teacher, shift')
           .eq('team', selectedTeam)
           .neq('student', '')
           .not('student', 'is', null)
@@ -755,12 +755,15 @@ export default function MainApp({
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
               const dParts = hRow.log_date.split('-');
               const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
+              const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
+              const hShift = hRow.shift || "";
               
               if (selectedTeam === "취업팀") {
-                studentDatesMap[name].push(dateObj);
+                const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
+                if (!alreadyHas) studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
               } else {
-                const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
-                if (!alreadyHas) studentDatesMap[name].push(dateObj);
+                const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime());
+                if (!alreadyHas) studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
               }
             }
           });
@@ -774,6 +777,7 @@ export default function MainApp({
         
         const todayParts = date.split('-');
         const todayDateObj = new Date(parseInt(todayParts[0], 10), parseInt(todayParts[1], 10) - 1, parseInt(todayParts[2], 10));
+        const currentUserGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
 
         shifts.forEach((shift, index) => {
           const log = logs[index];
@@ -795,10 +799,11 @@ export default function MainApp({
             
             if (!isAbsent) {
                 if (selectedTeam === "취업팀") {
-                    currentDatesMap[name].push(todayDateObj);
+                    const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
+                    if (!alreadyHas) currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
                 } else {
-                    const alreadyHas = currentDatesMap[name].some(d => d.getTime() === todayDateObj.getTime());
-                    if (!alreadyHas) currentDatesMap[name].push(todayDateObj);
+                    const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
+                    if (!alreadyHas) currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
                 }
             }
             

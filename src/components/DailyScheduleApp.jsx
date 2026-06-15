@@ -431,7 +431,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         const histTo = histFrom + histStep - 1;
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
-          .select('log_date, student, status')
+          .select('log_date, student, status, teacher, shift')
           .eq('team', teamName)
           .neq('student', '')
           .not('student', 'is', null)
@@ -477,13 +477,18 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             }
             const dParts = hRow.log_date.split('-');
             const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
+            const hGroup = getTeacherGroup(teamName, hRow.teacher);
+            const hShift = hRow.shift || "";
 
             if (teamName === "취업팀") {
-              studentDatesMap[name].push(dateObj);
-            } else {
-              const alreadyHas = studentDatesMap[name].some(d => d.getTime() === dateObj.getTime());
+              const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
               if (!alreadyHas) {
-                studentDatesMap[name].push(dateObj);
+                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+              }
+            } else {
+              const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime());
+              if (!alreadyHas) {
+                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
               }
             }
           }
@@ -536,10 +541,15 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
           if (!isAbsent) {
             if (teamName === "취업팀") {
-                currentDatesMap[name].push(todayDateObj);
+                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
+                if (!alreadyHas) {
+                    currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+                }
             } else {
-                const alreadyHas = currentDatesMap[name].some(d => d.getTime() === todayDateObj.getTime());
-                if (!alreadyHas) currentDatesMap[name].push(todayDateObj);
+                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
+                if (!alreadyHas) {
+                    currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+                }
             }
           }
 
