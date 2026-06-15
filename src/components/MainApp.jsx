@@ -2268,7 +2268,7 @@ export default function MainApp({
                           공지사항
                         </h4>
                         {weatherData && (
-                          <span className="text-[14px] sm:text-[16px] text-red-600 font-bold opacity-80 whitespace-nowrap ml-auto">
+                          <span className="text-[15px] sm:text-[18px] text-red-600 font-bold opacity-80 whitespace-nowrap ml-auto">
                             {weatherData.weatherDesc} ({Math.round(weatherData.minTemp)}°C / {Math.round(weatherData.maxTemp)}°C)
                           </span>
                         )}
