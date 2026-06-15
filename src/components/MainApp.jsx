@@ -2252,7 +2252,7 @@ export default function MainApp({
             `}</style>
             {todayNotices.length > 0 && (
               <div className="animate-fadeIn w-full">
-                <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors">
+                <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors touch-pan-y touch-pinch-zoom">
                   <div className="flex flex-col gap-1.5 sm:gap-2 w-full min-w-0">
                     <div
                       className="flex items-center gap-2 sm:gap-3 w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]"
@@ -2275,7 +2275,7 @@ export default function MainApp({
                       </div>
                     </div>
                     <div
-                      className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[126px] sm:max-h-[144px] overflow-y-auto overscroll-contain touch-pan-y pr-1"
+                      className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[126px] sm:max-h-[144px] overflow-y-auto overscroll-contain touch-pan-y touch-pinch-zoom pr-1"
                       style={{ scrollbarWidth: 'thin', scrollbarColor: '#fca5a5 transparent' }}
                       onTouchStart={(e) => e.stopPropagation()}
                       onTouchMove={(e) => e.stopPropagation()}
