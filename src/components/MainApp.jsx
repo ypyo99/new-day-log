@@ -719,7 +719,7 @@ export default function MainApp({
 
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
-          .select('log_date, student, status, teacher, shift, memo')
+          .select('log_date, student, status, teacher, shift')
           .eq('team', selectedTeam)
           .neq('student', '')
           .not('student', 'is', null)
@@ -771,7 +771,7 @@ export default function MainApp({
               }
               
               if (isNew) {
-                const memoMatch = (hRow.memo || "").match(/(\d+)\s*회차/);
+                const memoMatch = (hRow.status || "").match(/(\d+)\s*회차/);
                 if (memoMatch) {
                     const explicitCount = parseInt(memoMatch[1], 10);
                     const currentLen = studentDatesMap[name].length;

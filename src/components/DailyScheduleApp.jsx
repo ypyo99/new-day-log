@@ -496,7 +496,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             }
             
             if (isNew) {
-                const memoMatch = (hRow.memo || "").match(/(\d+)\s*회차/);
+                const memoMatch = (hRow.status || "").match(/(\d+)\s*회차/);
                 if (memoMatch) {
                     const explicitCount = parseInt(memoMatch[1], 10);
                     const currentLen = studentDatesMap[name].length;
