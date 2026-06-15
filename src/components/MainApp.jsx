@@ -102,37 +102,6 @@ export default function MainApp({
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
-  const [weatherData, setWeatherData] = useState(null);
-
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo');
-        const data = await res.json();
-
-        if (data && data.daily) {
-          const maxTemp = data.daily.temperature_2m_max[0];
-          const minTemp = data.daily.temperature_2m_min[0];
-          const code = data.daily.weathercode[0];
-
-          let weatherDesc = '맑음 ☀️';
-          if (code === 0) weatherDesc = '맑음 ☀️';
-          else if ([1, 2].includes(code)) weatherDesc = '구름 조금 🌤️';
-          else if (code === 3) weatherDesc = '흐림 ☁️';
-          else if ([45, 48].includes(code)) weatherDesc = '안개 🌫️';
-          else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) weatherDesc = '비 🌧️';
-          else if ([71, 73, 75, 77, 85, 86].includes(code)) weatherDesc = '눈 ❄️';
-          else if ([95, 96, 99].includes(code)) weatherDesc = '뇌우 ⛈️';
-
-          setWeatherData({ minTemp, maxTemp, weatherDesc });
-        }
-      } catch (e) {
-        console.error("날씨 정보 가져오기 실패:", e);
-      }
-    };
-    fetchWeather();
-  }, []);
-
   const [todayNotices, setTodayNotices] = useState(() => {
     try {
       const cached = window.localStorage.getItem('sungdong_today_notices');
@@ -2282,11 +2251,6 @@ export default function MainApp({
                         <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight text-red-800 m-0 shrink-0">
                           공지사항
                         </h4>
-                        {weatherData && (
-                          <span className="text-[15px] sm:text-[18px] text-red-700 font-bold whitespace-nowrap ml-auto">
-                            {weatherData.weatherDesc} ({Math.round(weatherData.minTemp)}°C / {Math.round(weatherData.maxTemp)}°C)
-                          </span>
-                        )}
                       </div>
                     </div>
                     <div
