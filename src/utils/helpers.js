@@ -61,7 +61,7 @@ export const formatStatusIfDate = (val) => {
       return `${d.getMonth() + 1}/${d.getDate()}`;
     }
   }
-  return strVal;
+  return strVal.replace(/취소/g, '종료');
 };
 
 // 이미지 처리 헬퍼

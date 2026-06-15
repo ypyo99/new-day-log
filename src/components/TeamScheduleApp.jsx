@@ -556,7 +556,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                       fillRGB = "FFE0F2FE"; fontColorRGB = "FF000000"; isBold = true;
                     }
                   } else if (rowObj.category === "진행") {
-                    if (item.status?.includes('결석') || item.status?.includes('취소')) {
+                    if (item.status?.includes('결석') || item.status?.includes('종료') || item.status?.includes('취소')) {
                       fillRGB = "FFFEE2E2"; fontColorRGB = "FFDC2626"; isBold = true;
                     } else if (item.status?.includes('휴가')) {
                       fillRGB = "FFF3F4F6"; fontColorRGB = "FF6B7280"; isBold = true;
@@ -1126,7 +1126,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                     </div>
                                   ) : '';
 
-                                  if (rawStatus.includes('결석') || rawStatus.includes('취소')) {
+                                  if (rawStatus.includes('결석') || rawStatus.includes('종료') || rawStatus.includes('취소')) {
                                     cellClass = "text-red-600 font-extrabold bg-red-50";
                                   } else if (rawStatus.includes('휴가')) {
                                     cellClass = "text-gray-500 font-bold bg-gray-100";
@@ -1276,7 +1276,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             // 텍스트 클래스 계산
                             let studentTextClass = "text-gray-800";
                             let locationTextClass = "text-black";
-                            let statusTextClass = item.status?.includes('결석') || item.status?.includes('취소') ? 'text-red-500'
+                            let statusTextClass = item.status?.includes('결석') || item.status?.includes('종료') || item.status?.includes('취소') ? 'text-red-500'
                               : item.status?.includes('선생님휴가') ? 'text-black'
                                 : item.status?.includes('휴가') ? 'text-gray-400'
                                   : item.status ? 'text-black'

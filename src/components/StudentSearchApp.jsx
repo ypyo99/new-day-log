@@ -62,7 +62,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
     });
   }, [currentTeamNames, searchTerm]);
 
-  const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
+  const ATTENDANCE_TAGS = ['1', '결석', '종료', '선생님휴가'];
 
   useEffect(() => {
     document.documentElement.style.overscrollBehaviorY = 'auto';
@@ -483,7 +483,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
                     {filteredRecords.map((rec, idx) => {
                       const isAttended = rec.attendanceTag.includes("출석");
                       const isAbsent = rec.attendanceTag.includes("결석");
-                      const isCanceled = rec.attendanceTag.includes("취소");
+                      const isCanceled = rec.attendanceTag.includes("종료") || rec.attendanceTag.includes("취소");
                       const borderColor = isAbsent ? "border-l-red-400" : isCanceled ? "border-l-gray-400" : isAttended ? "border-l-blue-400" : "border-l-teal-300";
                       const bgColor = isAbsent ? "bg-red-50/50" : isCanceled ? "bg-gray-50/50" : "bg-white";
 

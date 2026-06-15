@@ -362,8 +362,8 @@ export default function MainApp({
   const [logsDate, setLogsDate] = useState(date);
 
 
-  const ATTENDANCE_TAGS = ['1', '결석', '취소', '선생님휴가'];
-  const RENDER_TAGS = ['1', '결석', '취소', '선생님휴가'];
+  const ATTENDANCE_TAGS = ['1', '결석', '종료', '선생님휴가'];
+  const RENDER_TAGS = ['1', '결석', '종료', '선생님휴가'];
 
   const fetchTeachersFromSheet = async (team) => {
     setIsFetchingTeachers(true);
@@ -747,7 +747,8 @@ export default function MainApp({
               const segments = personalStatus.split('/');
               if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
             }
-            const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+            personalStatus = personalStatus.replace(/취소/g, '종료');
+            const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("선생님휴가");
             if (!isAbsentOrCanceled) {
               if (hRow.log_date === date && hRow.teacher === currentUser) return;
 
@@ -787,7 +788,8 @@ export default function MainApp({
                const segments = currentStatus.split('/');
                if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
             }
-            const isAbsent = currentStatus.includes("결석") || currentStatus.includes("취소") || currentStatus.includes("선생님휴가");
+            currentStatus = currentStatus.replace(/취소/g, '종료');
+            const isAbsent = currentStatus.includes("결석") || currentStatus.includes("종료") || currentStatus.includes("선생님휴가");
             
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
             
@@ -1039,7 +1041,7 @@ export default function MainApp({
         if (isKyungrodangEntry) {
           const isGyeolseok = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("결석") : false);
           const isVacation = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("선생님휴가") : false);
-          const isCancel = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("취소") : false);
+          const isCancel = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("종료") : false);
 
           if (!isGyeolseok && !isVacation && !isCancel && hc === "" && memo !== "") {
             setValidationErrorMsg(`${targetNameForHeadcount} 참석인원 또는 출결사항을 확인해 주세요!`);
@@ -1278,7 +1280,7 @@ export default function MainApp({
     }
     const baseActiveStyle = 'text-white font-bold border-[1.5px] translate-y-[2px] shadow-[inset_0_3px_5px_rgba(0,0,0,0.5)]';
     if (tag === '결석') return `bg-red-400 border-red-500 ${baseActiveStyle}`;
-    if (tag === '취소') return `bg-orange-350 border-orange-500 ${baseActiveStyle}`;
+    if (tag === '종료') return `bg-orange-350 border-orange-500 ${baseActiveStyle}`;
     if (tag === '선생님휴가') return `bg-gray-500 border-gray-600 ${baseActiveStyle}`;
     return `bg-blue-500 border-blue-700 ${baseActiveStyle}`;
   };
@@ -2627,7 +2629,7 @@ export default function MainApp({
                                     const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
 
                                     const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
-                                    const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '취소'].includes(tag));
+                                    const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '종료'].includes(tag));
 
                                     return (
                                       <button
@@ -2660,7 +2662,7 @@ export default function MainApp({
                             const hasMemo = (logs[index]?.memo || "").trim() !== "";
                             const hasExcusedAttendance = studentNames.some((_, sIdx) => {
                               const tags = (logs[index]?.selectedTags && logs[index].selectedTags[sIdx]) ? logs[index].selectedTags[sIdx] : [];
-                              return tags.includes("결석") || tags.includes("선생님휴가") || tags.includes("취소");
+                              return tags.includes("결석") || tags.includes("선생님휴가") || tags.includes("종료");
                             });
                             const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty && !hasExcusedAttendance);
 
@@ -2773,7 +2775,7 @@ export default function MainApp({
 
                   const att = prog.attendance || "";
                   let attColor = "text-gray-700";
-                  if (att.includes("결석") || att.includes("취소")) {
+                  if (att.includes("결석") || att.includes("종료")) {
                     attColor = "text-red-600 font-bold";
                   } else if (att.includes("선생님휴가")) {
                     attColor = "text-gray-400 font-bold";

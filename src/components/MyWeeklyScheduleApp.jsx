@@ -270,7 +270,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   const getStatusColorClass = (statusStr) => {
     if (!statusStr) return "text-gray-800";
     const parts = statusStr.split(',').map(s => s.trim().replace(/\s+/g, ''));
-    if (parts.includes("결석") || parts.includes("취소")) return "text-red-600";
+    if (parts.includes("결석") || parts.includes("종료") || parts.includes("취소")) return "text-red-600";
     if (parts.includes("휴가") || parts.includes("선생님휴가")) return "text-gray-500";
     return "text-blue-700";
   };
@@ -281,7 +281,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
     let tags = [];
     let memos = [];
 
-    const tagKeywords = ['출석', '결석', '취소', '선생님휴가', '휴가'];
+    const tagKeywords = ['출석', '결석', '종료', '취소', '선생님휴가', '휴가'];
 
     parts.forEach((part, i) => {
       const cleanPart = part.replace(/\s+/g, '');
@@ -435,7 +435,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                   {parsedStatus.tags.map((tag, tIdx) => {
                                     let tagStyle = "bg-blue-100 text-blue-700 border-blue-300";
                                     if (tag.includes('결석')) tagStyle = "bg-red-100 text-red-700 border-red-300";
-                                    else if (tag.includes('취소')) tagStyle = "bg-orange-100 text-orange-700 border-orange-300";
+                                    else if (tag.includes('종료') || tag.includes('취소')) tagStyle = "bg-orange-100 text-orange-700 border-orange-300";
                                     else if (tag.includes('휴가')) tagStyle = "bg-gray-200 text-gray-700 border-gray-400";
                                     else if (tag.includes('출석') || /^\d+/.test(tag)) tagStyle = "bg-blue-500 text-white border-blue-600 shadow-inner";
                                     return (
