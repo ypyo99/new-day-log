@@ -571,7 +571,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                 }
             }
             if (isNew) {
-                const memoMatch = (row.memo || "").match(/(\d+)\s*회차/);
+                const memoMatch = (row.status || "").match(/(\d+)\s*회차/);
                 if (memoMatch) {
                     const explicitCount = parseInt(memoMatch[1], 10);
                     const currentLen = currentDatesMap[name].length;
