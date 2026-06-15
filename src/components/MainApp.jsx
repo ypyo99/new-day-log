@@ -2923,10 +2923,10 @@ export default function MainApp({
               <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {selectedStudentDates.dates.map((d, idx) => {
                   const today = new Date();
-                  const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+                  const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
                   return (
                     <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
-                      {d.getMonth() + 1}/{d.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.getDay()]})
+                      {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
                 })}
