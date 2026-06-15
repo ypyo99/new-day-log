@@ -719,7 +719,7 @@ export default function MainApp({
 
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
-          .select('log_date, student, status, teacher, shift')
+          .select('log_date, student, status, teacher, shift, memo')
           .eq('team', selectedTeam)
           .neq('student', '')
           .not('student', 'is', null)
@@ -736,6 +736,7 @@ export default function MainApp({
 
         const currentUserGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
         const studentDatesMap = {};
+        const studentOffsetsMap = {};
         allTeamRecords.forEach(hRow => {
           if (!hRow.student) return;
           const parsedNames = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
@@ -755,16 +756,28 @@ export default function MainApp({
               if (hRow.log_date === date && hGroup === currentUserGroup) return;
 
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
+              if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
               const dParts = hRow.log_date.split('-');
               const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
               const hShift = hRow.shift || "";
               
+              let isNew = false;
               if (selectedTeam === "취업팀") {
                 const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
-                if (!alreadyHas) studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+                if (!alreadyHas) isNew = true;
               } else {
                 const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime());
-                if (!alreadyHas) studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+                if (!alreadyHas) isNew = true;
+              }
+              
+              if (isNew) {
+                const memoMatch = (hRow.memo || "").match(/(\d+)\s*회차/);
+                if (memoMatch) {
+                    const explicitCount = parseInt(memoMatch[1], 10);
+                    const currentLen = studentDatesMap[name].length;
+                    studentOffsetsMap[name] = explicitCount - (currentLen + 1);
+                }
+                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
               }
             }
           });
@@ -772,8 +785,12 @@ export default function MainApp({
 
         const newCounts = {};
         const currentDatesMap = {};
+        const currentOffsetsMap = {};
         for (const [k, v] of Object.entries(studentDatesMap)) {
              currentDatesMap[k] = [...v];
+        }
+        for (const [k, v] of Object.entries(studentOffsetsMap)) {
+             currentOffsetsMap[k] = v;
         }
         
         const todayParts = date.split('-');
@@ -796,19 +813,32 @@ export default function MainApp({
             const isAbsent = currentStatus.includes("결석") || currentStatus.includes("종료") || currentStatus.includes("선생님휴가");
             
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
+            if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
             
             if (!isAbsent) {
+                let isNew = false;
                 if (selectedTeam === "취업팀") {
                     const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
-                    if (!alreadyHas) currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
+                    if (!alreadyHas) isNew = true;
                 } else {
                     const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
-                    if (!alreadyHas) currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
+                    if (!alreadyHas) isNew = true;
+                }
+                
+                if (isNew) {
+                    const memoMatch = (log.memo || "").match(/(\d+)\s*회차/);
+                    if (memoMatch) {
+                        const explicitCount = parseInt(memoMatch[1], 10);
+                        const currentLen = currentDatesMap[name].length;
+                        currentOffsetsMap[name] = explicitCount - (currentLen + 1);
+                    }
+                    currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
                 }
             }
             
             const dates = currentDatesMap[name];
-            countsForSlot.push({ name, count: dates.length, dates: [...dates] });
+            const offset = currentOffsetsMap[name] || 0;
+            countsForSlot.push({ name, count: dates.length + offset, dates: [...dates] });
           });
           if (countsForSlot.length > 0) newCounts[index] = countsForSlot;
         });

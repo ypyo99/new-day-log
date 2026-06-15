@@ -453,6 +453,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       }
 
       const studentDatesMap = {};
+      const studentOffsetsMap = {};
       allTeamRecords.forEach(hRow => {
         if (!hRow.student) return;
         const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
@@ -475,21 +476,33 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             if (!studentDatesMap[name]) {
               studentDatesMap[name] = [];
             }
+            if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
             const dParts = hRow.log_date.split('-');
             const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
             const hGroup = getTeacherGroup(teamName, hRow.teacher);
             const hShift = hRow.shift || "";
 
+            let isNew = false;
             if (teamName === "취업팀") {
               const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
               if (!alreadyHas) {
-                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+                isNew = true;
               }
             } else {
               const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime());
               if (!alreadyHas) {
-                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+                isNew = true;
               }
+            }
+            
+            if (isNew) {
+                const memoMatch = (hRow.memo || "").match(/(\d+)\s*회차/);
+                if (memoMatch) {
+                    const explicitCount = parseInt(memoMatch[1], 10);
+                    const currentLen = studentDatesMap[name].length;
+                    studentOffsetsMap[name] = explicitCount - (currentLen + 1);
+                }
+                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
             }
           }
         });
@@ -508,8 +521,12 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       });
 
       const currentDatesMap = {};
+      const currentOffsetsMap = {};
       for (const [k, v] of Object.entries(studentDatesMap)) {
          currentDatesMap[k] = [...v];
+      }
+      for (const [k, v] of Object.entries(studentOffsetsMap)) {
+         currentOffsetsMap[k] = v;
       }
 
       const todayParts = dateStr.split('-');
@@ -538,25 +555,37 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           const isAbsent = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
 
           if (!currentDatesMap[name]) currentDatesMap[name] = [];
+          if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
 
           if (!isAbsent) {
+            let isNew = false;
             if (teamName === "취업팀") {
                 const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
                 if (!alreadyHas) {
-                    currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+                    isNew = true;
                 }
             } else {
                 const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
                 if (!alreadyHas) {
-                    currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+                    isNew = true;
                 }
+            }
+            if (isNew) {
+                const memoMatch = (row.memo || "").match(/(\d+)\s*회차/);
+                if (memoMatch) {
+                    const explicitCount = parseInt(memoMatch[1], 10);
+                    const currentLen = currentDatesMap[name].length;
+                    currentOffsetsMap[name] = explicitCount - (currentLen + 1);
+                }
+                currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
             }
           }
 
           const dates = currentDatesMap[name];
+          const offset = currentOffsetsMap[name] || 0;
           countsForThisRow.push({
             name: name,
-            count: dates.length,
+            count: dates.length + offset,
             dates: [...dates]
           });
         });
