@@ -573,15 +573,27 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                 }
             }
             if (isNew) {
-                const textToMatch = (row.status || "");
-                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
-                if (memoMatches.length > 0) {
-                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                    const explicitCount = parseInt(matchObj[1], 10);
-                    const currentLen = currentDatesMap[name].length;
-                    currentOffsetsMap[name] = explicitCount - (currentLen + 1);
-                }
                 currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+            }
+
+            const textToMatch = (row.status || "");
+            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+            if (memoMatches.length > 0) {
+                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                const explicitCount = parseInt(matchObj[1], 10);
+                const currentLen = currentDatesMap[name].length;
+                currentOffsetsMap[name] = explicitCount - currentLen;
+                
+                // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용
+                parsedData.forEach(prevRow => {
+                    if (prevRow.sessionCounts) {
+                        prevRow.sessionCounts.forEach(sc => {
+                            if (sc.name === name) {
+                                sc.count = currentDatesMap[name].length + currentOffsetsMap[name];
+                            }
+                        });
+                    }
+                });
             }
           }
 
