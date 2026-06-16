@@ -107,10 +107,23 @@ export default function MainApp({
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+        const now = new Date();
+        const targetDateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+
+        try {
+          const cached = window.localStorage.getItem('sungdong_weather_cache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.date === targetDateStr && parsed.data) {
+              setWeatherData(parsed.data);
+              return;
+            }
+          }
+        } catch (e) {}
+
         const apiKey = '1dcc5e3c0b79c084c3a779e391b69d90bf46c75579a6889130b84185a14c844a';
 
         // 날짜/시간 계산 (기상청 단기예보 Base Time: 0200, 0500, 0800...)
-        const now = new Date();
         let baseDate = new Date(now);
         // 새벽 2시 10분 이전이면 어제 23시 데이터를 사용
         if (now.getHours() < 2 || (now.getHours() === 2 && now.getMinutes() < 10)) {
@@ -165,8 +178,7 @@ export default function MainApp({
         if (data.response && data.response.header.resultCode === '00' && data.response.body.items) {
           const items = data.response.body.items.item;
 
-          // 오늘 날짜 문자열
-          const targetDateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+          // 오늘 날짜 문자열 (상단에서 이미 정의함)
 
           let maxTemp = null;
           let minTemp = null;
@@ -197,7 +209,14 @@ export default function MainApp({
           }
 
           if (maxTemp !== null && minTemp !== null) {
-            setWeatherData({ minTemp, maxTemp, weatherDesc });
+            const resultData = { minTemp, maxTemp, weatherDesc };
+            setWeatherData(resultData);
+            try {
+              window.localStorage.setItem('sungdong_weather_cache', JSON.stringify({
+                date: targetDateStr,
+                data: resultData
+              }));
+            } catch (e) {}
           } else {
             setWeatherData({ error: true, msg: '데이터 없음' });
           }
@@ -207,7 +226,11 @@ export default function MainApp({
         }
       } catch (e) {
         console.error("날씨 정보 가져오기 실패:", e);
-        setWeatherData({ error: true, msg: e.message || '연결 실패' });
+        let errMsg = e.message || '연결 실패';
+        if (errMsg === 'Failed to fetch' || errMsg.includes('NetworkError') || errMsg.includes('fetch')) {
+          errMsg = '기상청 서버 응답 지연/점검 중';
+        }
+        setWeatherData({ error: true, msg: errMsg });
       }
     };
     fetchWeather();
