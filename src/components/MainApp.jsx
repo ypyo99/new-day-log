@@ -95,6 +95,7 @@ export default function MainApp({
   const [isSaveComplete, setIsSaveComplete] = useState(false);
 
   const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [repeatTargetDates, setRepeatTargetDates] = useState([]);
   const [repeatMode, setRepeatMode] = useState('all');
   const [repeatShiftIndex, setRepeatShiftIndex] = useState(null);
@@ -1057,6 +1058,13 @@ export default function MainApp({
     return Object.values(logs).every(log => !log.student?.trim() && !log.location?.trim());
   }, [logs]);
 
+  const isCurrentUser20DaysFalse = useMemo(() => {
+    const todaysData = allScheduleData[date] || {};
+    return Object.values(todaysData).some(shiftArr =>
+      Array.isArray(shiftArr) && shiftArr.some(r => (r.teacher || "").trim() === (currentUser || "").trim() && r.is_20days === false)
+    );
+  }, [allScheduleData, date, currentUser]);
+
   const isMissingHeadcount = useMemo(() => {
     return false;
   }, []);
@@ -1442,20 +1450,32 @@ export default function MainApp({
     }, 50);
   };
 
-  const handleLogout = async () => {
-    if (hasChanges) {
-      const wantsToSave = window.confirm("변경된 근무일지가 저장되지 않았습니다. 저장하시겠습니까?");
-      if (wantsToSave) {
-        const saved = await performAutoSave();
-        if (!saved) {
-          return; // 저장 실패 시 중단
-        }
-        return; // 저장 성공 시 기존 저장화면(팝업)을 볼 수 있도록 로그아웃 처리를 중단함
-      }
-    }
+  const executeLogout = () => {
     setIsLoggedIn(false);
     setRecords([]);
     window.localStorage.removeItem('sungdong_admin_logged_in');
+  };
+
+  const handleLogout = async () => {
+    if (hasChanges) {
+      setShowLogoutConfirm(true);
+      return;
+    }
+    executeLogout();
+  };
+
+  const handleLogoutConfirmYes = async () => {
+    setShowLogoutConfirm(false);
+    const saved = await performAutoSave();
+    if (!saved) {
+      return; // 저장 실패 시 중단
+    }
+    return; // 저장 성공 시 기존 저장화면(팝업)을 볼 수 있도록 로그아웃 처리를 중단함
+  };
+
+  const handleLogoutConfirmNo = () => {
+    setShowLogoutConfirm(false);
+    executeLogout();
   };
   const handleSubmit = async (e) => { e.preventDefault(); await performAutoSave(); };
 
@@ -2706,7 +2726,7 @@ export default function MainApp({
                 </div>
               )}
 
-              {isEmptySchedule && !isDataLoading && (
+              {!isDataLoading && isCurrentUser20DaysFalse && (
                 <div className="mt-2 animate-fadeIn">
                   <div className="bg-orange-100 border-2 border-orange-300 rounded-xl p-4 text-orange-800 shadow-sm">
                     <div className="flex items-start gap-3">
@@ -2716,7 +2736,7 @@ export default function MainApp({
                         </svg>
                       </div>
                       <p className="font-bold text-[15px] sm:text-[17px] leading-snug break-keep text-orange-900">
-                        대체근무인 경우, 대상자 이름, 장소, 출석 사항 등을 입력/체크하고 화면 하단의 <span className="text-blue-700 font-extrabold">'데이터베이스에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
+                        대체근무인 경우, 대상자 이름과 장소를 입력하고 화면 하단의 <span className="text-blue-700 font-extrabold">'데이터베이스에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
                       </p>
                     </div>
                   </div>
@@ -3119,6 +3139,34 @@ export default function MainApp({
               {selectedStudentDates.dates.length === 0 && (
                 <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+            <div className="bg-blue-600 py-4 px-6 text-center">
+              <h3 className="text-xl font-bold text-white tracking-wide">저장 확인</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed break-keep">
+                변경된 근무일지가 저장되지 않았습니다.<br />저장하시겠습니까?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleLogoutConfirmYes}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                >
+                  예
+                </button>
+                <button
+                  onClick={handleLogoutConfirmNo}
+                  className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                >
+                  아니오
+                </button>
+              </div>
             </div>
           </div>
         </div>
