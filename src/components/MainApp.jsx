@@ -147,17 +147,17 @@ export default function MainApp({
           let extractedError = '응답 형식 오류';
           const errMsgMatch = text.match(/<errMsg>(.*?)<\/errMsg>/);
           const reasonMatch = text.match(/<returnAuthMsg>(.*?)<\/returnAuthMsg>/);
-          
+
           if (reasonMatch) {
             extractedError = reasonMatch[1]; // 예: HTTP_ERROR, SERVICE_KEY_IS_NOT_REGISTERED_ERROR
           } else if (errMsgMatch) {
             extractedError = errMsgMatch[1];
           }
-          
+
           if (extractedError.includes('SERVICE_KEY_IS_NOT_REGISTERED_ERROR')) {
             extractedError = 'API 키 미등록(동기화 중)';
           }
-          
+
           setWeatherData({ error: true, msg: extractedError });
           return;
         }
@@ -2363,15 +2363,15 @@ export default function MainApp({
                           공지사항
                         </h4>
                         {!weatherData ? (
-                          <span className="text-[13px] sm:text-[14px] text-red-500 font-medium ml-auto text-right">
+                          <span className="text-[14px] sm:text-[15px] text-red-500 font-medium ml-auto text-right">
                             날씨 정보 불러오는 중...
                           </span>
                         ) : weatherData.error ? (
-                          <span className="text-[13px] sm:text-[14px] text-red-500/80 font-medium ml-auto text-right leading-tight">
+                          <span className="text-[14px] sm:text-[15px] text-red-500/80 font-medium ml-auto text-right leading-tight">
                             날씨 정보 준비 중 ({weatherData.msg})
                           </span>
                         ) : (
-                          <span className="text-[14px] sm:text-[16px] text-red-700 font-bold ml-auto text-right leading-tight">
+                          <span className="text-[15px] sm:text-[18px] text-red-700 font-bold ml-auto text-right leading-tight">
                             {weatherData.weatherDesc} ({weatherData.minTemp}℃ / {weatherData.maxTemp}℃)
                           </span>
                         )}
@@ -2682,7 +2682,7 @@ export default function MainApp({
                         </svg>
                       </div>
                       <p className="font-bold text-[15px] sm:text-[17px] leading-snug break-keep text-orange-900">
-                        대체근무인 경우, 대상자 이름, 장소, 출석 사항 등을 입력/체크하고 화면 하단의 <span className="text-blue-700 font-extrabold">'구글 시트에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
+                        대체근무인 경우, 대상자 이름, 장소, 출석 사항 등을 입력/체크하고 화면 하단의 <span className="text-blue-700 font-extrabold">'데이터베이스에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
                       </p>
                     </div>
                   </div>
@@ -2795,6 +2795,14 @@ export default function MainApp({
                             value={logs[index].location}
                             onChange={(e) => handleLogChange(index, 'location', e.target.value)}
                             onBlur={handleInputBlur}
+                            onClick={() => {
+                              const currentLoc = logs[index]?.location || "";
+                              if (currentLoc === '복지관') {
+                                handleLogChange(index, 'location', '낭만스튜디오');
+                              } else if (currentLoc === '낭만스튜디오') {
+                                handleLogChange(index, 'location', '복지관');
+                              }
+                            }}
                             disabled={isDataLoading}
                             className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight caret-white ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                           />
