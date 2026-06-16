@@ -109,24 +109,8 @@ export default function MainApp({
     const fetchWeather = async () => {
       try {
         const now = new Date();
-        const isAfter5PM = now.getHours() >= 17;
-
-        let targetDate = new Date(now);
-        if (isAfter5PM) {
-          targetDate.setDate(targetDate.getDate() + 1);
-        }
+        const targetDate = new Date(now);
         const targetDateStr = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
-
-        try {
-          const cached = window.localStorage.getItem('sungdong_weather_cache');
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (parsed.date === targetDateStr && parsed.data) {
-              setWeatherData(parsed.data);
-              return;
-            }
-          }
-        } catch (e) { }
 
         const apiKey = '1dcc5e3c0b79c084c3a779e391b69d90bf46c75579a6889130b84185a14c844a';
 
@@ -198,14 +182,9 @@ export default function MainApp({
               if (item.category === 'TMX') maxTemp = parseFloat(item.fcstValue);
               if (item.category === 'TMN') minTemp = parseFloat(item.fcstValue);
 
-              // 현재 또는 가까운 미래의 날씨 상태 (내일 날씨인 경우 12시 기준으로 우선 추출)
-              if (isAfter5PM) {
-                if (item.category === 'SKY' && (sky === null || item.fcstTime === '1200')) sky = item.fcstValue;
-                if (item.category === 'PTY' && (pty === null || item.fcstTime === '1200')) pty = item.fcstValue;
-              } else {
-                if (item.category === 'SKY' && sky === null) sky = item.fcstValue;
-                if (item.category === 'PTY' && pty === null) pty = item.fcstValue;
-              }
+              // 현재 또는 가까운 미래의 날씨 상태
+              if (item.category === 'SKY' && sky === null) sky = item.fcstValue;
+              if (item.category === 'PTY' && pty === null) pty = item.fcstValue;
             }
           });
 
@@ -221,14 +200,8 @@ export default function MainApp({
           }
 
           if (maxTemp !== null && minTemp !== null) {
-            const resultData = { minTemp, maxTemp, weatherDesc, isTomorrow: isAfter5PM };
+            const resultData = { minTemp, maxTemp, weatherDesc, isTomorrow: false };
             setWeatherData(resultData);
-            try {
-              window.localStorage.setItem('sungdong_weather_cache', JSON.stringify({
-                date: targetDateStr,
-                data: resultData
-              }));
-            } catch (e) { }
           } else {
             setWeatherData({ error: true, msg: '데이터 없음' });
           }
@@ -246,6 +219,10 @@ export default function MainApp({
       }
     };
     fetchWeather();
+
+    // 1시간(3600000ms)마다 날씨 데이터를 새로 읽어옴
+    const weatherInterval = setInterval(fetchWeather, 60 * 60 * 1000);
+    return () => clearInterval(weatherInterval);
   }, []);
 
   const [todayNotices, setTodayNotices] = useState(() => {
