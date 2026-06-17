@@ -33,6 +33,21 @@ const mapShiftToOfficial = (team, teacherName, originalShift) => {
   return originalShift;
 };
 
+const checkIsCanceled = (status) => {
+  if (!status) return false;
+  const s = status.trim();
+  const noSpace = s.replace(/\s+/g, "");
+  const exactWords = ["취소", "종료", "중단", "수업취소", "수업종료", "수업중단", "당일취소", "사전취소", "교육취소", "교육종료", "일정취소"];
+  if (exactWords.includes(noSpace)) return true;
+
+  if (s.length <= 15 && (s.includes("취소") || s.includes("종료") || s.includes("중단"))) {
+    const exclusions = ["쿠팡", "주문", "결제", "예매", "앱", "어플", "화면", "사진", "배달", "쇼핑", "당근", "송금", "이체", "기차", "택시", "지도", "검색"];
+    if (exclusions.some(kw => s.includes(kw))) return false;
+    return true;
+  }
+  return false;
+};
+
 // =====================================================================
 // ✨ 교육 요약 & 인사이트 컴포넌트
 // =====================================================================
@@ -72,7 +87,7 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
 
   const attendanceStats = useMemo(() => {
     if (!data || data.length === 0) return null;
-    let total = 0, attended = 0, absent = 0, canceled = 0;
+    let total = 0, attended = 0, absent = 0, canceled = 0, vacation = 0;
     const absentReasons = [];
 
     data.forEach(row => {
@@ -80,7 +95,7 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
       if (!studentStr || studentStr === "-" || studentStr.includes("자체학습") || studentStr.includes("대상자발굴")) return;
 
       const statusStr = (row.status || "").trim();
-      if (statusStr.includes("복지관으로 이동") || statusStr.includes("선생님휴가")) return;
+      if (statusStr.includes("복지관으로 이동")) return; // '선생님휴가' 제외 로직 제거
 
       const studentNames = studentStr.split(/[/,]/).map(s => s.trim()).filter(Boolean);
       const statusParts = statusStr.includes('/') ? statusStr.split('/') : [statusStr];
@@ -108,8 +123,10 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
           if (studentStatus.includes("병원") || studentStatus.includes("진료")) absentReasons.push("병원 진료");
           else if (studentStatus.includes("행사") || studentStatus.includes("일정") || studentStatus.includes("집안")) absentReasons.push("개인 일정");
           else if (studentStatus.includes("여행")) absentReasons.push("여행");
-        } else if (studentStatus.includes("종료") || studentStatus.includes("취소") || studentStatus.includes("중단")) {
+        } else if (checkIsCanceled(studentStatus)) {
           canceled += headcount;
+        } else if (studentStatus.includes("휴가") || studentStatus.includes("선생님휴가")) {
+          vacation += headcount;
         } else if (studentStatus) {
           const isAttended = isAssistant || /^[1-9]\d*/.test(studentStatus) || studentStatus.length > 2 || studentStatus === "1" || studentStatus === "출석";
           if (isAttended) attended += headcount;
@@ -118,7 +135,7 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
     });
 
     const rate = total > 0 ? Math.round((attended / total) * 100) : 0;
-    return { total, attended, absent, canceled, rate, absentReasons: [...new Set(absentReasons)] };
+    return { total, attended, absent, canceled, vacation, rate, absentReasons: [...new Set(absentReasons)] };
   }, [data]);
 
   const dynamicInsights = useMemo(() => {
@@ -221,8 +238,8 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
                 <span className="text-2xl font-black text-green-900">{attendanceStats.attended}명</span>
               </div>
               <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-red-600 text-xs font-black mb-1 uppercase tracking-wider">결석/종료</span>
-                <span className="text-2xl font-black text-red-900">{attendanceStats.absent + attendanceStats.canceled}명</span>
+                <span className="text-red-600 text-xs font-black mb-1 uppercase tracking-wider">결석/종료/휴가</span>
+                <span className="text-2xl font-black text-red-900">{attendanceStats.absent}/{attendanceStats.canceled}/{attendanceStats.vacation}명</span>
               </div>
               <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100 flex flex-col items-center justify-center shadow-sm">
                 <span className="text-purple-600 text-xs font-black mb-1 uppercase tracking-wider">출석률</span>
@@ -516,7 +533,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             }
           }
 
-          const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+          const isAbsentOrCanceled = personalStatus.includes("결석") || checkIsCanceled(personalStatus) || personalStatus.includes("선생님휴가");
           const textToMatch = (hRow.memo || hRow.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
           const hasExplicitCount = memoMatches.length > 0;
@@ -625,7 +642,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               personalStatus = segments[nameIdx].trim();
             }
           }
-          const isAbsent = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+          const isAbsent = personalStatus.includes("결석") || checkIsCanceled(personalStatus) || personalStatus.includes("선생님휴가");
           const textToMatch = (row.memo || row.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
           const hasExplicitCount = memoMatches.length > 0;
@@ -898,7 +915,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                           let statusColorClass = "text-black font-bold";
                           if (row.status) {
-                            const hasAbsenceOrCancel = row.status.includes("결석") || row.status.includes("종료") || row.status.includes("취소");
+                            const hasAbsenceOrCancel = row.status.includes("결석") || checkIsCanceled(row.status);
                             const hasVacation = row.status.includes("휴가");
                             if (hasAbsenceOrCancel) {
                               statusColorClass = "text-red-600 font-bold";
