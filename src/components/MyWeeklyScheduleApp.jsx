@@ -587,26 +587,48 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                               )}
                               {cellData.sessionCounts && !cellData.student?.includes("간담회") && (
                                 <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
-                                  {cellData.sessionCounts.map((sc, scIdx) => {
-                                    let sessionCellBg = "bg-gray-300";
-                                    let sessionTextCol = "text-black";
-                                    if (sc.count >= 15) {
-                                      sessionCellBg = "bg-orange-600";
-                                      sessionTextCol = "text-white";
-                                    } else if (sc.count >= 10) {
-                                      sessionCellBg = "bg-purple-900";
-                                      sessionTextCol = "text-white";
-                                    } else if (sc.count >= 7) {
-                                      sessionCellBg = "bg-purple-400";
-                                      sessionTextCol = "text-white";
+                                  {(() => {
+                                    if (cellData.sessionCounts.length > 1) {
+                                      const maxCount = Math.max(...cellData.sessionCounts.map(sc => sc.count));
+                                      let sessionCellBg = "bg-gray-300";
+                                      let sessionTextCol = "text-black";
+                                      if (maxCount >= 15) {
+                                        sessionCellBg = "bg-orange-600";
+                                        sessionTextCol = "text-white";
+                                      } else if (maxCount >= 10) {
+                                        sessionCellBg = "bg-purple-900";
+                                        sessionTextCol = "text-white";
+                                      } else if (maxCount >= 7) {
+                                        sessionCellBg = "bg-purple-400";
+                                        sessionTextCol = "text-white";
+                                      }
+                                      return (
+                                        <span className={`px-2 py-0.5 rounded-md text-[clamp(0.7rem,1.3vw,0.85rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
+                                          {cellData.sessionCounts.map(sc => `${sc.count}회차`).join('/')}
+                                        </span>
+                                      );
+                                    } else {
+                                      return cellData.sessionCounts.map((sc, scIdx) => {
+                                        let sessionCellBg = "bg-gray-300";
+                                        let sessionTextCol = "text-black";
+                                        if (sc.count >= 15) {
+                                          sessionCellBg = "bg-orange-600";
+                                          sessionTextCol = "text-white";
+                                        } else if (sc.count >= 10) {
+                                          sessionCellBg = "bg-purple-900";
+                                          sessionTextCol = "text-white";
+                                        } else if (sc.count >= 7) {
+                                          sessionCellBg = "bg-purple-400";
+                                          sessionTextCol = "text-white";
+                                        }
+                                        return (
+                                          <span key={scIdx} className={`px-2 py-0.5 rounded-md text-[clamp(0.7rem,1.3vw,0.85rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
+                                            {sc.count}회차
+                                          </span>
+                                        );
+                                      });
                                     }
-                                    const displayName = cellData.sessionCounts.length > 1 ? `${sc.name} ` : "";
-                                    return (
-                                      <span key={scIdx} className={`px-2 py-0.5 rounded-md text-[clamp(0.7rem,1.3vw,0.85rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
-                                        {displayName}{sc.count}회차
-                                      </span>
-                                    );
-                                  })}
+                                  })()}
                                 </div>
                               )}
                               {cellData.student && <div className={`font-bold ${isHoliday ? 'text-red-900 w-full' : (cellData.isSpecial ? 'text-red-700 w-full' : 'text-gray-900 w-full')} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center flex-shrink-0`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
