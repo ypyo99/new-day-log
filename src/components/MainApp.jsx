@@ -146,8 +146,24 @@ export default function MainApp({
         // 기상청 API는 CORS를 허용하므로 프록시를 거치지 않고 직접 호출하여 Vite Proxy 통신 행(hang) 이슈 방지
         const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${apiKey}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${formattedDate}&base_time=${baseTime}&nx=60&ny=127`;
 
-        const res = await fetch(url);
-        const text = await res.text();
+        let res;
+        let text;
+        let fetchSuccess = false;
+        
+        // 공공데이터포털 서버 불안정(ERR_CONNECTION_RESET 등) 대응을 위한 3회 재시도 로직
+        for (let i = 0; i < 3; i++) {
+          try {
+            res = await fetch(url);
+            text = await res.text();
+            fetchSuccess = true;
+            break;
+          } catch (err) {
+            if (i === 2) throw err;
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기 후 재시도
+          }
+        }
+        
+        if (!fetchSuccess) throw new Error("Failed to fetch after retries");
 
         if (text.includes("Unauthorized")) {
           setWeatherData({ error: true, msg: 'API 키 미승인(동기화 1~2시간 소요)' });
