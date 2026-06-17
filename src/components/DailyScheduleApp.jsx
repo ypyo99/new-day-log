@@ -270,7 +270,7 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
                     {dynamicInsights.map((insight, i) => (
                       <li key={i} className="flex gap-3 text-[15px] md:text-[16px] text-gray-700 leading-relaxed">
                         <span className="text-indigo-500 mt-1.5 font-black shrink-0">●</span>
-                        <p className="font-medium" dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<span className="text-indigo-800 font-extrabold">$1</span>') }}></p>
+                        <p className="font-medium" dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<span class="text-indigo-800 font-extrabold">$1</span>') }}></p>
                       </li>
                     ))}
                   </ul>
@@ -357,7 +357,6 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
 
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
-  const shifts = ["9:30~10:30", "10:30~11:30", "11:30~12:30", "13:00~14:00", "14:00~15:00", "15:00~16:00"];
 
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
@@ -1016,7 +1015,10 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                         src={getDirectImageUrl(row.location)}
                                         alt="Sign"
                                         className={`${isMultipleStudents ? 'h-28 sm:h-32' : 'h-14 sm:h-16'} w-auto object-contain mix-blend-multiply`}
-                                        onError={(e) => { e.target.closest('div').style.display = 'none'; }}
+                                        onError={(e) => { 
+                                          const parent = e.target.closest('div');
+                                          if (parent) parent.style.display = 'none';
+                                        }}
                                       />
                                     </div>
                                   </div>
