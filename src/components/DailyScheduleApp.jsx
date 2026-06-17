@@ -11,7 +11,8 @@ import {
   getGroupWeight,
   getShiftWeight,
   getDirectImageUrl,
-  getTeacherShifts
+  getTeacherShifts,
+  getTeamTeacherNames
 } from '../utils/helpers';
 import { Home, LucideCalendar, Clock, BookOpen, Sparkles } from './Icons';
 
@@ -425,19 +426,47 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         return;
       }
 
-      const parsedData = records.map(r => {
-        const group = getTeacherGroup(teamName, r.teacher);
+      const parsedData = [];
+      const teamTeachers = getTeamTeacherNames(teamName);
+      
+      teamTeachers.forEach(teacher => {
+        const officialShifts = getTeacherShifts(teamName, teacher) || [];
+        const group = getTeacherGroup(teamName, teacher);
+        officialShifts.forEach(shift => {
+          parsedData.push({
+            group: group,
+            teacher: teacher,
+            time: shift,
+            student: "-",
+            status: "-",
+            location: "",
+            sessionCounts: null,
+            isSpecial: false
+          });
+        });
+      });
 
-        return {
+      records.forEach(r => {
+        const group = getTeacherGroup(teamName, r.teacher);
+        const mappedTime = mapShiftToOfficial(teamName, r.teacher, r.shift);
+        
+        const existingIdx = parsedData.findIndex(p => p.teacher === r.teacher && p.time === mappedTime && p.student === "-");
+        const formattedRecord = {
           group: group,
           teacher: r.teacher,
-          time: mapShiftToOfficial(teamName, r.teacher, r.shift),
+          time: mappedTime,
           student: r.student || "",
           status: r.status || "",
           location: r.signature_url || r.location || "",
           sessionCounts: null,
           isSpecial: false
         };
+
+        if (existingIdx !== -1) {
+          parsedData[existingIdx] = formattedRecord;
+        } else {
+          parsedData.push(formattedRecord);
+        }
       });
 
       let allTeamRecords = [];
@@ -578,7 +607,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       });
 
       timeSortedData.forEach(row => {
-        if (!row.student) {
+        if (!row.student || row.student.trim() === '-') {
           row.sessionCounts = null;
           return;
         }
@@ -894,7 +923,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                             }
                           }
 
-                          const locTextForDisplay = row.location ? row.location.trim() : "";
+                          const locTextForDisplay = (row.location && row.location.trim() !== '-') ? row.location.trim() : "";
                           const isLocationUrl = locTextForDisplay && (locTextForDisplay.startsWith('http') || locTextForDisplay.startsWith('//') || locTextForDisplay.startsWith('data:') || locTextForDisplay.includes('drive.google.com'));
                           const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !(row.student || "").includes("보조강사") && selectedTeam !== '취업팀' && !isLocationUrl;
 
@@ -967,13 +996,15 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                               <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
                                 <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
-                                  <span className="whitespace-nowrap text-center">{(row.student || "").replace(/\n/g, ' ')}</span>
-                                  {showLocationText && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
+                                  {(!row.student || row.student.trim() === '-') ? null : (
+                                    <span className="whitespace-nowrap text-center">{row.student.replace(/\n/g, ' ')}</span>
+                                  )}
+                                  {showLocationText && row.student && row.student.trim() !== '-' && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
                                     <span className="whitespace-nowrap text-center mt-0.5 font-medium text-gray-500 text-[1.0em]">({locTextForDisplay})</span>
                                   )}
                                 </div>
                                 <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
-                                  {!row.status ? null : row.status.split(/(\d+회차)/g).map((part, i) =>
+                                  {(!row.status || row.status.trim() === '-') ? null : row.status.split(/(\d+회차)/g).map((part, i) =>
                                     /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
                                   )}
                                 </div>
