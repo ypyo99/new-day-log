@@ -233,7 +233,8 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             .gte('log_date', firstWorkDateStr)
             .lte('log_date', endDateStr)
             .range(start, start + limit - 1)
-            .order('log_date', { ascending: true });
+            .order('log_date', { ascending: true })
+            .order('id', { ascending: true });
 
           if (chunkErr) throw chunkErr;
 

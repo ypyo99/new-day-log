@@ -465,6 +465,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           .eq('team', team)
           .gte('log_date', startDate)
           .lte('log_date', endDate)
+          .order('log_date', { ascending: true })
+          .order('id', { ascending: true })
           .range(start, start + limit - 1);
 
         if (fetchErr) throw fetchErr;
@@ -579,6 +581,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           .from('daily_logs_backup')
           .select('*')
           .eq('backup_id', lastBackupId)
+          .order('original_id', { ascending: true })
           .range(start, start + limit - 1);
 
         if (fetchErr) throw fetchErr;

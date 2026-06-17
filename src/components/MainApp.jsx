@@ -618,7 +618,8 @@ export default function MainApp({
             .select('*')
             .eq('team', selectedTeam)
             .range(start, start + limit - 1)
-            .order('log_date', { ascending: false });
+            .order('log_date', { ascending: false })
+            .order('id', { ascending: true });
 
           if (chunkErr) throw chunkErr;
 
