@@ -877,7 +877,11 @@ export default function MainApp({
             }
             personalStatus = personalStatus.replace(/취소/g, '종료');
             const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("선생님휴가");
-            if (!isAbsentOrCanceled) {
+            const textToMatch = (hRow.memo || hRow.status || "");
+            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+            const hasExplicitCount = memoMatches.length > 0;
+
+            if (!isAbsentOrCanceled || hasExplicitCount) {
               const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
               if (hRow.log_date === date && hGroup === currentUserGroup) return;
 
@@ -897,9 +901,7 @@ export default function MainApp({
               }
 
               if (isNew) {
-                const textToMatch = (hRow.memo || hRow.status || "");
-                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
-                if (memoMatches.length > 0) {
+                if (hasExplicitCount) {
                   const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
                   const explicitCount = parseInt(matchObj[1], 10);
                   const currentLen = studentDatesMap[name].length;
@@ -939,11 +941,14 @@ export default function MainApp({
             }
             currentStatus = currentStatus.replace(/취소/g, '종료');
             const isAbsent = currentStatus.includes("결석") || currentStatus.includes("종료") || currentStatus.includes("선생님휴가");
+            const textToMatch = (log.memo || log.status || "");
+            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+            const hasExplicitCount = memoMatches.length > 0;
 
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
             if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
 
-            if (!isAbsent) {
+            if (!isAbsent || hasExplicitCount) {
               let isNew = false;
               if (selectedTeam === "취업팀") {
                 const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
@@ -954,9 +959,7 @@ export default function MainApp({
               }
 
               if (isNew) {
-                const textToMatch = (log.memo || log.status || "");
-                const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
-                if (memoMatches.length > 0) {
+                if (hasExplicitCount) {
                   const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
                   const explicitCount = parseInt(matchObj[1], 10);
                   const currentLen = currentDatesMap[name].length;
