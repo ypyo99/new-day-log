@@ -603,7 +603,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                         sessionTextCol = "text-white";
                                       }
                                       return (
-                                        <span className={`px-2 py-1 rounded-md text-[clamp(0.7rem,1.3vw,0.85rem)] font-extrabold border shadow-sm leading-tight whitespace-pre-wrap text-center overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
+                                        <span className={`px-2 py-1 rounded-md text-[clamp(0.8rem,1.6vw,1.05rem)] font-extrabold border shadow-sm leading-tight whitespace-pre-wrap text-center overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
                                           {cellData.sessionCounts.map(sc => `${sc.count}회차`).join('/\n')}
                                         </span>
                                       );
@@ -622,7 +622,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                           sessionTextCol = "text-white";
                                         }
                                         return (
-                                          <span key={scIdx} className={`px-2 py-0.5 rounded-md text-[clamp(0.7rem,1.3vw,0.85rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
+                                          <span key={scIdx} className={`px-2 py-0.5 rounded-md text-[clamp(0.8rem,1.6vw,1.05rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
                                             {sc.count}회차
                                           </span>
                                         );
