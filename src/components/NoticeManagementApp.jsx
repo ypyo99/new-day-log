@@ -122,6 +122,23 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const lastScrolledTriggerRef = useRef(0);
   const editorScrollSaveRef = useRef(null);
 
+  const savedSelectionRef = useRef(null);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current && editorRef.current.contains(sel.anchorNode)) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+  };
+
   const [uploading, setUploading] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
   const [selectedImgWidth, setSelectedImgWidth] = useState(100);
@@ -167,6 +184,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
     if (navigator.vibrate) navigator.vibrate(30);
     if (editorRef.current) {
       editorRef.current.focus({ preventScroll: true });
+      restoreSelection();
       document.execCommand(command, false, value);
       setContent(editorRef.current.innerHTML);
     }
@@ -404,6 +422,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
 
       if (editorRef.current) {
         editorRef.current.focus();
+        restoreSelection();
         try {
           document.execCommand('insertHTML', false, imgHtml);
         } catch (execErr) {
@@ -988,7 +1007,11 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                       )}
 
                       {/* 서식 지정 툴바 */}
-                      <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm text-sm">
+                      <div 
+                        className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm text-sm"
+                        onTouchStart={saveSelection}
+                        onMouseDown={saveSelection}
+                      >
                         {/* 1. 기본 스타일, 크기, 정렬 */}
                         <div className="flex flex-wrap items-center gap-2">
                           <button type="button" onClick={() => execFormat('bold')} className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border rounded font-bold text-gray-800 shadow-sm active:scale-95 transition-all" title="굵게">B</button>
