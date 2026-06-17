@@ -277,6 +277,19 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
       });
     });
 
+    // 시간대가 빠른 것부터 회차 계산을 위해 정렬
+    Object.keys(studentHistoryMap).forEach(name => {
+      studentHistoryMap[name].sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        const getT = (s) => {
+          if (!s) return 9999;
+          const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+          return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+        };
+        return getT(a.shift) - getT(b.shift);
+      });
+    });
+
     // 휴무일(holidays DB) 및 팀장의 스케줄을 확인하여 specialDays(공휴일/간담회/소양교육) 설정
     const newSpecialDays = {};
     const days = getCurrentWeekDays();

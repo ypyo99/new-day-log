@@ -913,6 +913,18 @@ export default function MainApp({
           });
         });
 
+        // 시간대가 빠른 것부터 회차 계산을 위해 정렬
+        Object.keys(studentDatesMap).forEach(name => {
+          studentDatesMap[name].sort((a, b) => {
+            if (a.date.getTime() !== b.date.getTime()) return a.date.getTime() - b.date.getTime();
+            const getT = (s) => {
+              if (!s) return 9999;
+              const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+              return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+            };
+            return getT(a.shift) - getT(b.shift);
+          });
+        });
         const newCounts = {};
         const currentDatesMap = {};
         const currentOffsetsMap = {};
