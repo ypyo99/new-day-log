@@ -449,7 +449,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         const histTo = histFrom + histStep - 1;
           const { data: histData, error: histError } = await supabaseClient
             .from('daily_logs')
-            .select('log_date, student, status, teacher, shift, memo')
+            .select('log_date, student, status, teacher, shift')
           .eq('team', teamName)
           .neq('student', '')
           .not('student', 'is', null)
