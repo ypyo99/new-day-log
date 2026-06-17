@@ -242,8 +242,11 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
           if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
         }
         const isAbsent = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+        const textToMatch = hRow.status || "";
+        const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+        const hasExplicitCount = memoMatches.length > 0;
         
-        if (!isAbsent) {
+        if (!isAbsent || hasExplicitCount) {
            if (!studentHistoryMap[name]) studentHistoryMap[name] = [];
            if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
            
@@ -261,9 +264,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            }
            
            if (isNew) {
-               const textToMatch = hRow.status || "";
-               const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
-               if (memoMatches.length > 0) {
+               if (hasExplicitCount) {
                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
                    const explicitCount = parseInt(matchObj[1], 10);
                    const currentLen = studentHistoryMap[name].length;
