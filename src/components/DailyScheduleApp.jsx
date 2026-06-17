@@ -77,7 +77,7 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
 
     data.forEach(row => {
       const studentStr = (row.student || "").trim();
-      if (!studentStr || studentStr.includes("자체학습") || studentStr.includes("대상자발굴")) return;
+      if (!studentStr || studentStr === "-" || studentStr.includes("자체학습") || studentStr.includes("대상자발굴")) return;
 
       const statusStr = (row.status || "").trim();
       if (statusStr.includes("복지관으로 이동") || statusStr.includes("선생님휴가")) return;
