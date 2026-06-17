@@ -112,6 +112,18 @@ export default function MainApp({
         const targetDate = new Date(now);
         const targetDateStr = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
 
+        // 캐시 확인 (하루 한 번만 호출)
+        const cachedData = window.localStorage.getItem('sungdong_weather');
+        if (cachedData) {
+          try {
+            const parsed = JSON.parse(cachedData);
+            if (parsed.date === targetDateStr && parsed.data && !parsed.data.error) {
+              setWeatherData(parsed.data);
+              return;
+            }
+          } catch (e) {}
+        }
+
         const apiKey = '1dcc5e3c0b79c084c3a779e391b69d90bf46c75579a6889130b84185a14c844a';
 
         // 날짜/시간 계산 (기상청 단기예보 Base Time: 0200, 0500, 0800...)
@@ -202,6 +214,7 @@ export default function MainApp({
           if (maxTemp !== null && minTemp !== null) {
             const resultData = { minTemp, maxTemp, weatherDesc, isTomorrow: false };
             setWeatherData(resultData);
+            window.localStorage.setItem('sungdong_weather', JSON.stringify({ date: targetDateStr, data: resultData }));
           } else {
             setWeatherData({ error: true, msg: '데이터 없음' });
           }
@@ -219,10 +232,6 @@ export default function MainApp({
       }
     };
     fetchWeather();
-
-    // 1시간(3600000ms)마다 날씨 데이터를 새로 읽어옴
-    const weatherInterval = setInterval(fetchWeather, 60 * 60 * 1000);
-    return () => clearInterval(weatherInterval);
   }, []);
 
   const [todayNotices, setTodayNotices] = useState(() => {
