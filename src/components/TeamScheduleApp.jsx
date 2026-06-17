@@ -621,10 +621,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
             let alignHorizontal = "center";
             if (rowObj.category === "진행") {
-              const cellText = typeof cell.value === 'string' ? cell.value : (cell.value && cell.value.richText ? cell.value.richText.map(rt => rt.text).join('') : '');
-              if (cellText && cellText.includes('\n')) {
-                alignHorizontal = "left";
-              }
+              alignHorizontal = "left";
             }
             cell.alignment = { vertical: "middle", horizontal: alignHorizontal, wrapText: true };
           }
@@ -1176,7 +1173,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 } else if (row.category === "진행") {
                                   const rawStatus = item.status || '';
                                   cellContent = rawStatus ? (
-                                    <div className={`w-full break-all whitespace-pre-wrap px-0.5 leading-snug ${rawStatus.includes('\n') ? 'text-left' : 'text-center'}`} title={rawStatus}>
+                                    <div className="w-full break-all whitespace-pre-wrap px-0.5 leading-snug text-left" title={rawStatus}>
                                       {rawStatus.split(/(\d+\s*회차)/g).map((part, idx) => {
                                         if (/\d+\s*회차/.test(part)) {
                                           return <span key={idx} className="text-blue-600">{part}</span>;
