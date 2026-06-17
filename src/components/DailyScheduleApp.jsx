@@ -455,6 +455,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           .not('student', 'is', null)
           .lte('log_date', dateStr)
           .order('log_date', { ascending: true })
+          .order('id', { ascending: true })
           .range(histFrom, histTo);
 
         if (histError) throw histError;

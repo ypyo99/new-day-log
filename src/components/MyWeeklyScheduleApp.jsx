@@ -195,6 +195,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
             .not('student', 'is', null)
             .lte('log_date', endStr)
             .order('log_date', { ascending: true })
+            .order('id', { ascending: true })
             .range(histFrom, histTo);
 
           if (histError) throw histError;
