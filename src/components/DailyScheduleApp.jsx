@@ -568,7 +568,16 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       const todayParts = dateStr.split('-');
       const todayDateObj = new Date(parseInt(todayParts[0], 10), parseInt(todayParts[1], 10) - 1, parseInt(todayParts[2], 10));
 
-      parsedData.forEach(row => {
+      const timeSortedData = [...parsedData].sort((a, b) => {
+        const getT = (s) => {
+          if (!s) return 9999;
+          const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+          return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+        };
+        return getT(a.time) - getT(b.time);
+      });
+
+      timeSortedData.forEach(row => {
         if (!row.student) {
           row.sessionCounts = null;
           return;
