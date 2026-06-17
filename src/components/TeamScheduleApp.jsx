@@ -13,7 +13,8 @@ import {
   isOfficialTeamTeacher,
   getGroupWeight,
   getShiftWeight,
-  getDayName
+  getDayName,
+  getTeacherShifts
 } from '../utils/helpers';
 import {
   Home,
@@ -23,6 +24,23 @@ import {
   DownloadIcon,
   CalendarIcon
 } from './Icons';
+
+const mapShiftToOfficial = (team, teacherName, originalShift) => {
+  if (!originalShift || !teacherName) return originalShift;
+  const officialShifts = getTeacherShifts(team, teacherName);
+  if (!officialShifts || officialShifts.length === 0) return originalShift;
+  if (officialShifts.includes(originalShift)) return originalShift;
+
+  const standardDefaults = team === "3팀" 
+    ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"]
+    : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
+    
+  const idx = standardDefaults.indexOf(originalShift);
+  if (idx !== -1 && officialShifts[idx]) {
+    return officialShifts[idx];
+  }
+  return originalShift;
+};
 
 export default function TeamScheduleApp({ team, onNavigateBack }) {
   const [currentTeam, setCurrentTeam] = useState(team);
@@ -71,7 +89,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
       if (error) throw error;
 
       if (records) {
-        setData(records);
+        const mappedRecords = records.map(r => ({
+          ...r,
+          shift: mapShiftToOfficial(r.team, r.teacher, r.shift)
+        }));
+        setData(mappedRecords);
         const tSet = new Set();
         getTeamTeacherNames(currentTeam).forEach(t => tSet.add(t));
         records.forEach(r => { if (r.teacher) tSet.add(r.teacher); });
@@ -216,7 +238,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           if (chunkErr) throw chunkErr;
 
           if (chunk && chunk.length > 0) {
-            teamData = teamData.concat(chunk);
+            const mappedChunk = chunk.map(r => ({
+              ...r,
+              shift: mapShiftToOfficial(r.team, r.teacher, r.shift)
+            }));
+            teamData = teamData.concat(mappedChunk);
             if (chunk.length < limit) {
               hasMore = false;
             } else {
@@ -347,7 +373,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
         titleCell.alignment = { vertical: "middle", horizontal: "left" };
 
         // Row 2: Headers
-        const headerRowData = ["연번", "성명", "시간", ...dateList.map(d => d.label)];
+        const headerRowData = ["연번", "성명", "수업시간", ...dateList.map(d => d.label)];
         const headerRow = ws.addRow(headerRowData);
         headerRow.height = 35;
 
@@ -995,7 +1021,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                     <tr>
                       <th className="border border-blue-700 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">연번</th>
                       <th className="border border-blue-700 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">성명</th>
-                      <th className="border border-blue-700 border-r-2 border-r-gray-700 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">시간</th>
+                      <th className="border border-blue-700 border-r-2 border-r-gray-700 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">수업시간</th>
                       {uniqueDates.map(dateStr => {
                         const m = dateStr.split('-')[1];
                         const d = dateStr.split('-')[2];
@@ -1244,7 +1270,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                           <tr className="bg-gray-100 border-b border-gray-200 text-gray-700 font-bold">
                             <th className="border-r border-gray-200 py-2 w-[12%]">조</th>
                             <th className="border-r border-gray-200 py-2 w-[18%]">강사명</th>
-                            <th className="border-r border-gray-200 py-2 w-[18%]">시간</th>
+                            <th className="border-r border-gray-200 py-2 w-[18%]">수업시간</th>
                             <th className="border-r border-gray-200 py-2 w-[22%]">대상(학생)</th>
                             <th className="border-r border-gray-200 py-2 w-[18%]">장소/서명</th>
                             <th className="py-2 w-[12%]">출결 상태</th>

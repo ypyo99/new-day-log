@@ -10,9 +10,27 @@ import {
   getTeacherSortWeight,
   getGroupWeight,
   getShiftWeight,
-  getDirectImageUrl
+  getDirectImageUrl,
+  getTeacherShifts
 } from '../utils/helpers';
 import { Home, LucideCalendar, Clock, BookOpen, Sparkles } from './Icons';
+
+const mapShiftToOfficial = (team, teacherName, originalShift) => {
+  if (!originalShift || !teacherName) return originalShift;
+  const officialShifts = getTeacherShifts(team, teacherName);
+  if (!officialShifts || officialShifts.length === 0) return originalShift;
+  if (officialShifts.includes(originalShift)) return originalShift;
+
+  const standardDefaults = team === "3팀" 
+    ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"]
+    : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
+    
+  const idx = standardDefaults.indexOf(originalShift);
+  if (idx !== -1 && officialShifts[idx]) {
+    return officialShifts[idx];
+  }
+  return originalShift;
+};
 
 // =====================================================================
 // ✨ 교육 요약 & 인사이트 컴포넌트
@@ -413,7 +431,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         return {
           group: group,
           teacher: r.teacher,
-          time: r.shift,
+          time: mapShiftToOfficial(teamName, r.teacher, r.shift),
           student: r.student || "",
           status: r.status || "",
           location: r.signature_url || r.location || "",

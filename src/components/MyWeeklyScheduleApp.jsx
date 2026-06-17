@@ -5,9 +5,28 @@ import { supabaseClient } from '../utils/supabase';
 import {
   getLocalDateString,
   getTeacherShifts,
-  getTeamDefaultShifts
+  getTeamDefaultShifts,
+  getGlobalTeachersList,
+  getTeacherGroup
 } from '../utils/helpers';
 import { User, MainCalendarIcon, Home, Clock } from './Icons';
+
+const mapShiftToOfficial = (team, teacherName, originalShift) => {
+  if (!originalShift || !teacherName) return originalShift;
+  const officialShifts = getTeacherShifts(team, teacherName);
+  if (!officialShifts || officialShifts.length === 0) return originalShift;
+  if (officialShifts.includes(originalShift)) return originalShift;
+
+  const standardDefaults = team === "3팀" 
+    ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"]
+    : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
+    
+  const idx = standardDefaults.indexOf(originalShift);
+  if (idx !== -1 && officialShifts[idx]) {
+    return officialShifts[idx];
+  }
+  return originalShift;
+};
 
 export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -25,6 +44,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [supabaseRecords, setSupabaseRecords] = useState([]);
+  const [allTeamRecords, setAllTeamRecords] = useState([]);
   const [dbHolidays, setDbHolidays] = useState([]);
   const [noDataMessage, setNoDataMessage] = useState("");
   const [teamLeader, setTeamLeader] = useState(null);
@@ -153,7 +173,40 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
 
         const { data, error } = await query;
         if (error) throw error;
-        setSupabaseRecords(data || []);
+        
+        const mappedData = (data || []).map(r => ({
+          ...r,
+          shift: mapShiftToOfficial(r.team, r.teacher, r.shift)
+        }));
+        setSupabaseRecords(mappedData);
+
+        let allHistRecords = [];
+        let histFrom = 0;
+        const histStep = 1000;
+        let histHasMore = true;
+
+        while (histHasMore) {
+          const histTo = histFrom + histStep - 1;
+          const { data: histData, error: histError } = await supabaseClient
+            .from('daily_logs')
+            .select('log_date, student, status, teacher, shift')
+            .eq('team', team)
+            .neq('student', '')
+            .not('student', 'is', null)
+            .lte('log_date', endStr)
+            .order('log_date', { ascending: true })
+            .range(histFrom, histTo);
+
+          if (histError) throw histError;
+          if (histData && histData.length > 0) {
+            allHistRecords = allHistRecords.concat(histData);
+            if (histData.length < histStep) histHasMore = false;
+            else histFrom += histStep;
+          } else {
+            histHasMore = false;
+          }
+        }
+        setAllTeamRecords(allHistRecords);
 
         const { data: holidayData, error: holidayError } = await supabaseClient
           .from('holidays')
@@ -172,6 +225,55 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   // 2. Supabase에서 읽어온 주간 레코드를 바탕으로 시간대별, 요일별 데이터 구조화
   useEffect(() => {
     if (!teacher || !currentWeekStart) return;
+
+    const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+    const studentHistoryMap = {};
+    const studentOffsetsMap = {};
+    
+    allTeamRecords.forEach(hRow => {
+      if (!hRow.student) return;
+      const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+      names.forEach((name, nameIdx) => {
+        if (excludeKeywords.some(kw => name.includes(kw))) return;
+        
+        let personalStatus = hRow.status || "";
+        if (personalStatus.includes('/')) {
+          const segments = personalStatus.split('/');
+          if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
+        }
+        const isAbsent = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+        
+        if (!isAbsent) {
+           if (!studentHistoryMap[name]) studentHistoryMap[name] = [];
+           if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
+           
+           const hGroup = getTeacherGroup(team, hRow.teacher);
+           const hShift = mapShiftToOfficial(team, hRow.teacher, hRow.shift);
+           const dateObj = hRow.log_date;
+           
+           let isNew = false;
+           if (team === "취업팀") {
+               const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
+               if (!alreadyHas) isNew = true;
+           } else {
+               const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj);
+               if (!alreadyHas) isNew = true;
+           }
+           
+           if (isNew) {
+               const textToMatch = hRow.status || "";
+               const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+               if (memoMatches.length > 0) {
+                   const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                   const explicitCount = parseInt(matchObj[1], 10);
+                   const currentLen = studentHistoryMap[name].length;
+                   studentOffsetsMap[name] = explicitCount - (currentLen + 1);
+               }
+               studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+           }
+        }
+      });
+    });
 
     // 휴무일(holidays DB) 및 팀장의 스케줄을 확인하여 specialDays(공휴일/간담회/소양교육) 설정
     const newSpecialDays = {};
@@ -207,11 +309,21 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
     });
     setSpecialDays(newSpecialDays);
 
-    const defaultSlots = teacher && teacher !== "__ALL__"
-      ? getTeacherShifts(team, teacher)
-      : getTeamDefaultShifts(team);
+    let baseSlots = [];
+    if (teacher && teacher !== "__ALL__") {
+      baseSlots = getTeacherShifts(team, teacher);
+    } else {
+      const allTeachersInTeam = getGlobalTeachersList().filter(t => t.team === team);
+      const allShifts = new Set();
+      allTeachersInTeam.forEach(t => {
+        if (t.shift1) allShifts.add(t.shift1);
+        if (t.shift2) allShifts.add(t.shift2);
+        if (t.shift3) allShifts.add(t.shift3);
+      });
+      baseSlots = allShifts.size > 0 ? Array.from(allShifts) : getTeamDefaultShifts(team);
+    }
 
-    const extractedSlots = new Set();
+    const extractedSlots = new Set(baseSlots);
     supabaseRecords.forEach(r => {
       // 해당 선생님의 시간대만 추출
       if (r.shift && (teacher === "__ALL__" || r.teacher === teacher)) {
@@ -219,15 +331,13 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
       }
     });
 
-    const finalSlots = extractedSlots.size > 0
-      ? Array.from(extractedSlots).sort((a, b) => {
+    const finalSlots = Array.from(extractedSlots).sort((a, b) => {
         const getT = (s) => {
           const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
           return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
         };
         return getT(a) - getT(b);
-      })
-      : (defaultSlots.length > 0 ? defaultSlots : getTeamDefaultShifts(team));
+      });
 
     setTimeSlots(finalSlots);
 
@@ -244,28 +354,57 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
             student: isSpecialDay.student,
             location: isSpecialDay.location,
             status: isSpecialDay.memo,
+            sessionCounts: null,
             isSpecial: true
           };
         } else if (isSpecialDay && slotIdx > 0) {
-          parsedData[slot][dateStr] = { student: "", location: "", status: "", isSpecial: true };
+          parsedData[slot][dateStr] = { student: "", location: "", status: "", sessionCounts: null, isSpecial: true };
         } else {
           const supRec = supabaseRecords.find(r => r.log_date === dateStr && r.shift === slot && (teacher === "__ALL__" || r.teacher === teacher));
           if (supRec) {
+            const countsForCell = [];
+            const names = (supRec.student || "").split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+            names.forEach(name => {
+                if (excludeKeywords.some(kw => name.includes(kw))) return;
+                
+                const histList = studentHistoryMap[name] || [];
+                let count = 0;
+                for (let i = 0; i < histList.length; i++) {
+                    const h = histList[i];
+                    if (h.date < dateStr) count++;
+                    else if (h.date === dateStr) {
+                        if (team === "취업팀") {
+                           count++;
+                           if (h.shift === slot) break;
+                        } else {
+                           count++;
+                           break;
+                        }
+                    } else break;
+                }
+                
+                const offset = studentOffsetsMap[name] || 0;
+                if (count > 0 || offset > 0) {
+                    countsForCell.push({ name: name, count: count + offset });
+                }
+            });
+
             parsedData[slot][dateStr] = {
               student: supRec.student || "",
               location: supRec.signature_url || supRec.location || "",
               status: supRec.status || "",
+              sessionCounts: countsForCell.length > 0 ? countsForCell : null,
               isSpecial: false
             };
           } else {
-            parsedData[slot][dateStr] = { student: "", location: "", status: "", isSpecial: false };
+            parsedData[slot][dateStr] = { student: "", location: "", status: "", sessionCounts: null, isSpecial: false };
           }
         }
       });
     });
 
     setScheduleData(parsedData);
-  }, [teacher, currentWeekStart, supabaseRecords, teamLeader, dbHolidays]);
+  }, [teacher, currentWeekStart, supabaseRecords, teamLeader, dbHolidays, allTeamRecords]);
 
   const getStatusColorClass = (statusStr) => {
     if (!statusStr) return "text-gray-800";
@@ -376,7 +515,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
               <table className="w-full table-fixed text-center border-collapse">
                 <thead>
                   <tr className="bg-[#eef2ff] border-b-2 border-gray-300">
-                    <th className="w-[12%] py-2 md:py-3 border-r-2 border-gray-300 font-black text-gray-800 text-[clamp(1rem,2.2vw,1.3rem)]">시간</th>
+                    <th className="w-[12%] py-2 md:py-3 border-r-2 border-gray-300 font-black text-gray-800 text-[clamp(1rem,2.2vw,1.3rem)]">수업시간</th>
                     {currentDays.map((day, i) => {
                       const dateStr = getLocalDateString(day);
                       const isToday = dateStr === getLocalDateString(new Date());
@@ -441,6 +580,30 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                     return (
                                       <span key={tIdx} className={`px-2.5 py-1 rounded-lg text-[clamp(0.75rem,1.5vw,1rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${tagStyle}`}>
                                         {tag}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {cellData.sessionCounts && !cellData.student?.includes("간담회") && (
+                                <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
+                                  {cellData.sessionCounts.map((sc, scIdx) => {
+                                    let sessionCellBg = "bg-gray-300";
+                                    let sessionTextCol = "text-black";
+                                    if (sc.count >= 15) {
+                                      sessionCellBg = "bg-orange-600";
+                                      sessionTextCol = "text-white";
+                                    } else if (sc.count >= 10) {
+                                      sessionCellBg = "bg-purple-900";
+                                      sessionTextCol = "text-white";
+                                    } else if (sc.count >= 7) {
+                                      sessionCellBg = "bg-purple-400";
+                                      sessionTextCol = "text-white";
+                                    }
+                                    const displayName = cellData.sessionCounts.length > 1 ? `${sc.name} ` : "";
+                                    return (
+                                      <span key={scIdx} className={`px-2 py-0.5 rounded-md text-[clamp(0.7rem,1.3vw,0.85rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
+                                        {displayName}{sc.count}회차
                                       </span>
                                     );
                                   })}
