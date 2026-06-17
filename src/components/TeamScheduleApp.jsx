@@ -482,10 +482,19 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           });
 
           const dataRow = ws.addRow(rowArr);
+          
+          let maxLines = 1;
+          rowArr.forEach(val => {
+            if (typeof val === 'string' && val) {
+              const lines = val.split('\n').length;
+              if (lines > maxLines) maxLines = lines;
+            }
+          });
+
           if (tName === "취업팀" && rowObj.category === "장소") {
-            dataRow.height = 54; // 취업팀 장소(싸인) 행의 높이를 54로 설정
+            dataRow.height = Math.max(54, maxLines * 15); // 취업팀 장소(싸인) 행의 기본 높이 54 또는 줄바꿈에 따른 높이
           } else {
-            dataRow.height = 40; // 높이를 기존 26에서 40으로 증가시켜 이미지가 잘리지 않게 조정
+            dataRow.height = Math.max(40, maxLines * 15); // 기본 높이 40 또는 줄바꿈에 따른 높이
           }
 
           const totalCols = dateList.length + 3;
@@ -1160,7 +1169,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 } else if (row.category === "진행") {
                                   const rawStatus = item.status || '';
                                   cellContent = rawStatus ? (
-                                    <div className="w-full break-all whitespace-normal overflow-hidden line-clamp-3 px-0.5 leading-snug" title={rawStatus}>
+                                    <div className="w-full break-all whitespace-pre-wrap px-0.5 leading-snug" title={rawStatus}>
                                       {rawStatus.split(/(\d+\s*회차)/g).map((part, idx) => {
                                         if (/\d+\s*회차/.test(part)) {
                                           return <span key={idx} className="text-blue-600">{part}</span>;
