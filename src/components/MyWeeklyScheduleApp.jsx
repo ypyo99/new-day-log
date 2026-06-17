@@ -567,8 +567,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                         }
 
                         return (
-                          <td key={i} className={`${cellBgClass} p-0 align-middle transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
-                            <div className={`flex flex-col gap-1 justify-center items-center h-full min-h-[110px] overflow-hidden w-full max-w-full ${isHoliday ? 'p-3 bg-red-300 text-white' : 'p-3'}`}>
+                          <td key={i} className={`${cellBgClass} p-0 align-top transition-all overflow-hidden h-full hover:brightness-95 ${todayBorderClass}`}>
+                            <div className={`flex flex-col gap-1 justify-start items-center h-full min-h-[110px] overflow-hidden w-full max-w-full ${isHoliday ? 'p-3 bg-red-300 text-white' : 'p-3'}`}>
                               {parsedStatus.tags.length > 0 && !cellData.student?.includes("간담회") && (
                                 <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
                                   {parsedStatus.tags.map((tag, tIdx) => {
