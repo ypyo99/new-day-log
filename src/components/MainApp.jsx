@@ -2864,7 +2864,9 @@ export default function MainApp({
                                     const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
 
                                     const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
-                                    const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? tag === '1' : ['1', '결석', '종료'].includes(tag));
+                                    const currentStudentName = studentNames[sIdx] || "";
+                                    const hasRealName = currentStudentName.length > 0 && !currentStudentName.includes("경로당") && !currentStudentName.includes("복지관");
+                                    const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? (!hasRealName && tag === '1') : ['1', '결석', '종료'].includes(tag));
 
                                     return (
                                       <button
