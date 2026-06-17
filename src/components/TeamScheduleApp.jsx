@@ -596,6 +596,18 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
               cell.font = { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: fontColorRGB } };
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillRGB } };
+
+              if (rowObj.category === "진행" && cell.value && typeof cell.value === 'string' && /\d+\s*회차/.test(cell.value)) {
+                const parts = cell.value.split(/(\d+\s*회차)/g);
+                cell.value = {
+                  richText: parts.map(part => {
+                    if (/\d+\s*회차/.test(part)) {
+                      return { text: part, font: { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: "FF2563EB" } } };
+                    }
+                    return { text: part, font: { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: fontColorRGB } } };
+                  }).filter(rt => rt.text !== '')
+                };
+              }
             }
 
             cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
@@ -1149,7 +1161,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   const rawStatus = item.status || '';
                                   cellContent = rawStatus ? (
                                     <div className="w-full break-all whitespace-normal overflow-hidden line-clamp-3 px-0.5 leading-snug" title={rawStatus}>
-                                      {rawStatus}
+                                      {rawStatus.split(/(\d+\s*회차)/g).map((part, idx) => {
+                                        if (/\d+\s*회차/.test(part)) {
+                                          return <span key={idx} className="text-blue-600">{part}</span>;
+                                        }
+                                        return part;
+                                      })}
                                     </div>
                                   ) : '';
 
