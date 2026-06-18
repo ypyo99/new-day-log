@@ -208,15 +208,12 @@ export default function StudentSearchApp({ onNavigateBack }) {
           });
         }
 
-        // 각 팀별 선생님 정렬
         Object.keys(teachersByTeam).forEach(t => {
           teachersByTeam[t].sort((a, b) => getTeacherSortWeight(t, a) - getTeacherSortWeight(t, b));
         });
 
         setTeacherListByTeam(teachersByTeam);
-
         allParsed.sort((a, b) => b.colDate - a.colDate);
-
         setAllRecords(allParsed);
       } catch (e) {
         console.error("Supabase 로드 실패:", e);
@@ -231,7 +228,61 @@ export default function StudentSearchApp({ onNavigateBack }) {
 
   const filteredRecords = useMemo(() => {
     if (!selectedName || selectedName.trim() === "") return [];
-    let raw = allRecords.filter(r => r.name === selectedName);
+    
+    let allForStudent = allRecords.filter(r => r.name === selectedName);
+    if (allForStudent.length === 0) return [];
+
+    allForStudent.sort((a, b) => {
+      if (a.colDate.getTime() !== b.colDate.getTime()) return a.colDate.getTime() - b.colDate.getTime();
+      const getT = (s) => {
+        if (!s) return 9999;
+        const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+        return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+      };
+      return getT(a.time) - getT(b.time);
+    });
+
+    let currentSession = 0;
+    let countedDates = new Set();
+
+    allForStudent.forEach(r => {
+      const textToMatch = (r.memo || "");
+      const memoMatch = textToMatch.match(/(\d+)\s*회차/);
+      
+      const isAbsentOrCanceled = (r.attendanceTag || "").includes("결석") || (r.attendanceTag || "").includes("선생님휴가") || (r.attendanceTag || "").includes("종료") || (r.attendanceTag || "").includes("취소");
+      const isAttended = !isAbsentOrCanceled && r.attendanceTag && r.attendanceTag !== "기록있음";
+
+      const dateKey = r.colDate.getTime();
+      const teamName = r.team;
+      const specificKey = teamName === "취업팀" ? `${dateKey}_${r.time}_${r.group}` : `${dateKey}`;
+
+      if (memoMatch) {
+         currentSession = parseInt(memoMatch[1], 10);
+         r.computedSession = `${currentSession}회차`;
+         countedDates.add(specificKey); // 명시적 회차가 있을 때도 중복 카운트 방지를 위해 등록
+      } else {
+         if (isAttended) {
+            // 해당 날짜(특정키)에 아직 출석 처리(회차 증가)를 안 했다면 증가
+            if (!countedDates.has(specificKey)) {
+                countedDates.add(specificKey);
+                currentSession++;
+            }
+         }
+         
+         // 결석한 날에도 현재까지의 누적 회차 표시
+         if (currentSession > 0) {
+            r.computedSession = `${currentSession}회차`;
+         } else {
+            r.computedSession = ""; 
+         }
+      }
+      
+      if (r.memo) {
+         r.memo = r.memo.replace(/\d+\s*회차/g, '').replace(/^,\s*/, '').replace(/,\s*$/, '').replace(/,\s*,/g, ',').trim();
+      }
+    });
+
+    let raw = allForStudent;
     if (teacherFilter !== "전체") {
       raw = raw.filter(r => r.teacher === teacherFilter);
     }
@@ -249,12 +300,13 @@ export default function StudentSearchApp({ onNavigateBack }) {
         if (r.location && r.location !== "복지관" && !existing.location.includes(r.location)) {
           existing.location += ', ' + r.location;
         }
-        if (r.memo && !existing.memo.includes(r.memo)) {
-          existing.memo = existing.memo ? existing.memo + ', ' + r.memo : r.memo;
+        if (r.computedSession && (!existing.computedSession || !existing.computedSession.includes(r.computedSession))) {
+          existing.computedSession = existing.computedSession ? existing.computedSession + ', ' + r.computedSession : r.computedSession;
+        }
+        if (r.memo && (!existing.memo || !existing.memo.includes(r.memo))) {
+          existing.memo = existing.memo ? existing.memo + (r.memo ? ', ' + r.memo : '') : r.memo;
         }
         
-        // 출결 태그(attendanceTag) 병합 논리:
-        // 한 선생님이 '선생님휴가'를 선택하고 다른 선생님이 '출석', '결석', '취소' 등을 선택한 경우, 실제 선택된 태그를 우선 표시함.
         const t1 = existing.attendanceTag || "";
         const t2 = r.attendanceTag || "";
         if (t1 === "선생님휴가" && t2 && t2 !== "선생님휴가") {
@@ -346,7 +398,6 @@ export default function StudentSearchApp({ onNavigateBack }) {
                 </div>
               ) : (
                 <div>
-                  {/* 🔍 실시간 검색창 추가 */}
                   <div className="relative mb-3">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500 pointer-events-none">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -374,7 +425,6 @@ export default function StudentSearchApp({ onNavigateBack }) {
                     )}
                   </div>
 
-                  {/* 🔍 검색 결과 없음 메시지 */}
                   {searchTerm && filteredNames.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-6 bg-red-50/50 rounded-xl border border-red-100 mb-3 animate-fadeIn">
                       <svg className="w-10 h-10 text-red-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -382,7 +432,6 @@ export default function StudentSearchApp({ onNavigateBack }) {
                     </div>
                   )}
 
-                  {/* 🕒 최근 검색 대상자 */}
                   {recentSearches.length > 0 && !searchTerm && (
                     <div className="mb-3">
                       <div className="flex justify-between items-center mb-1 px-1">
@@ -414,7 +463,6 @@ export default function StudentSearchApp({ onNavigateBack }) {
                     </div>
                   )}
 
-                  {/* 대상자 리스트 */}
                   <div className="max-h-[194px] md:max-h-[384px] overflow-y-auto border-2 border-teal-300 rounded-xl p-1 bg-gray-50/50 overflow-x-hidden">
                     <div className="grid grid-cols-3 min-[380px]:grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1">
                       {filteredNames.map(name => {
@@ -492,8 +540,8 @@ export default function StudentSearchApp({ onNavigateBack }) {
                           <div className="px-3 md:px-4 py-2.5 md:py-3">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-extrabold text-[16px] md:text-[18px] text-gray-900 whitespace-nowrap">{rec.dateStr}</span>
-                              <span className="text-[14px] md:text-[16px] text-teal-600 font-bold bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200 whitespace-nowrap">{rec.team}</span>
                               <span className="text-[15px] md:text-[17px] text-[#2563eb] font-extrabold bg-[#eff6ff] px-2.5 py-0.5 rounded-lg border border-[#bfdbfe] whitespace-nowrap">{rec.name}</span>
+                              <span className="text-[14px] md:text-[16px] text-teal-600 font-bold bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200 whitespace-nowrap">{rec.team}</span>
                               <span className="text-[14px] md:text-[16px] text-gray-500 font-bold whitespace-nowrap">({rec.teacher} 선생님)</span>
                               <span className="text-[14px] md:text-[16px] text-gray-500 font-medium whitespace-nowrap">📍 {rec.location}</span>
                             </div>
@@ -505,6 +553,11 @@ export default function StudentSearchApp({ onNavigateBack }) {
                               ) : (
                                 <span className="text-[14px] md:text-[16px] font-bold px-2.5 py-0.5 rounded-full bg-gray-600 text-white border border-gray-700">
                                   미확인
+                                </span>
+                              )}
+                              {rec.computedSession && (
+                                <span className="text-[14px] md:text-[16px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-300 whitespace-nowrap">
+                                  {rec.computedSession}
                                 </span>
                               )}
                               {rec.memo && (
