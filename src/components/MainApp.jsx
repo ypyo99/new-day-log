@@ -130,7 +130,7 @@ export default function MainApp({
               setWeatherData(parsed.data);
               return;
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         const apiKey = '1dcc5e3c0b79c084c3a779e391b69d90bf46c75579a6889130b84185a14c844a';
@@ -158,7 +158,7 @@ export default function MainApp({
         let res;
         let text;
         let fetchSuccess = false;
-        
+
         // 공공데이터포털 서버 불안정(ERR_CONNECTION_RESET 등) 대응을 위한 3회 재시도 로직
         for (let i = 0; i < 3; i++) {
           try {
@@ -171,7 +171,7 @@ export default function MainApp({
             await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기 후 재시도
           }
         }
-        
+
         if (!fetchSuccess) throw new Error("Failed to fetch after retries");
 
         if (text.includes("Unauthorized")) {
@@ -3047,7 +3047,7 @@ export default function MainApp({
           <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
             <div className="bg-blue-600 py-4 px-6 text-center">
               <h3 className="text-2xl font-bold text-white tracking-wide">
-                {isSaveComplete ? "데이터 저장 완료" : "구글 시트에 저장 중..."}
+                {isSaveComplete ? "데이터 저장 완료" : "데이터베이스에 저장 중..."}
               </h3>
             </div>
             <div className="p-6">
@@ -3074,12 +3074,12 @@ export default function MainApp({
 
                   const att = prog.attendance || "";
                   let attColor = "text-gray-700";
-                  
+
                   // 출결 텍스트 색상을 설정할 때도, "쿠팡 취소" 등의 문구에 반응하지 않고 
                   // 콤마나 슬래시로 명확히 분리된 상태일 때만 빨간색 등으로 표시되게 합니다.
                   const isAbsentOrEnd = hasIndependentKeyword(att, ["결석", "종료", "취소"]);
                   const isVacation = hasIndependentKeyword(att, ["선생님휴가"]);
-                  
+
                   if (isAbsentOrEnd) {
                     attColor = "text-red-600 font-bold";
                   } else if (isVacation) {
