@@ -37,6 +37,15 @@ import {
   VintageDivider
 } from './Icons';
 
+// 주어진 문자열을 쉼표(,)나 슬래시(/) 단위로 쪼갠 뒤,
+// 특정 키워드 배열에 포함된 단어와 "정확히 일치"하는 토큰이 있는지 확인합니다.
+// 예: "쿠팡 취소" -> [ "쿠팡 취소" ] 이므로 "취소" 키워드와 불일치.
+// 예: "1, 취소, 쿠팡" -> [ "1", "취소", "쿠팡" ] 이므로 "취소" 키워드와 정확히 일치.
+const hasIndependentKeyword = (str, keywords) => {
+  if (!str) return false;
+  const tokens = str.split(/[,/]+/).map(t => t.trim());
+  return tokens.some(token => keywords.includes(token));
+};
 
 const AnimatedRefreshButton = ({ onClick, isFetching }) => {
   const [toggle, setToggle] = useState(false);
@@ -900,8 +909,13 @@ export default function MainApp({
               const segments = personalStatus.split('/');
               if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
             }
-            personalStatus = personalStatus.replace(/취소/g, '종료');
-            const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("선생님휴가");
+            // 기존의 personalStatus = personalStatus.replace(/취소/g, '종료'); 코드를 삭제하여 
+            // "쿠팡 취소"가 "쿠팡 종료"로 강제 변환되는 현상을 방지합니다.
+            // 문자열 내에서 독립적으로 쓰인 경우에만 감지하며, 
+            // "종료"나 "취소"가 있더라도 "출석(1)"이 함께 있다면 결석 처리하지 않고 회차에 포함시킵니다.
+            const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["종료", "취소"]);
+            const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
+            const isAbsentOrCanceled = hasIndependentKeyword(personalStatus, ["결석", "선생님휴가"]) || (hasEndOrCancel && !hasAttendance);
             const textToMatch = (hRow.memo || hRow.status || "");
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
             const hasExplicitCount = memoMatches.length > 0;
@@ -976,8 +990,11 @@ export default function MainApp({
               const segments = currentStatus.split('/');
               if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
             }
-            currentStatus = currentStatus.replace(/취소/g, '종료');
-            const isAbsent = currentStatus.includes("결석") || currentStatus.includes("종료") || currentStatus.includes("선생님휴가");
+            // 위와 동일하게 "취소" 무조건 변환 코드를 삭제하고, 독립 단어로 쓰인 경우만 감지하도록 수정합니다.
+            // 또한 "종료"나 "취소"가 있더라도 "출석(1)"이 함께 있다면 결석 처리하지 않고 회차에 포함시킵니다.
+            const hasCurrentEndOrCancel = hasIndependentKeyword(currentStatus, ["종료", "취소"]);
+            const hasCurrentAttendance = hasIndependentKeyword(currentStatus, ["1"]);
+            const isAbsent = hasIndependentKeyword(currentStatus, ["결석", "선생님휴가"]) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
             const textToMatch = (log.memo || log.status || "");
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
             const hasExplicitCount = memoMatches.length > 0;
@@ -3057,9 +3074,15 @@ export default function MainApp({
 
                   const att = prog.attendance || "";
                   let attColor = "text-gray-700";
-                  if (att.includes("결석") || att.includes("종료")) {
+                  
+                  // 출결 텍스트 색상을 설정할 때도, "쿠팡 취소" 등의 문구에 반응하지 않고 
+                  // 콤마나 슬래시로 명확히 분리된 상태일 때만 빨간색 등으로 표시되게 합니다.
+                  const isAbsentOrEnd = hasIndependentKeyword(att, ["결석", "종료", "취소"]);
+                  const isVacation = hasIndependentKeyword(att, ["선생님휴가"]);
+                  
+                  if (isAbsentOrEnd) {
                     attColor = "text-red-600 font-bold";
-                  } else if (att.includes("선생님휴가")) {
+                  } else if (isVacation) {
                     attColor = "text-gray-400 font-bold";
                   }
 

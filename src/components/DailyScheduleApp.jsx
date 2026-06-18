@@ -1,5 +1,10 @@
 // 팀 별 오늘 일정 보기
 
+
+
+
+
+
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import {
@@ -16,16 +21,23 @@ import {
 } from '../utils/helpers';
 import { Home, LucideCalendar, Clock, BookOpen, Sparkles } from './Icons';
 
+// 문자열 내에 콤마나 슬래시로 구분된 특정 키워드가 정확히 일치하는지 검사하는 유틸리티 함수입니다.
+const hasIndependentKeyword = (str, keywords) => {
+  if (!str) return false;
+  const tokens = str.split(/[,/]+/).map(t => t.trim());
+  return tokens.some(token => keywords.includes(token));
+};
+
 const mapShiftToOfficial = (team, teacherName, originalShift) => {
   if (!originalShift || !teacherName) return originalShift;
   const officialShifts = getTeacherShifts(team, teacherName);
   if (!officialShifts || officialShifts.length === 0) return originalShift;
   if (officialShifts.includes(originalShift)) return originalShift;
 
-  const standardDefaults = team === "3팀" 
+  const standardDefaults = team === "3팀"
     ? ["13:00~14:00", "14:00~15:00", "15:00~16:00"]
     : ["9:30~10:30", "10:30~11:30", "11:30~12:30"];
-    
+
   const idx = standardDefaults.indexOf(originalShift);
   if (idx !== -1 && officialShifts[idx]) {
     return officialShifts[idx];
@@ -35,17 +47,15 @@ const mapShiftToOfficial = (team, teacherName, originalShift) => {
 
 const checkIsCanceled = (status) => {
   if (!status) return false;
-  const s = status.trim();
-  const noSpace = s.replace(/\s+/g, "");
-  const exactWords = ["취소", "종료", "중단", "수업취소", "수업종료", "수업중단", "당일취소", "사전취소", "교육취소", "교육종료", "일정취소"];
-  if (exactWords.includes(noSpace)) return true;
+  
+  // 텍스트를 콤마(,)나 슬래시(/)로 분리합니다.
+  const tokens = status.split(/[,/]+/).map(t => t.trim());
+  
+  // 취소, 종료 단어는 첫 번째 또는 두 번째 단어로 온 경우만 인정합니다.
+  const isFirstWord = tokens[0] === "취소" || tokens[0] === "종료";
+  const isSecondWord = tokens.length > 1 && (tokens[1] === "취소" || tokens[1] === "종료");
 
-  if (s.length <= 15 && (s.includes("취소") || s.includes("종료") || s.includes("중단"))) {
-    const exclusions = ["쿠팡", "주문", "결제", "예매", "앱", "어플", "화면", "사진", "배달", "쇼핑", "당근", "송금", "이체", "기차", "택시", "지도", "검색"];
-    if (exclusions.some(kw => s.includes(kw))) return false;
-    return true;
-  }
-  return false;
+  return isFirstWord || isSecondWord;
 };
 
 // =====================================================================
@@ -118,15 +128,20 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
 
         total += headcount;
 
+        const hasAttendanceMark = hasIndependentKeyword(studentStatus, ["1", "출석"]);
+
         if (studentStatus.includes("결석")) {
           absent += headcount;
           if (studentStatus.includes("병원") || studentStatus.includes("진료")) absentReasons.push("병원 진료");
           else if (studentStatus.includes("행사") || studentStatus.includes("일정") || studentStatus.includes("집안")) absentReasons.push("개인 일정");
           else if (studentStatus.includes("여행")) absentReasons.push("여행");
-        } else if (checkIsCanceled(studentStatus)) {
-          canceled += headcount;
         } else if (studentStatus.includes("휴가") || studentStatus.includes("선생님휴가")) {
           vacation += headcount;
+        } else if (checkIsCanceled(studentStatus)) {
+          canceled += headcount;
+          if (hasAttendanceMark) {
+            attended += headcount;
+          }
         } else if (studentStatus) {
           const isAttended = isAssistant || /^[1-9]\d*/.test(studentStatus) || studentStatus.length > 2 || studentStatus === "1" || studentStatus === "출석";
           if (isAttended) attended += headcount;
@@ -444,7 +459,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
       const parsedData = [];
       const teamTeachers = getTeamTeacherNames(teamName);
-      
+
       teamTeachers.forEach(teacher => {
         const officialShifts = getTeacherShifts(teamName, teacher) || [];
         const group = getTeacherGroup(teamName, teacher);
@@ -465,7 +480,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       records.forEach(r => {
         const group = getTeacherGroup(teamName, r.teacher);
         const mappedTime = mapShiftToOfficial(teamName, r.teacher, r.shift);
-        
+
         const existingIdx = parsedData.findIndex(p => p.teacher === r.teacher && p.time === mappedTime && p.student === "-");
         const formattedRecord = {
           group: group,
@@ -492,9 +507,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
       while (histHasMore) {
         const histTo = histFrom + histStep - 1;
-          const { data: histData, error: histError } = await supabaseClient
-            .from('daily_logs')
-            .select('log_date, student, status, teacher, shift')
+        const { data: histData, error: histError } = await supabaseClient
+          .from('daily_logs')
+          .select('log_date, student, status, teacher, shift')
           .eq('team', teamName)
           .neq('student', '')
           .not('student', 'is', null)
@@ -533,7 +548,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             }
           }
 
-          const isAbsentOrCanceled = personalStatus.includes("결석") || checkIsCanceled(personalStatus) || personalStatus.includes("선생님휴가");
+          const hasEndOrCancel = checkIsCanceled(personalStatus);
+          const hasAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
+          const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("선생님휴가") || (hasEndOrCancel && !hasAttendance);
           const textToMatch = (hRow.memo || hRow.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
           const hasExplicitCount = memoMatches.length > 0;
@@ -562,15 +579,15 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                 isNew = true;
               }
             }
-            
+
             if (isNew) {
-                if (hasExplicitCount) {
-                    const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                    const explicitCount = parseInt(matchObj[1], 10);
-                    const currentLen = studentDatesMap[name].length;
-                    studentOffsetsMap[name] = explicitCount - (currentLen + 1);
-                }
-                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+              if (hasExplicitCount) {
+                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                const explicitCount = parseInt(matchObj[1], 10);
+                const currentLen = studentDatesMap[name].length;
+                studentOffsetsMap[name] = explicitCount - (currentLen + 1);
+              }
+              studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
             }
           }
         });
@@ -604,10 +621,10 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       const currentDatesMap = {};
       const currentOffsetsMap = {};
       for (const [k, v] of Object.entries(studentDatesMap)) {
-         currentDatesMap[k] = [...v];
+        currentDatesMap[k] = [...v];
       }
       for (const [k, v] of Object.entries(studentOffsetsMap)) {
-         currentOffsetsMap[k] = v;
+        currentOffsetsMap[k] = v;
       }
 
       const todayParts = dateStr.split('-');
@@ -642,7 +659,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               personalStatus = segments[nameIdx].trim();
             }
           }
-          const isAbsent = personalStatus.includes("결석") || checkIsCanceled(personalStatus) || personalStatus.includes("선생님휴가");
+          const hasCurrentEndOrCancel = checkIsCanceled(personalStatus);
+          const hasCurrentAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
+          const isAbsent = personalStatus.includes("결석") || personalStatus.includes("선생님휴가") || (hasCurrentEndOrCancel && !hasCurrentAttendance);
           const textToMatch = (row.memo || row.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
           const hasExplicitCount = memoMatches.length > 0;
@@ -653,36 +672,36 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           if (!isAbsent || hasExplicitCount) {
             let isNew = false;
             if (teamName === "취업팀") {
-                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
-                if (!alreadyHas) {
-                    isNew = true;
-                }
+              const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
+              if (!alreadyHas) {
+                isNew = true;
+              }
             } else {
-                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
-                if (!alreadyHas) {
-                    isNew = true;
-                }
+              const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
+              if (!alreadyHas) {
+                isNew = true;
+              }
             }
             if (isNew) {
-                currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+              currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
             }
 
             if (hasExplicitCount) {
-                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                const explicitCount = parseInt(matchObj[1], 10);
-                const currentLen = currentDatesMap[name].length;
-                currentOffsetsMap[name] = explicitCount - currentLen;
-                
-                // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용
-                parsedData.forEach(prevRow => {
-                    if (prevRow.sessionCounts) {
-                        prevRow.sessionCounts.forEach(sc => {
-                            if (sc.name === name) {
-                                sc.count = currentDatesMap[name].length + currentOffsetsMap[name];
-                            }
-                        });
+              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+              const explicitCount = parseInt(matchObj[1], 10);
+              const currentLen = currentDatesMap[name].length;
+              currentOffsetsMap[name] = explicitCount - currentLen;
+
+              // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용
+              parsedData.forEach(prevRow => {
+                if (prevRow.sessionCounts) {
+                  prevRow.sessionCounts.forEach(sc => {
+                    if (sc.name === name) {
+                      sc.count = currentDatesMap[name].length + currentOffsetsMap[name];
                     }
-                });
+                  });
+                }
+              });
             }
           }
 
@@ -1032,7 +1051,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                         src={getDirectImageUrl(row.location)}
                                         alt="Sign"
                                         className={`${isMultipleStudents ? 'h-28 sm:h-32' : 'h-14 sm:h-16'} w-auto object-contain mix-blend-multiply`}
-                                        onError={(e) => { 
+                                        onError={(e) => {
                                           const parent = e.target.closest('div');
                                           if (parent) parent.style.display = 'none';
                                         }}
