@@ -2838,6 +2838,16 @@ export default function MainApp({
                   const isFutureOrToday = date >= getLocalDateString(new Date());
                   const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
 
+                  const allSelectedTags = (logs[index]?.selectedTags || []).flat().filter(Boolean);
+                  const hasRedTag = allSelectedTags.includes("결석") || allSelectedTags.includes("종료") || allSelectedTags.includes("취소");
+                  const hasGrayTag = allSelectedTags.includes("선생님휴가");
+                  let memoTextColorClass = "text-gray-900";
+                  if (hasRedTag) {
+                    memoTextColorClass = "text-red-600";
+                  } else if (hasGrayTag) {
+                    memoTextColorClass = "text-gray-500";
+                  }
+
                   return (
                     <div key={index} id={`log-card-${index}`} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
                       <div className={`flex justify-between items-center w-full mb-2 sm:mb-3 transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
@@ -2999,7 +3009,7 @@ export default function MainApp({
                           })()}
                           <div className="relative flex-1 min-w-0 flex flex-col">
                             <div
-                              className={`absolute inset-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 font-bold text-gray-900 shadow-sm transition-all text-[18px] md:text-[22px] leading-tight whitespace-pre-wrap overflow-y-auto break-words z-0 pointer-events-none ${(isDataLoading || isInfoMissing) ? 'opacity-50' : ''}`}
+                              className={`absolute inset-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 font-bold ${memoTextColorClass} shadow-sm transition-all text-[18px] md:text-[22px] leading-tight whitespace-pre-wrap overflow-y-auto break-words z-0 pointer-events-none ${(isDataLoading || isInfoMissing) ? 'opacity-50' : ''}`}
                               aria-hidden="true"
                             >
                               {!logs[index]?.memo ? (
