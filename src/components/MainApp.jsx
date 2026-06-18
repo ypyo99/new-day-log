@@ -912,8 +912,9 @@ export default function MainApp({
             // 기존의 personalStatus = personalStatus.replace(/취소/g, '종료'); 코드를 삭제하여 
             // "쿠팡 취소"가 "쿠팡 종료"로 강제 변환되는 현상을 방지합니다.
             // 문자열 내에서 독립적으로 쓰인 경우에만 감지하며, 
-            // "종료"나 "취소"가 있더라도 "출석(1)"이 함께 있다면 결석 처리하지 않고 회차에 포함시킵니다.
-            const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["종료", "취소"]);
+            // "취소"가 있더라도 "출석(1)"이 함께 있다면 결석 처리하지 않고 회차에 포함시킵니다.
+            // ('종료' 버튼 클릭 시에는 회차에서 차감되지 않도록 조건에서 제외함)
+            const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
             const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
             const isAbsentOrCanceled = hasIndependentKeyword(personalStatus, ["결석", "선생님휴가"]) || (hasEndOrCancel && !hasAttendance);
             const textToMatch = (hRow.memo || hRow.status || "");
@@ -985,17 +986,51 @@ export default function MainApp({
           parsedNames.forEach((name, nameIdx) => {
             if (excludeKeywords.some(kw => name.includes(kw))) return;
 
-            let currentStatus = log.status || "";
-            if (currentStatus.includes('/')) {
-              const segments = currentStatus.split('/');
-              if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
+            // [수정된 부분 시작]
+            // 입력 화면에서 '결석', '선생님휴가' 버튼을 누르는 순간 즉각 회차에 반영되도록 하기 위해
+            // DB에서 불러온 기존의 고정된 상태값(log.status) 대신, 
+            // 현재 화면에서 사용자가 클릭하여 선택한 태그(selectedTags)와 작성 중인 메모(memo)를 결합해
+            // 실시간 출결 상태(fullRealtimeStatus) 문자열을 재구성합니다.
+            let currentStatus = "";
+            const tagsStrings = [];
+            // 현재 입력된 학생들의 이름을 콤마나 슬래시 기준으로 분리하여 배열로 만듭니다.
+            const tempStudentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+            
+            // 학생 수만큼 반복하면서 각 학생별로 선택된 출결 태그(예: '결석', '1' 등)를 가져와 콤마로 연결합니다.
+            for (let j = 0; j < Math.max(1, tempStudentNames.length); j++) {
+              const tags = log.selectedTags && log.selectedTags[j] ? log.selectedTags[j] : [];
+              tagsStrings.push(tags.join(', '));
             }
+            
+            // 여러 명일 경우 슬래시(/)로 구분하고, 한 명일 경우 그대로 사용합니다.
+            let orderedTagsStr = tagsStrings.length > 1 ? tagsStrings.join('/') : (tagsStrings[0] || "");
+            
+            let realtimeStatusStr = [];
+            if (orderedTagsStr) realtimeStatusStr.push(orderedTagsStr);
+            if (log.memo) realtimeStatusStr.push(log.memo);
+            
+            // 최종적으로 구성된 실시간 출결 상태 문자열입니다. (예: "결석 / 1, 메모내용")
+            const fullRealtimeStatus = realtimeStatusStr.join(', ');
+
+            // 여러 명의 학생이 있을 경우 슬래시(/)로 나뉘어져 있으므로, 현재 검사 중인 학생(nameIdx)의 상태만 추출합니다.
+            if (fullRealtimeStatus.includes('/')) {
+              const segments = fullRealtimeStatus.split('/');
+              if (segments.length > nameIdx) currentStatus = segments[nameIdx].trim();
+            } else {
+              currentStatus = fullRealtimeStatus;
+            }
+
             // 위와 동일하게 "취소" 무조건 변환 코드를 삭제하고, 독립 단어로 쓰인 경우만 감지하도록 수정합니다.
-            // 또한 "종료"나 "취소"가 있더라도 "출석(1)"이 함께 있다면 결석 처리하지 않고 회차에 포함시킵니다.
-            const hasCurrentEndOrCancel = hasIndependentKeyword(currentStatus, ["종료", "취소"]);
+            // 또한 "취소"가 있더라도 "출석(1)"이 함께 있다면 결석 처리하지 않고 회차에 포함시킵니다.
+            // ('종료' 태그를 누르더라도 회차가 1 차감되지 않도록 "종료" 키워드를 조건에서 제외합니다.)
+            const hasCurrentEndOrCancel = hasIndependentKeyword(currentStatus, ["취소"]);
             const hasCurrentAttendance = hasIndependentKeyword(currentStatus, ["1"]);
+            
+            // 결석, 선생님휴가가 있거나, 출석 없이 취소만 있는 경우 결석(isAbsent = true)으로 판정합니다.
+            // 이 판정 결과에 따라 화면의 렌더링 회차가 즉시 1 차감됩니다.
             const isAbsent = hasIndependentKeyword(currentStatus, ["결석", "선생님휴가"]) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
-            const textToMatch = (log.memo || log.status || "");
+            const textToMatch = (log.memo || fullRealtimeStatus);
+            // [수정된 부분 끝]
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
             const hasExplicitCount = memoMatches.length > 0;
 
