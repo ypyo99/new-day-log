@@ -8,6 +8,7 @@ import {
   getTeacherGroup,
   getTeacherSortWeight
 } from '../utils/helpers';
+import ExcelJS from 'exceljs';
 import { Home, LucideCalendar } from './Icons';
 
 export default function AutoScheduleApp({ onNavigateBack }) {
@@ -651,6 +652,149 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     ? sortedTeacherNames
     : sortedTeacherNames.filter(name => name === previewFilter);
 
+  const handleApplyAssistant = async () => {
+    if (draftRecords.length === 0) {
+      alert("먼저 '주간 시간표 보기'를 통해 시간표 초안을 작성해 주세요.");
+      return;
+    }
+    try {
+      setProgressMsg("보조강사 엑셀 데이터를 가져오는 중...");
+      const response = await fetch('/보조강사 최종배정표.xlsx');
+      if (!response.ok) {
+        throw new Error("엑셀 파일을 찾을 수 없습니다.");
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      const worksheet = workbook.worksheets[0];
+
+      const assistantData = [];
+      worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+        if (rowNumber < 3) return; // Header is row 1 and 2
+        const vals = row.values;
+        // vals[3]: 시간표 과목명, vals[4]: 일정, vals[6]: 배정팀
+        const subject = vals[3] ? String(vals[3]).trim() : '';
+        const scheduleStr = vals[4] ? String(vals[4]).trim() : '';
+        const assignTeam = vals[6] ? String(vals[6]).trim() : '';
+        
+        if (subject && scheduleStr && assignTeam) {
+          assistantData.push({ subject, scheduleStr, assignTeam });
+        }
+      });
+
+      let updateCount = 0;
+      const matchedUpdates = [];
+      
+      const newDrafts = draftRecords.map(r => {
+        const teacherGroup = getTeacherGroup(r.team, r.teacher);
+        if (!teacherGroup || teacherGroup === "기타") return r;
+        
+        let myTeamNum = "";
+        let myGroupNum = "";
+
+        if (r.team === "취업팀") {
+          myTeamNum = "취업팀";
+          myGroupNum = teacherGroup.trim(); // "오전" or "오후"
+        } else {
+          const teamNumMatch = r.team.match(/(\d+)팀/);
+          const groupNumMatch = teacherGroup.match(/(\d+)조/);
+          if (!teamNumMatch || !groupNumMatch) return r;
+          myTeamNum = teamNumMatch[1];
+          myGroupNum = groupNumMatch[1];
+        }
+        
+        const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayNum = new Date(r.log_date).getDay();
+        const myDayStr = daysOfWeek[dayNum];
+        
+        let newStudent = r.student;
+        let matched = false;
+        
+        assistantData.forEach(d => {
+           let excelTeamNum = "";
+           let excelGroupNum = "";
+           
+           if (d.assignTeam.includes("취업팀")) {
+             excelTeamNum = "취업팀";
+             if (d.assignTeam.includes("오전")) excelGroupNum = "오전";
+             else if (d.assignTeam.includes("오후")) excelGroupNum = "오후";
+           } else {
+             const tMatch = d.assignTeam.match(/(\d+)[^\d]+(\d+)/);
+             if (tMatch) {
+               excelTeamNum = tMatch[1];
+               excelGroupNum = tMatch[2];
+             }
+           }
+           
+           if (excelTeamNum && excelGroupNum && myTeamNum === excelTeamNum && myGroupNum === excelGroupNum) {
+              const sMatch = d.scheduleStr.match(/([가-힣]+)\(([^)]+)\)/);
+              if (sMatch) {
+                 const excelDay = sMatch[1];
+                 const excelTime = sMatch[2];
+                 
+                 if (excelDay === myDayStr) {
+                    function parseTime(tStr) {
+                      const m = tStr.match(/(\d+):(\d+)/);
+                      if (!m) return -1;
+                      return parseInt(m[1]) * 60 + parseInt(m[2]);
+                    }
+
+                    const eParts = excelTime.split('~');
+                    const eStart = parseTime(eParts[0]);
+                    const eEnd = eParts.length > 1 ? parseTime(eParts[1]) : eStart + 60;
+
+                    const sParts = r.shift.split('~');
+                    const sStart = parseTime(sParts[0]);
+                    const sEnd = sParts.length > 1 ? parseTime(sParts[1]) : sStart + 60;
+
+                    if (Math.max(eStart, sStart) < Math.min(eEnd, sEnd)) {
+                       newStudent = d.subject;
+                       matched = true;
+                    }
+                 }
+              }
+           }
+        });
+        
+        if (matched) {
+           updateCount++;
+           matchedUpdates.push({
+             teacher: r.teacher,
+             dayNum: dayNum,
+             shift: r.shift,
+             student: newStudent
+           });
+           return { ...r, student: newStudent };
+        }
+        return r;
+      });
+
+      if (updateCount > 0) {
+        setDraftRecords(newDrafts);
+        
+        setScheduleTemplates(prev => {
+           const updated = JSON.parse(JSON.stringify(prev));
+           matchedUpdates.forEach(m => {
+              if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
+                 updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
+              }
+           });
+           return updated;
+        });
+        
+        alert(`총 ${updateCount}건의 보조강사 일정이 업데이트되었습니다.`);
+      } else {
+        alert("해당 기간의 주간시간표와 엑셀 데이터 중 일치하는 항목이 없습니다.");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("보조강사 데이터를 적용하는 중 오류가 발생했습니다: " + err.message);
+    } finally {
+      setProgressMsg("");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans pb-6">
       <header className="bg-blue-600 text-white px-4 pt-4 pb-7 shadow-lg z-40 flex justify-between items-start relative shrink-0 min-h-[96px]">
@@ -700,13 +844,22 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6 w-full">
             <div className="flex justify-between items-center border-b pb-3 mb-4 gap-2">
               <h2 className="text-base sm:text-lg font-bold text-gray-800">기간 및 팀 선택</h2>
-              <button
-                onClick={handleAnalyze}
-                disabled={analyzing || saving}
-                className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-blue-600 text-white font-extrabold rounded-md shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
-              >
-                {analyzing ? '분석 중...' : '주간 시간표 보기'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={analyzing || saving}
+                  className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-blue-600 text-white font-extrabold rounded-md shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
+                >
+                  {analyzing ? '분석 중...' : '주간 시간표 보기'}
+                </button>
+                <button
+                  onClick={handleApplyAssistant}
+                  disabled={analyzing || saving || draftRecords.length === 0}
+                  className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-green-600 text-white font-extrabold rounded-md shadow-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
+                >
+                  보조강사 적용
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -904,10 +1057,10 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                               <>
                                 <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-50 text-gray-400 text-[10px]">✏️</span>
                                 {student ? (
-                                  <div>
-                                    <div className={`font-black text-[13px] md:text-[16px] lg:text-[18px] ${isExclude ? 'text-gray-400 font-bold' : 'text-blue-600'}`}>{student}</div>
+                                  <div className="flex flex-col gap-2.5 my-1">
+                                    <div className={`font-black leading-relaxed text-[13px] md:text-[16px] lg:text-[18px] ${isExclude ? 'text-gray-400 font-bold' : 'text-blue-600'}`}>{student}</div>
                                     {location && !location.startsWith("http") && (
-                                      <div className="text-[12px] md:text-[14px] lg:text-[16px] text-gray-500 mt-1 font-bold">{location}</div>
+                                      <div className="text-[12px] md:text-[14px] lg:text-[16px] text-gray-500 font-bold">{location}</div>
                                     )}
                                   </div>
                                 ) : (
