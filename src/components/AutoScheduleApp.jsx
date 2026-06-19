@@ -652,18 +652,25 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     ? sortedTeacherNames
     : sortedTeacherNames.filter(name => name === previewFilter);
 
-  const handleApplyAssistant = async () => {
+  const fileInputRef = useRef(null);
+
+  const handleApplyAssistantClick = () => {
     if (draftRecords.length === 0) {
       alert("먼저 '주간 시간표 보기'를 통해 시간표 초안을 작성해 주세요.");
       return;
     }
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
     try {
       setProgressMsg("보조강사 엑셀 데이터를 가져오는 중...");
-      const response = await fetch('/보조강사 최종배정표.xlsx');
-      if (!response.ok) {
-        throw new Error("엑셀 파일을 찾을 수 없습니다.");
-      }
-      const arrayBuffer = await response.arrayBuffer();
+      const arrayBuffer = await file.arrayBuffer();
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(arrayBuffer);
       const worksheet = workbook.worksheets[0];
@@ -792,6 +799,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       alert("보조강사 데이터를 적용하는 중 오류가 발생했습니다: " + err.message);
     } finally {
       setProgressMsg("");
+      event.target.value = ''; // 같은 파일을 다시 선택할 수 있도록 초기화
     }
   };
 
@@ -853,12 +861,19 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                   {analyzing ? '분석 중...' : '주간 시간표'}
                 </button>
                 <button
-                  onClick={handleApplyAssistant}
+                  onClick={handleApplyAssistantClick}
                   disabled={analyzing || saving || draftRecords.length === 0}
                   className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-green-600 text-white font-extrabold rounded-md shadow-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
                 >
                   보조강사 적용
                 </button>
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
               </div>
             </div>
 
