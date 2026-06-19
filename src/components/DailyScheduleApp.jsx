@@ -934,9 +934,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                           let statusColorClass = "text-black font-bold";
                           if (row.status) {
+                            const hasEnd = row.status.includes("종료");
                             const hasAbsenceOrCancel = row.status.includes("결석") || checkIsCanceled(row.status);
                             const hasVacation = row.status.includes("휴가");
-                            if (hasAbsenceOrCancel) {
+                            
+                            if (hasEnd) {
+                              statusColorClass = "text-gray-600 font-bold";
+                            } else if (hasAbsenceOrCancel) {
                               statusColorClass = "text-red-600 font-bold";
                             } else if (hasVacation) {
                               statusColorClass = "text-gray-800 font-bold";
@@ -945,7 +949,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                           let studentCellBg = "";
                           const combinedText = (row.student || "") + " " + (row.location || "");
-                          if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
+                          if (row.status && row.status.includes("선생님휴가")) {
+                            studentCellBg = "bg-gray-100";
+                          } else if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
                             studentCellBg = "bg-red-200";
                           } else if (combinedText.includes("보조강사")) {
                             studentCellBg = "bg-[#FFFF00]";
