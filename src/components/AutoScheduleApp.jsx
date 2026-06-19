@@ -105,7 +105,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       handleAnalyze();
       setTriggerAnalyze(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [triggerAnalyze, startDate, endDate, isAdmin, team]);
 
   useEffect(() => { setSavedItem('sungdong_auto_lastBackupId', lastBackupId); }, [lastBackupId]);
@@ -117,7 +117,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   const getPrevWeekDays = (startDateStr) => {
     const d = new Date(startDateStr);
     d.setDate(d.getDate() - 7);
-    
+
     const day = d.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
     d.setDate(d.getDate() + diffToMonday);
@@ -519,7 +519,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         .eq('team', team)
         .gte('log_date', startDate)
         .lte('log_date', endDate);
-        
+
       if (deleteErr) {
         console.error("Delete Error:", deleteErr);
         throw new Error("기존 데이터를 삭제하는 중 오류가 발생했습니다.");
@@ -669,14 +669,14 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const worksheet = workbook.worksheets[0];
 
       const assistantData = [];
-      worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+      worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
         if (rowNumber < 3) return; // Header is row 1 and 2
         const vals = row.values;
         // vals[3]: 시간표 과목명, vals[4]: 일정, vals[6]: 배정팀
         const subject = vals[3] ? String(vals[3]).trim() : '';
         const scheduleStr = vals[4] ? String(vals[4]).trim() : '';
         const assignTeam = vals[6] ? String(vals[6]).trim() : '';
-        
+
         if (subject && scheduleStr && assignTeam) {
           assistantData.push({ subject, scheduleStr, assignTeam });
         }
@@ -684,11 +684,11 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
       let updateCount = 0;
       const matchedUpdates = [];
-      
+
       const newDrafts = draftRecords.map(r => {
         const teacherGroup = getTeacherGroup(r.team, r.teacher);
         if (!teacherGroup || teacherGroup === "기타") return r;
-        
+
         let myTeamNum = "";
         let myGroupNum = "";
 
@@ -702,86 +702,86 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           myTeamNum = teamNumMatch[1];
           myGroupNum = groupNumMatch[1];
         }
-        
+
         const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
         const dayNum = new Date(r.log_date).getDay();
         const myDayStr = daysOfWeek[dayNum];
-        
+
         let newStudent = r.student;
         let matched = false;
-        
+
         assistantData.forEach(d => {
-           let excelTeamNum = "";
-           let excelGroupNum = "";
-           
-           if (d.assignTeam.includes("취업팀")) {
-             excelTeamNum = "취업팀";
-             if (d.assignTeam.includes("오전")) excelGroupNum = "오전";
-             else if (d.assignTeam.includes("오후")) excelGroupNum = "오후";
-           } else {
-             const tMatch = d.assignTeam.match(/(\d+)[^\d]+(\d+)/);
-             if (tMatch) {
-               excelTeamNum = tMatch[1];
-               excelGroupNum = tMatch[2];
-             }
-           }
-           
-           if (excelTeamNum && excelGroupNum && myTeamNum === excelTeamNum && myGroupNum === excelGroupNum) {
-              const sMatch = d.scheduleStr.match(/([가-힣]+)\(([^)]+)\)/);
-              if (sMatch) {
-                 const excelDay = sMatch[1];
-                 const excelTime = sMatch[2];
-                 
-                 if (excelDay === myDayStr) {
-                    function parseTime(tStr) {
-                      const m = tStr.match(/(\d+):(\d+)/);
-                      if (!m) return -1;
-                      return parseInt(m[1]) * 60 + parseInt(m[2]);
-                    }
+          let excelTeamNum = "";
+          let excelGroupNum = "";
 
-                    const eParts = excelTime.split('~');
-                    const eStart = parseTime(eParts[0]);
-                    const eEnd = eParts.length > 1 ? parseTime(eParts[1]) : eStart + 60;
+          if (d.assignTeam.includes("취업팀")) {
+            excelTeamNum = "취업팀";
+            if (d.assignTeam.includes("오전")) excelGroupNum = "오전";
+            else if (d.assignTeam.includes("오후")) excelGroupNum = "오후";
+          } else {
+            const tMatch = d.assignTeam.match(/(\d+)[^\d]+(\d+)/);
+            if (tMatch) {
+              excelTeamNum = tMatch[1];
+              excelGroupNum = tMatch[2];
+            }
+          }
 
-                    const sParts = r.shift.split('~');
-                    const sStart = parseTime(sParts[0]);
-                    const sEnd = sParts.length > 1 ? parseTime(sParts[1]) : sStart + 60;
+          if (excelTeamNum && excelGroupNum && myTeamNum === excelTeamNum && myGroupNum === excelGroupNum) {
+            const sMatch = d.scheduleStr.match(/([가-힣]+)\(([^)]+)\)/);
+            if (sMatch) {
+              const excelDay = sMatch[1];
+              const excelTime = sMatch[2];
 
-                    if (Math.max(eStart, sStart) < Math.min(eEnd, sEnd)) {
-                       newStudent = d.subject;
-                       matched = true;
-                    }
-                 }
+              if (excelDay === myDayStr) {
+                function parseTime(tStr) {
+                  const m = tStr.match(/(\d+):(\d+)/);
+                  if (!m) return -1;
+                  return parseInt(m[1]) * 60 + parseInt(m[2]);
+                }
+
+                const eParts = excelTime.split('~');
+                const eStart = parseTime(eParts[0]);
+                const eEnd = eParts.length > 1 ? parseTime(eParts[1]) : eStart + 60;
+
+                const sParts = r.shift.split('~');
+                const sStart = parseTime(sParts[0]);
+                const sEnd = sParts.length > 1 ? parseTime(sParts[1]) : sStart + 60;
+
+                if (Math.max(eStart, sStart) < Math.min(eEnd, sEnd)) {
+                  newStudent = d.subject;
+                  matched = true;
+                }
               }
-           }
+            }
+          }
         });
-        
+
         if (matched) {
-           updateCount++;
-           matchedUpdates.push({
-             teacher: r.teacher,
-             dayNum: dayNum,
-             shift: r.shift,
-             student: newStudent
-           });
-           return { ...r, student: newStudent };
+          updateCount++;
+          matchedUpdates.push({
+            teacher: r.teacher,
+            dayNum: dayNum,
+            shift: r.shift,
+            student: newStudent
+          });
+          return { ...r, student: newStudent };
         }
         return r;
       });
 
       if (updateCount > 0) {
         setDraftRecords(newDrafts);
-        
+
         setScheduleTemplates(prev => {
-           const updated = JSON.parse(JSON.stringify(prev));
-           matchedUpdates.forEach(m => {
-              if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
-                 updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
-              }
-           });
-           return updated;
+          const updated = JSON.parse(JSON.stringify(prev));
+          matchedUpdates.forEach(m => {
+            if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
+              updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
+            }
+          });
+          return updated;
         });
-        
+
         alert(`총 ${updateCount}건의 보조강사 일정이 업데이트되었습니다.`);
       } else {
         alert("해당 기간의 주간시간표와 엑셀 데이터 중 일치하는 항목이 없습니다.");
@@ -850,7 +850,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                   disabled={analyzing || saving}
                   className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-blue-600 text-white font-extrabold rounded-md shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
                 >
-                  {analyzing ? '분석 중...' : '주간 시간표 보기'}
+                  {analyzing ? '분석 중...' : '주간 시간표'}
                 </button>
                 <button
                   onClick={handleApplyAssistant}
