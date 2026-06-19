@@ -693,6 +693,9 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const matchedUpdates = [];
 
       const newDrafts = draftRecords.map(r => {
+        // 20일 근무 초과 등으로 is_20days가 false인 날짜는 보조강사 일정도 배정하지 않음
+        if (r.is_20days === false) return r;
+
         const teacherGroup = getTeacherGroup(r.team, r.teacher);
         if (!teacherGroup || teacherGroup === "기타") return r;
 
