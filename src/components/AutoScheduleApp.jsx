@@ -782,6 +782,30 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         return r;
       });
 
+      // ===== 🔍 디버그용 (확인 후 삭제 예정) =====
+      const firstExcel = assistantData[0];
+      const firstDraft = draftRecords.find(r => r.is_20days !== false);
+      let debugMsg = `📋 엑셀 데이터 읽음: ${assistantData.length}건\n`;
+      if (firstExcel) {
+        debugMsg += `\n[엑셀 첫 번째 행]\n과목: "${firstExcel.subject}"\n일정: "${firstExcel.scheduleStr}"\n배정팀: "${firstExcel.assignTeam}"`;
+        // 정규식 매칭 테스트
+        const tMatch = firstExcel.assignTeam.match(/(\d+)[^\d]+(\d+)/);
+        debugMsg += `\n  → 팀매칭: ${tMatch ? `팀${tMatch[1]}, 조${tMatch[2]}` : '실패'}`;
+        const sMatch = firstExcel.scheduleStr.match(/([가-힣]+)\s*\(\s*([^)]+)\s*\)/);
+        debugMsg += `\n  → 요일매칭: ${sMatch ? `요일="${sMatch[1]}", 시간="${sMatch[2]}"` : '실패'}`;
+      }
+      if (firstDraft) {
+        const [y, m, d2] = firstDraft.log_date.split('-');
+        const dObj = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d2,10));
+        const daysOfWeekDebug = ['일','월','화','수','목','금','토'];
+        const tg = getTeacherGroup(firstDraft.team, firstDraft.teacher);
+        const teamM = firstDraft.team.match(/(\d+)팀/);
+        const groupM = tg ? tg.match(/(\d+)조/) : null;
+        debugMsg += `\n\n[시간표 첫 번째 데이터]\n선생님: "${firstDraft.teacher}"\n팀: "${firstDraft.team}" → 팀번호: ${teamM ? teamM[1] : '없음'}\n그룹: "${tg}" → 조번호: ${groupM ? groupM[1] : '없음'}\n날짜: "${firstDraft.log_date}" → 요일: "${daysOfWeekDebug[dObj.getDay()]}"\n시간: "${firstDraft.shift}"`;
+      }
+      alert(debugMsg);
+      // ===== 🔍 디버그용 끝 =====
+
       if (updateCount > 0) {
         setDraftRecords(newDrafts);
 
