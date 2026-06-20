@@ -676,17 +676,18 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
         if (rowNumber < 3) return; // 1~2행은 헤더이므로 건너뜀
         const vals = row.values;
-        // [실제 엑셀 컬럼 구조 확인 후 수정]
+        // [실제 엑셀 컬럼 구조]
         // vals[1]: 순번
-        // vals[2]: 과목명 (예: "스마트폰/키오스크 기초 1반")
-        // vals[3]: 일정   (예: "화(10:00~10:50)")
-        // vals[4]: 장소   (예: "3층 평생교육실1")
-        // vals[5]: 배정팀 (예: "2—4" → 2팀 4조)
-        // vals[6]: 강사명 (예: "권용의/김향숙")
+        // vals[2]: 대분류 (예: "스마트폰/키오스크 기초 1반")
+        // vals[3]: 과목명 (예: "보조강사스마트폰1") ← 학생이름 칸에 들어갈 값
+        // vals[4]: 일정   (예: "화(10:00~10:50)")
+        // vals[5]: 장소   (예: "3층 평생교육실1")
+        // vals[6]: 배정팀 (예: "2—4" → 2팀 4조)
+        // vals[7]: 강사명 (예: "권용의/김향숙")
         // 아이폰/맥 환경에서 한글 자음/모음이 분리되는 현상(NFD)을 방지하기 위해 normalize('NFC') 적용
-        const subject = vals[2] ? String(vals[2]).normalize('NFC').trim() : '';
-        const scheduleStr = vals[3] ? String(vals[3]).normalize('NFC').trim() : '';
-        const assignTeam = vals[5] ? String(vals[5]).normalize('NFC').trim() : '';
+        const subject = vals[3] ? String(vals[3]).normalize('NFC').trim() : '';
+        const scheduleStr = vals[4] ? String(vals[4]).normalize('NFC').trim() : '';
+        const assignTeam = vals[6] ? String(vals[6]).normalize('NFC').trim() : '';
 
         if (subject && scheduleStr && assignTeam) {
           assistantData.push({ subject, scheduleStr, assignTeam });
@@ -789,41 +790,6 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         return r;
       });
 
-      // ===== 🔍 디버그용 1: 엑셀 3번째 행 전체 컬럼 값 확인 =====
-      let allColsMsg = `📋 엑셀 전체 컬럼 확인 (3번째 행)\n`;
-      worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
-        if (rowNumber === 3) {
-          const vals = row.values;
-          for (let i = 1; i <= 12; i++) {
-            allColsMsg += `[${i}열]: "${vals[i] !== undefined && vals[i] !== null ? String(vals[i]).normalize('NFC').trim() : '없음'}"\n`;
-          }
-        }
-      });
-      alert(allColsMsg);
-      // ===== 🔍 디버그용 1 끝 =====
-
-      // ===== 🔍 디버그용 2: 엑셀 첫 행 vs 시간표 첫 번째 데이터 비교 =====
-      const firstExcel = assistantData[0];
-      const firstDraft = draftRecords.find(r => r.is_20days !== false);
-      let debugMsg = `📋 엑셀 데이터 읽음: ${assistantData.length}건\n`;
-      if (firstExcel) {
-        debugMsg += `\n[엑셀 첫 번째 행]\n과목: "${firstExcel.subject}"\n일정: "${firstExcel.scheduleStr}"\n배정팀: "${firstExcel.assignTeam}"`;
-        const tMatch = firstExcel.assignTeam.match(/(\d+)[^\d]+(\d+)/);
-        debugMsg += `\n  → 팀매칭: ${tMatch ? `팀${tMatch[1]}, 조${tMatch[2]}` : '실패'}`;
-        const sMatch = firstExcel.scheduleStr.match(/([가-힣]+)\s*\(\s*([^)]+)\s*\)/);
-        debugMsg += `\n  → 요일매칭: ${sMatch ? `요일="${sMatch[1]}", 시간="${sMatch[2]}"` : '실패'}`;
-      }
-      if (firstDraft) {
-        const [y, m, d2] = firstDraft.log_date.split('-');
-        const dObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d2, 10));
-        const daysOfWeekDebug = ['일', '월', '화', '수', '목', '금', '토'];
-        const tg = getTeacherGroup(firstDraft.team, firstDraft.teacher);
-        const teamM = firstDraft.team.match(/(\d+)팀/);
-        const groupM = tg ? tg.match(/(\d+)조/) : null;
-        debugMsg += `\n\n[시간표 첫 번째 데이터]\n선생님: "${firstDraft.teacher}"\n팀: "${firstDraft.team}" → 팀번호: ${teamM ? teamM[1] : '없음'}\n그룹: "${tg}" → 조번호: ${groupM ? groupM[1] : '없음'}\n날짜: "${firstDraft.log_date}" → 요일: "${daysOfWeekDebug[dObj.getDay()]}"\n시간: "${firstDraft.shift}"`;
-      }
-      alert(debugMsg);
-      // ===== 🔍 디버그용 2 끝 =====
 
 
       if (updateCount > 0) {
