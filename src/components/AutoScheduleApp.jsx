@@ -789,9 +789,13 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           return updated;
         });
 
-        alert(`총 ${updateCount}건의 보조강사 일정이 업데이트되었습니다.`);
+        setTimeout(() => {
+          alert(`총 ${updateCount}건의 보조강사 일정이 업데이트되었습니다.`);
+        }, 100);
       } else {
-        alert("해당 기간의 주간시간표와 엑셀 데이터 중 일치하는 항목이 없습니다.");
+        setTimeout(() => {
+          alert("해당 기간의 주간시간표와 엑셀 데이터 중 일치하는 항목이 없습니다.");
+        }, 100);
       }
 
     } catch (err) {
