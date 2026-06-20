@@ -674,13 +674,19 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
       const assistantData = [];
       worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
-        if (rowNumber < 3) return; // Header is row 1 and 2
+        if (rowNumber < 3) return; // 1~2행은 헤더이므로 건너뜀
         const vals = row.values;
-        // vals[3]: 시간표 과목명, vals[4]: 일정, vals[6]: 배정팀
+        // [실제 엑셀 컬럼 구조 확인 후 수정]
+        // vals[1]: 순번
+        // vals[2]: 과목명 (예: "스마트폰/키오스크 기초 1반")
+        // vals[3]: 일정   (예: "화(10:00~10:50)")
+        // vals[4]: 장소   (예: "3층 평생교육실1")
+        // vals[5]: 배정팀 (예: "2—4" → 2팀 4조)
+        // vals[6]: 강사명 (예: "권용의/김향숙")
         // 아이폰/맥 환경에서 한글 자음/모음이 분리되는 현상(NFD)을 방지하기 위해 normalize('NFC') 적용
-        const subject = vals[3] ? String(vals[3]).normalize('NFC').trim() : '';
-        const scheduleStr = vals[4] ? String(vals[4]).normalize('NFC').trim() : '';
-        const assignTeam = vals[6] ? String(vals[6]).normalize('NFC').trim() : '';
+        const subject = vals[2] ? String(vals[2]).normalize('NFC').trim() : '';
+        const scheduleStr = vals[3] ? String(vals[3]).normalize('NFC').trim() : '';
+        const assignTeam = vals[5] ? String(vals[5]).normalize('NFC').trim() : '';
 
         if (subject && scheduleStr && assignTeam) {
           assistantData.push({ subject, scheduleStr, assignTeam });
@@ -691,6 +697,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const matchedUpdates = [];
 
       const newDrafts = draftRecords.map(r => {
+
         // 20일 근무 초과 등으로 is_20days가 false인 날짜는 보조강사 일정도 배정하지 않음
         if (r.is_20days === false) return r;
 
@@ -782,19 +789,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         return r;
       });
 
-      // ===== 🔍 디버그용 (확인 후 삭제 예정) =====
-      // 엑셀 3번째 행의 모든 컬럼 값을 alert로 보여주기
-      let allColsMsg = `📋 엑셀 전체 컬럼 확인 (3번째 행)\n`;
-      worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
-        if (rowNumber === 3) {
-          const vals = row.values;
-          for (let i = 1; i <= 12; i++) {
-            allColsMsg += `[${i}열]: "${vals[i] !== undefined && vals[i] !== null ? String(vals[i]).normalize('NFC').trim() : '없음'}"\n`;
-          }
-        }
-      });
-      alert(allColsMsg);
-      // ===== 🔍 디버그용 끝 =====
+
 
       if (updateCount > 0) {
         setDraftRecords(newDrafts);
