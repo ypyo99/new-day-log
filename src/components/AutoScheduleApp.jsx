@@ -734,9 +734,11 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           }
 
           if (excelTeamNum && excelGroupNum && myTeamNum === excelTeamNum && myGroupNum === excelGroupNum) {
-            const sMatch = d.scheduleStr.match(/([가-힣]+)\(([^)]+)\)/);
+            // 정규식을 유연하게 수정하여 '월요일(09:30~10:30)', '월 (09:30~10:30)' 등 공백을 허용
+            const sMatch = d.scheduleStr.match(/([가-힣]+)\s*\(\s*([^)]+)\s*\)/);
             if (sMatch) {
-              const excelDay = sMatch[1];
+              // '요일' 글자를 제거하여 '월요일'과 '월'이 같아지도록 통일
+              const excelDay = sMatch[1].replace('요일', '').trim();
               const excelTime = sMatch[2];
 
               if (excelDay === myDayStr) {
