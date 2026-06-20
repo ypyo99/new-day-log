@@ -1561,7 +1561,7 @@ export default function MainApp({
     return `bg-blue-500 border-blue-700 ${baseActiveStyle}`;
   };
 
-  const handleRepeatSchedule = () => {
+  const handleRepeatSchedule = async () => {
     if (isDataLoading) return;
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
@@ -1618,6 +1618,10 @@ export default function MainApp({
 
   const executeRepeatSchedule = async () => {
     setShowRepeatConfirm(false);
+    if (hasChanges) {
+      const saved = await performAutoSave();
+      if (!saved) return;
+    }
     setIsSubmitting(true);
     setShowSavePopup(true);
     setIsSaveComplete(false);
@@ -2700,14 +2704,13 @@ export default function MainApp({
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
-                    disabled={hasChanges || !!noNewScheduleToRepeat}
-                    className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${hasChanges || !!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
+                    disabled={!!noNewScheduleToRepeat}
+                    className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${!!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
                     title={
-                      hasChanges ? "변경사항을 먼저 저장해야 일정 복제가 가능합니다." :
-                        noNewScheduleToRepeat === "current_is_false_20days" ? "20일 근무일 이내의 일정만 복제할 수 있습니다." :
-                          noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
-                            noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
-                              "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
+                      noNewScheduleToRepeat === "current_is_false_20days" ? "20일 근무일 이내의 일정만 복제할 수 있습니다." :
+                        noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
+                          noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
+                            "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
                     }
                   >
                     <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
