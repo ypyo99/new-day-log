@@ -677,9 +677,10 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         if (rowNumber < 3) return; // Header is row 1 and 2
         const vals = row.values;
         // vals[3]: 시간표 과목명, vals[4]: 일정, vals[6]: 배정팀
-        const subject = vals[3] ? String(vals[3]).trim() : '';
-        const scheduleStr = vals[4] ? String(vals[4]).trim() : '';
-        const assignTeam = vals[6] ? String(vals[6]).trim() : '';
+        // 아이폰/맥 환경에서 한글 자음/모음이 분리되는 현상(NFD)을 방지하기 위해 normalize('NFC') 적용
+        const subject = vals[3] ? String(vals[3]).normalize('NFC').trim() : '';
+        const scheduleStr = vals[4] ? String(vals[4]).normalize('NFC').trim() : '';
+        const assignTeam = vals[6] ? String(vals[6]).normalize('NFC').trim() : '';
 
         if (subject && scheduleStr && assignTeam) {
           assistantData.push({ subject, scheduleStr, assignTeam });
@@ -711,7 +712,10 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         }
 
         const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
-        const dayNum = new Date(r.log_date).getDay();
+        // 스마트폰(특히 iOS Safari)에서 new Date('YYYY-MM-DD') 파싱 오류를 방지하기 위해 수동 파싱 적용
+        const [year, month, day] = r.log_date.split('-');
+        const dateObj = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+        const dayNum = dateObj.getDay();
         const myDayStr = daysOfWeek[dayNum];
 
         let newStudent = r.student;
