@@ -672,9 +672,32 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       await workbook.xlsx.load(arrayBuffer);
       const worksheet = workbook.worksheets[0];
 
+      let courseStartDateStr = "";
+      let courseEndDateStr = "";
+      const dateRow = worksheet.getRow(2);
+      if (dateRow) {
+        const parseExcelDate = (cellVal) => {
+          if (!cellVal) return "";
+          if (cellVal instanceof Date) {
+            const yyyy = cellVal.getFullYear();
+            const mm = String(cellVal.getMonth() + 1).padStart(2, '0');
+            const dd = String(cellVal.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+          }
+          const match = String(cellVal).trim().match(/^(\d{4})[^\d](\d{1,2})[^\d](\d{1,2})/);
+          if (match) {
+            return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+          }
+          return String(cellVal).trim();
+        };
+        // 엑셀의 C2, D2 셀 (1-indexed 기준 3번, 4번 컬럼)에서 수강기간 시작일, 종료일 추출
+        courseStartDateStr = parseExcelDate(dateRow.getCell(3).value);
+        courseEndDateStr = parseExcelDate(dateRow.getCell(4).value);
+      }
+
       const assistantData = [];
       worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
-        if (rowNumber < 3) return; // 1~2행은 헤더이므로 건너뜀
+        if (rowNumber < 4) return; // 1~3행은 헤더이므로 건너뜀
         const vals = row.values;
         // [실제 엑셀 컬럼 구조]
         // vals[1]: 순번
@@ -727,7 +750,9 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         const myDayStr = daysOfWeek[dayNum];
 
         let newStudent = r.student;
+        let newLocation = r.location;
         let matched = false;
+        let isOutsideRange = false;
 
         assistantData.forEach(d => {
           let excelTeamNum = "";
@@ -769,8 +794,17 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                 const sEnd = sParts.length > 1 ? parseTime(sParts[1]) : sStart + 60;
 
                 if (Math.max(eStart, sStart) < Math.min(eEnd, sEnd)) {
-                  newStudent = d.subject;
                   matched = true;
+                  // 수강기간 판별
+                  if (courseStartDateStr && courseEndDateStr) {
+                    if (r.log_date < courseStartDateStr || r.log_date > courseEndDateStr) {
+                      isOutsideRange = true;
+                    }
+                  }
+                  
+                  if (!isOutsideRange) {
+                    newStudent = d.subject;
+                  }
                 }
               }
             }
@@ -779,13 +813,20 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
         if (matched) {
           updateCount++;
+          if (isOutsideRange) {
+            newStudent = "";
+            newLocation = "";
+          }
+
           matchedUpdates.push({
             teacher: r.teacher,
             dayNum: dayNum,
             shift: r.shift,
-            student: newStudent
+            student: newStudent,
+            location: newLocation,
+            isOutsideRange: isOutsideRange
           });
-          return { ...r, student: newStudent };
+          return { ...r, student: newStudent, location: newLocation };
         }
         return r;
       });
@@ -798,8 +839,11 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         setScheduleTemplates(prev => {
           const updated = JSON.parse(JSON.stringify(prev));
           matchedUpdates.forEach(m => {
-            if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
-              updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
+            if (!m.isOutsideRange) {
+              if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
+                updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
+                updated[m.teacher].days[m.dayNum][m.shift].location = m.location;
+              }
             }
           });
           return updated;

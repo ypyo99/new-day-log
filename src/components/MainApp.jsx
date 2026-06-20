@@ -281,25 +281,7 @@ export default function MainApp({
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
-          const validNotices = data.filter(notice => {
-            let isValid = true;
-
-            if (notice.start_date) {
-              const startDate = new Date(notice.start_date);
-              startDate.setHours(0, 0, 0, 0);
-              if (today < startDate) isValid = false;
-            }
-
-            if (notice.end_date) {
-              const endDate = new Date(notice.end_date);
-              endDate.setHours(0, 0, 0, 0);
-              if (today > endDate) isValid = false;
-            }
-
-            return isValid;
-          });
-
-          const sorted = [...validNotices].sort((a, b) => {
+          const sorted = (data || []).sort((a, b) => {
             const isTopA = a.is_top || false;
             const isTopB = b.is_top || false;
             if (isTopA !== isTopB) {
