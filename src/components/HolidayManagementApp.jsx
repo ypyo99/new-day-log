@@ -350,8 +350,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                   shift: shift,
                   student: holiday.name,
                   location: holiday.content1,
-                  status: holiday.content2,
-                  signature_url: null
+                  status: holiday.content2
                 });
               }
             }

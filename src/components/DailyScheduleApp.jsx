@@ -488,7 +488,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           time: mappedTime,
           student: r.student || "",
           status: r.status || "",
-          location: r.signature_url || r.location || "",
+          location: r.location || "",
           sessionCounts: null,
           isSpecial: false
         };

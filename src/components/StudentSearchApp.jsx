@@ -199,7 +199,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
                 team: row.team || "기타",
                 teacher: row.teacher || "",
                 time: row.shift || "",
-                location: row.signature_url || row.location || "복지관",
+                location: row.location || "복지관",
                 attendanceTag,
                 memo,
                 group: getTeacherGroup(row.team, row.teacher)

@@ -674,7 +674,7 @@ export default function MainApp({
             scheduleData[row.log_date][row.shift].push({
               teacher: row.teacher || "",
               student: row.student || "",
-              location: row.signature_url || row.location || "",
+              location: row.location || "",
               status: row.status || "",
               is_20days: row.is_20days
             });
@@ -1366,11 +1366,12 @@ export default function MainApp({
         const item = batchItems[i];
 
         const isStudentBlank = !item.student || item.student.trim() === "";
-        const isLocationBlank = !item.location || item.location.trim() === "";
 
-        if (isStudentBlank && isLocationBlank) {
-          deleteShifts.push(item.shift);
-          continue;
+        // 학생 이름이 블랭크일 경우 데이터베이스 레코드를 삭제하지 않고 모든 필드를 초기화하여 업데이트
+        if (isStudentBlank) {
+          item.student = "";
+          item.location = "";
+          item.status = "";
         }
 
         upsertData.push({
@@ -1380,8 +1381,7 @@ export default function MainApp({
           shift: item.shift,
           student: item.student || "",
           location: item.location || "",
-          status: item.status || "",
-          signature_url: null
+          status: item.status || ""
         });
       }
 
@@ -1410,7 +1410,10 @@ export default function MainApp({
 
       batchItems.forEach(item => {
         const isDeleted = deleteShifts.includes(item.shift);
-        if (isDeleted) {
+        const isStudentBlank = !item.student || item.student.trim() === "";
+        let finalUrl = "";
+
+        if (isDeleted || isStudentBlank) {
           setLogs(prev => ({
             ...prev,
             [item.index]: {
@@ -1424,15 +1427,17 @@ export default function MainApp({
           }));
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
           window.localStorage.removeItem(backupKey);
-          return;
+          
+          // deleteShifts에 포함된 경우(완전 삭제)에는 이후 로직 생략
+          if (isDeleted) return; 
+        } else {
+          const res = upsertData.find(r => r.shift === item.shift);
+          finalUrl = res ? res.location : item.location;
+
+          setLogs(prev => ({ ...prev, [item.index]: { ...prev[item.index], location: finalUrl } }));
+          const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
+          window.localStorage.removeItem(backupKey);
         }
-
-        const res = upsertData.find(r => r.shift === item.shift);
-        const finalUrl = res ? (res.signature_url || res.location) : item.location;
-
-        setLogs(prev => ({ ...prev, [item.index]: { ...prev[item.index], location: finalUrl } }));
-        const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
-        window.localStorage.removeItem(backupKey);
 
         validRecords.push({
           index: item.index,
@@ -1477,14 +1482,16 @@ export default function MainApp({
           const existingShiftData = newData[date][record.shift] || [];
           let shiftArr = Array.isArray(existingShiftData) ? [...existingShiftData] : [{ teacher: currentUser, ...existingShiftData }];
           const existingIdx = shiftArr.findIndex(r => r.teacher === currentUser);
+          const isStudentBlank = !record.student || record.student.trim() === "";
+          
           const newRecord = {
             teacher: currentUser,
-            student: logs[record.index].student || "",
+            student: isStudentBlank ? "" : (logs[record.index].student || ""),
             location: record.location,
             status: record.status,
-            selectedTags: logs[record.index].selectedTags,
-            memo: logs[record.index].memo,
-            headcount: logs[record.index].headcount
+            selectedTags: isStudentBlank ? [[]] : logs[record.index].selectedTags,
+            memo: isStudentBlank ? "" : logs[record.index].memo,
+            headcount: isStudentBlank ? "" : logs[record.index].headcount
           };
           if (existingIdx !== -1) {
             shiftArr[existingIdx] = { ...shiftArr[existingIdx], ...newRecord };
@@ -1695,8 +1702,7 @@ export default function MainApp({
               teacher: currentUser,
               shift: task.shift,
               student: task.student || "",
-              location: location || "",
-              signature_url: null
+              location: location || ""
             };
 
             const { error: upsertError } = await supabaseClient
@@ -1980,8 +1986,7 @@ export default function MainApp({
               teacher: currentUser,
               shift: task.shift,
               student: task.student || "",
-              location: location || "",
-              signature_url: null
+              location: location || ""
             };
 
             const { error: upsertError } = await supabaseClient

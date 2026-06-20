@@ -406,7 +406,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
 
             parsedData[slot][dateStr] = {
               student: supRec.student || "",
-              location: supRec.signature_url || supRec.location || "",
+              location: supRec.location || "",
               status: supRec.status || "",
               sessionCounts: countsForCell.length > 0 ? countsForCell : null,
               isSpecial: false

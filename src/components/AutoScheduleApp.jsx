@@ -289,7 +289,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           shifts.forEach(shift => {
             const match = targetRecords.find(r => r.shift.trim() === shift);
             const student = match ? (match.student || "") : "";
-            const location = match ? (match.signature_url || match.location || "") : "";
+            const location = match ? (match.location || "") : "";
 
             templates[teacherName][dayOfWeek][shift] = {
               student: student,
@@ -391,7 +391,6 @@ export default function AutoScheduleApp({ onNavigateBack }) {
               student: student,
               location: location,
               status: status,
-              signature_url: null,
               is_20days: isValid20Days
             });
           });
@@ -494,8 +493,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           shift: r.shift,
           student: r.student,
           location: r.location,
-          status: r.status,
-          signature_url: r.signature_url
+          status: r.status
         }));
 
         const bChunkSize = 500;
@@ -608,8 +606,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           shift: r.shift,
           student: r.student,
           location: r.location,
-          status: r.status,
-          signature_url: r.signature_url
+          status: r.status
         }));
 
         const chunkSize = 500;

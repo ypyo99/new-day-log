@@ -472,7 +472,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             } else if (item) {
               if (rowObj.category === "대상") val = item.student || "";
               else if (rowObj.category === "장소") {
-                const isSignatureUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")));
+                const isSignatureUrl = tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://"));
                 if (isSignatureUrl) val = ""; // Will overlay image
                 else val = item.location || "";
               }
@@ -559,7 +559,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               } else if (item) {
                 if (rowObj.category === "장소") {
                   fillRGB = "FFFFFFFF";
-                  const sigUrl = item.signature_url || (tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null);
+                  const sigUrl = tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null;
                   if (sigUrl) {
                     const promise = fetch(sigUrl)
                       .then(res => res.arrayBuffer())
@@ -1154,7 +1154,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                     cellClass = "text-gray-955 font-bold bg-sky-100";
                                   }
                                 } else if (row.category === "장소") {
-                                  const sigUrl = item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null);
+                                  const sigUrl = currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null;
                                   if (sigUrl) {
                                     cellContent = (
                                       <a href={sigUrl} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5 sm:py-1">
@@ -1369,9 +1369,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   <span className={`text-sm font-bold break-all whitespace-pre-wrap ${studentTextClass}`}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.name || '공휴일') : (item.student || '-')}</span>
                                 </td>
                                 <td className="border-r border-b border-gray-200 text-black align-middle py-2 px-1" style={targetStyle}>
-                                  {(item.signature_url || (currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")))) && !(isHoliday) ? (
+                                  {(currentTeam === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://"))) && !(isHoliday) ? (
                                     (() => {
-                                      const sigUrl = item.signature_url || item.location;
+                                      const sigUrl = item.location;
                                       return (
                                         <a href={sigUrl} target="_blank" rel="noopener noreferrer" className="block w-full flex justify-center py-0.5">
                                           <img src={sigUrl} alt="서명" className="h-5 sm:h-7 object-contain" />
