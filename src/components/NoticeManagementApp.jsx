@@ -547,13 +547,9 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
       if (error) throw error;
 
       if (!silent) alert("공지사항을 저장하였습니다.");
-      if (!isAdmin) {
-        setIsEditing(false);
-      }
+      setIsEditing(false);
+      setSelectedNotice(null);
       setSelectedImg(null);
-      if (data && data.length > 0) {
-        setSelectedNotice(data[0]);
-      }
       loadNotices();
       return true;
     } catch (err) {
@@ -1148,7 +1144,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
       </main>
 
       {/* 목록으로 스크롤하는 플로팅 화살표 버튼 (게시물 상세 보기 중 목록이 안 보일 때 표시) */}
-      <FloatingScrollButton listRef={listRef} show={!!(selectedNotice || isEditing)} />
+      <FloatingScrollButton listRef={listRef} show={!!selectedNotice && !isEditing} />
 
       {/* 담당자 암호 입력 모달 */}
       {showPwdModal && (
