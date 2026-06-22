@@ -98,7 +98,7 @@ export default function MainApp({
   const [showValidationError, setShowValidationError] = useState(false);
   const [validationErrorMsg, setValidationErrorMsg] = useState("");
   const [validationErrorIndex, setValidationErrorIndex] = useState(null);
-  const [validationErrorType, setValidationErrorType] = useState(""); // 에러 유형 (attendance, signature, headcount 등)
+  const [validationErrorType, setValidationErrorType] = useState(""); // 에러 유형 (attendance, headcount 등)
 
   const [saveProgress, setSaveProgress] = useState([]);
   const [isSaveComplete, setIsSaveComplete] = useState(false);
@@ -1121,7 +1121,7 @@ export default function MainApp({
     return false;
   }, []);
 
-  const performAutoSave = async (forceIndex = null, signatureOverride = null) => {
+  const performAutoSave = async (forceIndex = null) => {
     // 입력 유효성 검사 (학생 이름 / 장소 블랭크 검사)
     for (let i = 0; i < shifts.length; i++) {
       const log = logs[i];
@@ -1177,10 +1177,6 @@ export default function MainApp({
         currentStatusStr !== originalStatus;
 
       let effectiveLocation = log.location || "";
-      if (i === forceIndex) {
-        if (signatureOverride === "__DELETE__") effectiveLocation = "";
-        else if (signatureOverride && signatureOverride.startsWith("data:image")) effectiveLocation = signatureOverride;
-      }
 
       const sNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
 
@@ -1217,13 +1213,6 @@ export default function MainApp({
         return tags.length > 0;
       }).length;
       const hasCheckedAttendance = (checkedCount > 0) || (targetNameForHeadcount && hc !== "");
-
-      let currentLoc = (log.location || "").trim();
-      if (i === forceIndex && signatureOverride) {
-        if (signatureOverride === "__DELETE__") currentLoc = "";
-        else if (signatureOverride.startsWith("data:image")) currentLoc = signatureOverride;
-      }
-      const isSignBlank = !currentLoc || (!currentLoc.startsWith('data:image') && !currentLoc.startsWith('http') && !currentLoc.includes('drive.google.com') && !currentLoc.startsWith('=IMAGE'));
 
       const isTeamMeeting = studentNames.some(name => name.includes("팀장간담회"));
 
@@ -1271,14 +1260,6 @@ export default function MainApp({
           return false;
         }
       }
-
-      const isPresentChecked = studentNames.some((_, sIdx) => {
-        const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-        return tags.includes('1');
-      });
-      const needsSignature = isPresentChecked || (targetNameForHeadcount && hc !== "");
-
-
 
       if (!isFutureDate && targetNameForHeadcount) {
         const hc = (log.headcount || "").trim();
