@@ -905,7 +905,7 @@ export default function MainApp({
 
             if (!isAbsentOrCanceled || hasExplicitCount) {
               const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
-              if (hRow.log_date === date && hGroup === currentUserGroup) return;
+              if (hRow.log_date === date && hRow.teacher === currentUser) return;
 
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
               if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;

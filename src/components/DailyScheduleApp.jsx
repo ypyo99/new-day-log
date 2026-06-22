@@ -692,12 +692,12 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const currentLen = currentDatesMap[name].length;
               currentOffsetsMap[name] = explicitCount - currentLen;
 
-              // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용
+              // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용하되, 순서를 유지합니다.
               parsedData.forEach(prevRow => {
                 if (prevRow.sessionCounts) {
                   prevRow.sessionCounts.forEach(sc => {
                     if (sc.name === name) {
-                      sc.count = currentDatesMap[name].length + currentOffsetsMap[name];
+                      sc.count = sc.dates.length + currentOffsetsMap[name];
                     }
                   });
                 }
