@@ -977,20 +977,20 @@ export default function MainApp({
             const tagsStrings = [];
             // 현재 입력된 학생들의 이름을 콤마나 슬래시 기준으로 분리하여 배열로 만듭니다.
             const tempStudentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
-            
+
             // 학생 수만큼 반복하면서 각 학생별로 선택된 출결 태그(예: '결석', '1' 등)를 가져와 콤마로 연결합니다.
             for (let j = 0; j < Math.max(1, tempStudentNames.length); j++) {
               const tags = log.selectedTags && log.selectedTags[j] ? log.selectedTags[j] : [];
               tagsStrings.push(tags.join(', '));
             }
-            
+
             // 여러 명일 경우 슬래시(/)로 구분하고, 한 명일 경우 그대로 사용합니다.
             let orderedTagsStr = tagsStrings.length > 1 ? tagsStrings.join('/') : (tagsStrings[0] || "");
-            
+
             let realtimeStatusStr = [];
             if (orderedTagsStr) realtimeStatusStr.push(orderedTagsStr);
             if (log.memo) realtimeStatusStr.push(log.memo);
-            
+
             // 최종적으로 구성된 실시간 출결 상태 문자열입니다. (예: "결석 / 1, 메모내용")
             const fullRealtimeStatus = realtimeStatusStr.join(', ');
 
@@ -1007,7 +1007,7 @@ export default function MainApp({
             // ('종료' 태그를 누르더라도 회차가 1 차감되지 않도록 "종료" 키워드를 조건에서 제외합니다.)
             const hasCurrentEndOrCancel = hasIndependentKeyword(currentStatus, ["취소"]);
             const hasCurrentAttendance = hasIndependentKeyword(currentStatus, ["1"]);
-            
+
             // 결석, 선생님휴가가 있거나, 출석 없이 취소만 있는 경우 결석(isAbsent = true)으로 판정합니다.
             // 이 판정 결과에 따라 화면의 렌더링 회차가 즉시 1 차감됩니다.
             const isAbsent = hasIndependentKeyword(currentStatus, ["결석", "선생님휴가"]) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
@@ -1390,9 +1390,9 @@ export default function MainApp({
           }));
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
           window.localStorage.removeItem(backupKey);
-          
+
           // deleteShifts에 포함된 경우(완전 삭제)에는 이후 로직 생략
-          if (isDeleted) return; 
+          if (isDeleted) return;
         } else {
           const res = upsertData.find(r => r.shift === item.shift);
           finalUrl = res ? res.location : item.location;
@@ -1446,7 +1446,7 @@ export default function MainApp({
           let shiftArr = Array.isArray(existingShiftData) ? [...existingShiftData] : [{ teacher: currentUser, ...existingShiftData }];
           const existingIdx = shiftArr.findIndex(r => r.teacher === currentUser);
           const isStudentBlank = !record.student || record.student.trim() === "";
-          
+
           const newRecord = {
             teacher: currentUser,
             student: isStudentBlank ? "" : (logs[record.index].student || ""),
@@ -2613,7 +2613,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260616-weather
+            v260622
           </div>
         </div>
       </div>
