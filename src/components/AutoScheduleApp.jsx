@@ -749,10 +749,12 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         const dayNum = dateObj.getDay();
         const myDayStr = daysOfWeek[dayNum];
 
-        let newStudent = r.student;
+        let newStudent = r.student; // 기본값: 기존 기준 주간 스케줄 유지
         let newLocation = r.location;
         let matched = false;
-        let isOutsideRange = false;
+        // 수강기간 시작일 이전인지(기존 스케줄 유지), 종료일 이후인지(빈칸 처리) 구분
+        let isBeforeStart = false; // 수강기간 시작 전 → 기존 스케줄 유지
+        let isAfterEnd = false;    // 수강기간 종료 후 → 빈칸 처리
 
         assistantData.forEach(d => {
           let excelTeamNum = "";
@@ -795,14 +797,21 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
                 if (Math.max(eStart, sStart) < Math.min(eEnd, sEnd)) {
                   matched = true;
-                  // 수강기간 판별
+
+                  // ── 수강기간 판별 (시작 전 / 기간 내 / 종료 후 3가지로 분리) ──
                   if (courseStartDateStr && courseEndDateStr) {
-                    if (r.log_date < courseStartDateStr || r.log_date > courseEndDateStr) {
-                      isOutsideRange = true;
+                    if (r.log_date < courseStartDateStr) {
+                      // 수강기간 시작 전: 기존 기준 주간 스케줄을 그대로 유지
+                      isBeforeStart = true;
+                    } else if (r.log_date > courseEndDateStr) {
+                      // 수강기간 종료 후: 빈칸으로 처리
+                      isAfterEnd = true;
+                    } else {
+                      // 수강기간 내: 보조강사 과목명으로 교체
+                      newStudent = d.subject;
                     }
-                  }
-                  
-                  if (!isOutsideRange) {
+                  } else {
+                    // 수강기간 정보 없으면 무조건 보조강사 과목명 적용
                     newStudent = d.subject;
                   }
                 }
@@ -813,10 +822,16 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
         if (matched) {
           updateCount++;
-          if (isOutsideRange) {
+
+          if (isBeforeStart) {
+            // 수강기간 시작 전: newStudent / newLocation은 이미 r.student / r.location으로
+            // 초기화되어 있으므로 변경하지 않고 그대로 반환
+          } else if (isAfterEnd) {
+            // 수강기간 종료 후: 빈칸으로 초기화
             newStudent = "";
             newLocation = "";
           }
+          // 수강기간 내는 이미 위에서 newStudent = d.subject 로 설정됨
 
           matchedUpdates.push({
             teacher: r.teacher,
@@ -824,7 +839,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
             shift: r.shift,
             student: newStudent,
             location: newLocation,
-            isOutsideRange: isOutsideRange
+            isBeforeStart: isBeforeStart,
+            isAfterEnd: isAfterEnd
           });
           return { ...r, student: newStudent, location: newLocation };
         }
@@ -839,11 +855,15 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         setScheduleTemplates(prev => {
           const updated = JSON.parse(JSON.stringify(prev));
           matchedUpdates.forEach(m => {
-            if (!m.isOutsideRange) {
-              if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
-                updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
-                updated[m.teacher].days[m.dayNum][m.shift].location = m.location;
-              }
+            // 수강기간 내이거나, 시작 전(기존 스케줄 유지)이거나, 종료 후 모두
+            // 미리보기 템플릿에 반영하되:
+            // - isAfterEnd: 빈칸으로 표시 (student/location이 이미 빈칸)
+            // - isBeforeStart: 기존 스케줄 그대로 표시 (student가 이미 r.student)
+            // - 기간 내: 보조강사 과목명으로 표시
+            // → 모두 m.student / m.location 값을 그대로 반영하면 됨
+            if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
+              updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
+              updated[m.teacher].days[m.dayNum][m.shift].location = m.location;
             }
           });
           return updated;
