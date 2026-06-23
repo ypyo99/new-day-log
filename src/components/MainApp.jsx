@@ -353,13 +353,18 @@ export default function MainApp({
     }
   });
 
+  // holidays 전체 정보(이름/내용 포함)를 저장하는 상태
+  const [holidaysFullList, setHolidaysFullList] = useState([]);
+
   useEffect(() => {
     const loadHolidays = async () => {
       try {
-        const { data, error } = await supabaseClient.from('holidays').select('date');
+        // date와 함께 name, content1 도 함께 가져옴 (specialAlerts 표시를 위해)
+        const { data, error } = await supabaseClient.from('holidays').select('date, name, content1, content2');
         if (data && !error) {
           const dates = data.map(d => d.date);
           setHolidaysDbList(dates);
+          setHolidaysFullList(data); // 전체 정보 보관
           window.localStorage.setItem('sungdong_holidays', JSON.stringify(dates));
         } else if (error) {
           console.error("holidays fetch error:", error);
@@ -381,6 +386,76 @@ export default function MainApp({
       return cleanH === cleanDate || cleanH === mmdd;
     });
   }, [holidaysDbList]);
+
+  // ─────────────────────────────────────────────────────────────
+  // holidays 테이블에서 현재 날짜(date) 기준 10일 이내 일정을
+  // specialAlerts 상태에 반영 (근무기록 입력 화면에 텍스트박스로 표시)
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!date || holidaysFullList.length === 0) {
+      setSpecialAlerts([]);
+      return;
+    }
+
+    // 현재 선택된 날짜를 기준으로 Date 객체 생성 (iOS Safari 호환 수동 파싱)
+    const [y, m, d] = date.split('-');
+    const todayObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+
+    const alerts = [];
+
+    holidaysFullList.forEach(h => {
+      if (!h.date) return;
+      const rawDate = h.date.trim();
+
+      // holidays 테이블의 date 필드: 'YYYY-MM-DD', 'MM-DD', 'M/D' 등 여러 형식 지원
+      let holidayObj = null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+        // YYYY-MM-DD 형식
+        const [hy, hm, hd] = rawDate.split('-');
+        holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
+      } else if (/^\d{1,2}-\d{1,2}$/.test(rawDate)) {
+        // MM-DD 형식 → 올해 날짜로 변환
+        const [hm, hd] = rawDate.split('-');
+        holidayObj = new Date(todayObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
+      } else if (/^\d{1,2}\/\d{1,2}$/.test(rawDate)) {
+        // M/D 형식 → 올해 날짜로 변환
+        const [hm, hd] = rawDate.split('/');
+        holidayObj = new Date(todayObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
+      } else {
+        return; // 알 수 없는 형식이면 건너뜀
+      }
+
+      // 현재 날짜 기준으로 며칠 뒤인지 계산 (밀리초 → 일수)
+      const diffMs = holidayObj.getTime() - todayObj.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      // 0일(오늘) ~ 10일 후 사이의 일정만 표시
+      if (diffDays >= 0 && diffDays <= 10) {
+        const mm = String(holidayObj.getMonth() + 1);
+        const dd = String(holidayObj.getDate());
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayName = dayNames[holidayObj.getDay()];
+
+        const name = h.name || '';
+        const content1 = h.content1 ? ` (${h.content1})` : '';
+
+        let alertMsg = '';
+        if (diffDays === 0) {
+          alertMsg = `오늘(${mm}/${dd} ${dayName}) — ${name}${content1}`;
+        } else if (diffDays === 1) {
+          alertMsg = `내일(${mm}/${dd} ${dayName}) — ${name}${content1}`;
+        } else {
+          alertMsg = `${diffDays}일 후(${mm}/${dd} ${dayName}) — ${name}${content1}`;
+        }
+
+        alerts.push({ diffDays, msg: alertMsg });
+      }
+    });
+
+    // 날짜 순서대로 정렬
+    alerts.sort((a, b) => a.diffDays - b.diffDays);
+    setSpecialAlerts(alerts.map(a => a.msg));
+  }, [date, holidaysFullList]);
 
   useEffect(() => {
     const fetchDbTeachers = async () => {
