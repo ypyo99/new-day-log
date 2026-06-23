@@ -554,7 +554,7 @@ export default function MainApp({
         fetchedTeachers = ["이름입력(직접타이핑)"];
       }
       setTeachers(fetchedTeachers);
-      window.localStorage.setItem(`sungdong_teachers_${team}`, JSON.stringify(fetchedTeachers));
+      try { window.localStorage.setItem(`sungdong_teachers_${team}`, JSON.stringify(fetchedTeachers)); } catch (e) { console.warn('localStorage 용량 초과: 선생님 목록 캐싱 생략'); }
     } catch (error) {
       console.error("⚠️ 선생님 목록 로딩 에러:", error);
     } finally {
@@ -664,7 +664,7 @@ export default function MainApp({
         }
         if (isMounted) {
           setAllScheduleData(scheduleData);
-          window.localStorage.setItem(cacheKey, JSON.stringify(scheduleData));
+          try { window.localStorage.setItem(cacheKey, JSON.stringify(scheduleData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
         }
       } catch (error) {
         console.error(error);
@@ -1472,7 +1472,7 @@ export default function MainApp({
 
         if (selectedTeam && currentUser) {
           const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-          window.localStorage.setItem(cacheKey, JSON.stringify(newData));
+          try { window.localStorage.setItem(cacheKey, JSON.stringify(newData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
         }
 
         return newData;
@@ -1736,7 +1736,7 @@ export default function MainApp({
 
         if (selectedTeam && currentUser) {
           const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-          window.localStorage.setItem(cacheKey, JSON.stringify(newData));
+          try { window.localStorage.setItem(cacheKey, JSON.stringify(newData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
         }
 
         return newData;
@@ -2006,7 +2006,7 @@ export default function MainApp({
 
         if (selectedTeam && currentUser) {
           const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-          window.localStorage.setItem(cacheKey, JSON.stringify(newData));
+          try { window.localStorage.setItem(cacheKey, JSON.stringify(newData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
         }
 
         return newData;
@@ -2139,7 +2139,7 @@ export default function MainApp({
     if (field === 'memo') {
       const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
       if (value && value.trim() !== "") {
-        window.localStorage.setItem(backupKey, value);
+        try { window.localStorage.setItem(backupKey, value); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
       } else {
         window.localStorage.removeItem(backupKey);
       }
@@ -2253,7 +2253,7 @@ export default function MainApp({
 
         if (loadedMemo.trim() !== "") {
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-          window.localStorage.setItem(backupKey, loadedMemo);
+          try { window.localStorage.setItem(backupKey, loadedMemo); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
         }
 
         return newLogs;
