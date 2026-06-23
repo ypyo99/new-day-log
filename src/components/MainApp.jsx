@@ -437,7 +437,8 @@ export default function MainApp({
         const dayName = dayNames[holidayObj.getDay()];
 
         const name = h.name || '';
-        const content1 = h.content1 ? ` (${h.content1})` : '';
+        // name과 content1이 동일하면 content1을 표시하지 않음 (중복 방지)
+        const content1 = (h.content1 && h.content1.trim() !== name.trim()) ? ` (${h.content1})` : '';
 
         let alertMsg = '';
         if (diffDays === 0) {
