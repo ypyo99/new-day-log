@@ -603,7 +603,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 }
               }
 
-              cell.font = { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: fontColorRGB } };
+              cell.font = { name: "Malgun Gothic", size: 9, bold: isBold, color: { argb: fontColorRGB } };
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillRGB } };
 
               if (rowObj.category === "진행" && cell.value && typeof cell.value === 'string' && /\d+\s*회차/.test(cell.value)) {
@@ -611,9 +611,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 cell.value = {
                   richText: parts.map(part => {
                     if (/\d+\s*회차/.test(part)) {
-                      return { text: part, font: { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: "FF2563EB" } } };
+                      return { text: part, font: { name: "Malgun Gothic", size: 9, bold: isBold, color: { argb: "FF2563EB" } } };
                     }
-                    return { text: part, font: { name: "Malgun Gothic", size: 10, bold: isBold, color: { argb: fontColorRGB } } };
+                    return { text: part, font: { name: "Malgun Gothic", size: 9, bold: isBold, color: { argb: fontColorRGB } } };
                   }).filter(rt => rt.text !== '')
                 };
               }
@@ -1179,7 +1179,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 } else if (row.category === "진행") {
                                   const rawStatus = item.status || '';
                                   cellContent = rawStatus ? (
-                                    <div className="w-full break-all whitespace-pre-wrap px-0.5 leading-snug text-left" title={rawStatus}>
+                                    <div className="w-full break-all whitespace-pre-wrap px-0.5 leading-snug text-left text-[10px] sm:text-[11px] md:text-xs lg:text-sm" title={rawStatus}>
                                       {rawStatus.split(/(\d+\s*회차)/g).map((part, idx) => {
                                         if (/\d+\s*회차/.test(part)) {
                                           return <span key={idx} className="text-blue-600">{part}</span>;
@@ -1222,7 +1222,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             }
 
                             return (
-                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>
+                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[11px] sm:text-xs md:text-sm lg:text-[15px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>
                                 {/* 내용이 많아도 최대 72px(약 3~4줄) 높이에서 고정, 넘치면 스크롤 */}
                                 <div style={{ maxHeight: '72px', overflowY: 'auto' }}>
                                   {cellContent || '\u00A0'}
@@ -1393,7 +1393,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   )}
                                 </td>
                                 <td className="border-b border-gray-200 align-middle py-2 px-1" style={targetStyle}>
-                                  <span className={`text-sm font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={isHoliday ? (item.render.teacher ? (holidayInfo.content2 || '') : '') : (item.status || '')}>
+                                  <span className={`text-xs font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={isHoliday ? (item.render.teacher ? (holidayInfo.content2 || '') : '') : (item.status || '')}>
                                     {(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content2 || '-') : (item.status || '-')}
                                   </span>
                                 </td>
