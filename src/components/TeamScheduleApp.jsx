@@ -1045,8 +1045,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 <table className="table-fixed text-center border-collapse text-[13px] sm:text-sm md:text-base lg:text-lg min-w-[900px] w-full">
                   <thead className="sticky top-0 z-30 bg-[#2b5ce6] text-white">
                     <tr>
-                      <th className="border border-blue-700 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">연번</th>
-                      <th className="border border-blue-700 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">성명</th>
+                      {/* 연번 열 고정 - left:0 */}
+                      <th className="border border-blue-700 py-2.5 w-[50px] sm:w-[60px] md:w-[70px] lg:w-[80px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg" style={{ position: 'sticky', left: 0, zIndex: 40 }}>연번</th>
+                      {/* 성명 열 고정 - left: 연번열 너비만큼 */}
+                      <th className="border border-blue-700 py-2.5 w-[70px] sm:w-[80px] md:w-[90px] lg:w-[100px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg" style={{ position: 'sticky', left: 50, zIndex: 40 }}>성명</th>
+                      {/* 수업시간 열 - 고정 없음 */}
                       <th className="border border-blue-700 border-r-2 border-r-gray-700 py-2.5 w-[90px] sm:w-[100px] md:w-[115px] lg:w-[130px] font-bold text-white bg-[#1E3A8A] text-[13px] sm:text-sm md:text-base lg:text-lg">수업시간</th>
                       {uniqueDates.map(dateStr => {
                         const m = dateStr.split('-')[1];
@@ -1080,16 +1083,19 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
                       return (
                         <tr key={idx} className="hover:bg-blue-50/40 bg-gray-50" style={{ ...borderStyle, height: '36px' }}>
+                          {/* 연번 열 고정 */}
                           {row.renderGroup && (
-                            <td className="border border-gray-300 font-extrabold text-gray-800 bg-gray-50/80 align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanGroup}>
+                            <td className="border border-gray-300 font-extrabold text-gray-800 bg-gray-50/80 align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanGroup} style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#F9FAFB' }}>
                               {row.groupName}
                             </td>
                           )}
+                          {/* 성명 열 고정 */}
                           {row.renderTeacher && (
-                            <td className="border border-gray-300 font-bold text-gray-800 bg-[#F3F4F6] align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanTeacher}>
+                            <td className="border border-gray-300 font-bold text-gray-800 align-middle py-1.5 px-0.5 text-[13px] sm:text-sm md:text-base lg:text-lg" rowSpan={row.rowspanTeacher} style={{ position: 'sticky', left: 50, zIndex: 10, backgroundColor: '#F3F4F6' }}>
                               {row.teacher}
                             </td>
                           )}
+                          {/* 수업시간 열 - 고정 없음 */}
                           {row.renderShift && (
                             <td className="border border-gray-300 border-r-2 border-r-gray-700 text-gray-700 font-bold align-middle py-1.5 px-0.5 text-[12px] sm:text-[13px] md:text-sm lg:text-base bg-gray-50" rowSpan={row.rowspanShift}>
                               {row.shift}
@@ -1216,7 +1222,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             }
 
                             return (
-                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>{cellContent || '\u00A0'}
+                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[13px] sm:text-sm md:text-base lg:text-[17px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>
+                                {/* 내용이 많아도 최대 72px(약 3~4줄) 높이에서 고정, 넘치면 스크롤 */}
+                                <div style={{ maxHeight: '72px', overflowY: 'auto' }}>
+                                  {cellContent || '\u00A0'}
+                                </div>
                               </td>
                             );
                           })}
