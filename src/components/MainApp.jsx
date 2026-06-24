@@ -2935,7 +2935,7 @@ export default function MainApp({
                           ) : null}
                         </div>
 
-                        {shouldRepeatPerShift[index] && logsDate === date && isFutureOrToday && (
+                        {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (
                           <button
                             type="button"
                             onClick={() => handleRepeatScheduleForShift(index)}
