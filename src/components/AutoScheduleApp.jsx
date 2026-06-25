@@ -99,6 +99,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   const [lastBackupId, setLastBackupId] = useState(() => getSavedItem('sungdong_auto_lastBackupId', null));
   const [restoring, setRestoring] = useState(false);
   const [triggerAnalyze, setTriggerAnalyze] = useState(false);
+  const [isAssistantApplied, setIsAssistantApplied] = useState(false); // 보조강사 적용 상태
 
   useEffect(() => {
     if (triggerAnalyze && startDate && endDate && isAdmin) {
@@ -179,6 +180,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     setDraftRecords([]);
     setScheduleTemplates({});
     setPreviewFilter("ALL");
+    setIsAssistantApplied(false);
     setProgressMsg("선생님 명단 및 복제 기준 주간 계산 중...");
 
     try {
@@ -710,10 +712,11 @@ export default function AutoScheduleApp({ onNavigateBack }) {
         // 아이폰/맥 환경에서 한글 자음/모음이 분리되는 현상(NFD)을 방지하기 위해 normalize('NFC') 적용
         const subject = vals[3] ? String(vals[3]).normalize('NFC').trim() : '';
         const scheduleStr = vals[4] ? String(vals[4]).normalize('NFC').trim() : '';
+        const locationStr = vals[5] ? String(vals[5]).normalize('NFC').trim() : ''; // 장소 추출
         const assignTeam = vals[6] ? String(vals[6]).normalize('NFC').trim() : '';
 
         if (subject && scheduleStr && assignTeam) {
-          assistantData.push({ subject, scheduleStr, assignTeam });
+          assistantData.push({ subject, scheduleStr, assignTeam, locationStr });
         }
       });
 
@@ -809,10 +812,12 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                     } else {
                       // 수강기간 내: 보조강사 과목명으로 교체
                       newStudent = d.subject;
+                      if (d.locationStr) newLocation = d.locationStr;
                     }
                   } else {
                     // 수강기간 정보 없으면 무조건 보조강사 과목명 적용
                     newStudent = d.subject;
+                    if (d.locationStr) newLocation = d.locationStr;
                   }
                 }
               }
@@ -857,13 +862,14 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           matchedUpdates.forEach(m => {
             // 수강기간 내이거나, 시작 전(기존 스케줄 유지)이거나, 종료 후 모두
             // 미리보기 템플릿에 반영하되:
-            // - isAfterEnd: 빈칸으로 표시 (student/location이 이미 빈칸)
-            // - isBeforeStart: 기존 스케줄 그대로 표시 (student가 이미 r.student)
-            // - 기간 내: 보조강사 과목명으로 표시
-            // → 모두 m.student / m.location 값을 그대로 반영하면 됨
+            // 여러 주간의 데이터가 템플릿에 덮어써지는 과정에서, 마지막 주간이 '종료 후'라서 빈칸이 되면 
+            // 미리보기가 '-'로 표시되는 문제가 발생함.
+            // 따라서 템플릿(미리보기)에는 값이 있는 경우(보조강사 과목명이 있는 경우) 우선적으로 유지하도록 수정.
             if (updated[m.teacher] && updated[m.teacher].days[m.dayNum] && updated[m.teacher].days[m.dayNum][m.shift]) {
-              updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
-              updated[m.teacher].days[m.dayNum][m.shift].location = m.location;
+              if (m.student) {
+                updated[m.teacher].days[m.dayNum][m.shift].student = m.student;
+                updated[m.teacher].days[m.dayNum][m.shift].location = m.location;
+              }
             }
           });
           return updated;
@@ -877,6 +883,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           alert("해당 기간의 주간시간표와 엑셀 데이터 중 일치하는 항목이 없습니다.");
         }, 100);
       }
+      
+      setIsAssistantApplied(true); // 보조강사 데이터를 적용했으므로 상태를 true로 변경
 
     } catch (err) {
       console.error(err);
@@ -942,14 +950,14 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                   disabled={analyzing || saving}
                   className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-blue-600 text-white font-extrabold rounded-md shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
                 >
-                  {analyzing ? '분석 중...' : '주간 시간표'}
+                  {analyzing ? '분석 중...' : '① 주간 시간표'}
                 </button>
                 <button
                   onClick={handleApplyAssistantClick}
                   disabled={analyzing || saving || draftRecords.length === 0}
                   className="px-3 py-1.5 sm:px-6 sm:py-2.5 bg-green-600 text-white font-extrabold rounded-md shadow-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 text-sm sm:text-lg shrink-0"
                 >
-                  보조강사 적용
+                  ② 보조강사 적용
                 </button>
                 <input
                   type="file"
@@ -1206,12 +1214,18 @@ export default function AutoScheduleApp({ onNavigateBack }) {
               )}
               <button
                 onClick={() => setShowConfirmModal(true)}
-                disabled={saving || restoring}
+                disabled={saving || restoring || !isAssistantApplied}
                 className="px-6 py-3 bg-indigo-600 text-white font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95 w-full sm:w-auto justify-center"
               >
-                {saving ? '시간표 저장 중...' : '이 스케줄로 시간표 작성'}
+                {saving ? '시간표 저장 중...' : '③ 이 스케줄로 시간표 작성'}
               </button>
             </div>
+            
+            {!isAssistantApplied && draftRecords.length > 0 && (
+              <p className="text-center text-red-500 font-bold mt-4 text-sm">
+                * [② 보조강사 적용] 버튼을 눌러 보조강사 일정을 반영해야 시간표를 저장할 수 있습니다.
+              </p>
+            )}
           </div>
         )}
 

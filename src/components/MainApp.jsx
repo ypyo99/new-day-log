@@ -999,13 +999,14 @@ export default function MainApp({
               }
 
               if (isNew) {
-                if (hasExplicitCount) {
-                  const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                  const explicitCount = parseInt(matchObj[1], 10);
-                  const currentLen = studentDatesMap[name].length;
-                  studentOffsetsMap[name] = explicitCount - (currentLen + 1);
-                }
                 studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+              }
+
+              if (hasExplicitCount) {
+                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                const explicitCount = parseInt(matchObj[1], 10);
+                const currentLen = studentDatesMap[name].length;
+                studentOffsetsMap[name] = explicitCount - currentLen;
               }
             }
           });
@@ -1106,14 +1107,15 @@ export default function MainApp({
               }
 
               if (isNew) {
-                if (hasExplicitCount) {
-                  const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                  const explicitCount = parseInt(matchObj[1], 10);
-                  const currentLen = currentDatesMap[name].length;
-                  currentOffsetsMap[name] = explicitCount - (currentLen + 1);
-                }
                 currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
               }
+            }
+
+            if (hasExplicitCount) {
+              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+              const explicitCount = parseInt(matchObj[1], 10);
+              const currentLen = currentDatesMap[name].length;
+              currentOffsetsMap[name] = explicitCount - currentLen;
             }
 
             const dates = currentDatesMap[name];

@@ -265,13 +265,14 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            }
            
            if (isNew) {
-               if (hasExplicitCount) {
-                   const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                   const explicitCount = parseInt(matchObj[1], 10);
-                   const currentLen = studentHistoryMap[name].length;
-                   studentOffsetsMap[name] = explicitCount - (currentLen + 1);
-               }
                studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+           }
+
+           if (hasExplicitCount) {
+               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+               const explicitCount = parseInt(matchObj[1], 10);
+               const currentLen = studentHistoryMap[name].length;
+               studentOffsetsMap[name] = explicitCount - currentLen;
            }
         }
       });
