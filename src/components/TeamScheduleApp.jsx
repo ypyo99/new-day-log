@@ -164,35 +164,42 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
       const holidays = hData || [];
 
       const today = new Date();
-      let nextYear = today.getFullYear();
-      let nextMonth = today.getMonth() + 3; // 현재 달력상 달에 2개월 후를 지정 (getMonth()는 0부터 시작하므로 +1(현재달) +2(두달후) = +3)
 
-      if (nextMonth > 12) {
-        nextMonth -= 12;
-        nextYear++;
-      }
+      // 전체 데이터 중 가장 첫 날짜(오름차순)와 마지막 날짜(내림차순)를 DB에서 조회합니다.
+      let firstWorkDateStr = null;
+      let endDateStr = null;
 
-      const nextMonthLastDay = new Date(nextYear, nextMonth, 0).getDate();
-      const endDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextMonthLastDay).padStart(2, '0')}`;
-
-      const yearStr = today.getFullYear().toString();
-      let firstWorkDateStr = `${yearStr}-01-01`;
-      const { data: firstRec, error: firstRecErr } = await supabaseClient
+      const { data: firstRec, error: firstErr } = await supabaseClient
         .from('daily_logs')
         .select('log_date')
-        .gte('log_date', `${yearStr}-01-01`)
-        .lte('log_date', endDateStr)
         .order('log_date', { ascending: true })
         .limit(1);
+      if (firstErr) throw firstErr;
 
-      if (!firstRecErr && firstRec && firstRec.length > 0) {
+      const { data: lastRec, error: lastErr } = await supabaseClient
+        .from('daily_logs')
+        .select('log_date')
+        .order('log_date', { ascending: false })
+        .limit(1);
+      if (lastErr) throw lastErr;
+
+      if (firstRec && firstRec.length > 0 && lastRec && lastRec.length > 0) {
         firstWorkDateStr = firstRec[0].log_date;
+        endDateStr = lastRec[0].log_date;
+      } else {
+        // 데이터가 아예 없을 경우를 대비한 기본값 (오늘 날짜)
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        firstWorkDateStr = `${y}-${m}-${d}`;
+        endDateStr = `${y}-${m}-${d}`;
       }
 
       const dateList = [];
       const [startYear, startMonth, startDay] = firstWorkDateStr.split('-').map(Number);
       let curr = new Date(startYear, startMonth - 1, startDay);
-      const endLimit = new Date(nextYear, nextMonth - 1, nextMonthLastDay);
+      const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
+      const endLimit = new Date(endYear, endMonth - 1, endDay);
       while (curr <= endLimit) {
         const dayOfWeekIndex = curr.getDay();
         if (dayOfWeekIndex !== 0 && dayOfWeekIndex !== 6) {
