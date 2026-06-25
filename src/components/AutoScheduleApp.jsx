@@ -812,12 +812,12 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                     } else {
                       // 수강기간 내: 보조강사 과목명으로 교체
                       newStudent = d.subject;
-                      if (d.locationStr) newLocation = d.locationStr;
+                      newLocation = '복지관'; // 엑셀 데이터와 무관하게 장소를 무조건 '복지관'으로 고정
                     }
                   } else {
                     // 수강기간 정보 없으면 무조건 보조강사 과목명 적용
                     newStudent = d.subject;
-                    if (d.locationStr) newLocation = d.locationStr;
+                    newLocation = '복지관'; // 엑셀 데이터와 무관하게 장소를 무조건 '복지관'으로 고정
                   }
                 }
               }
