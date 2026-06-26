@@ -2208,6 +2208,127 @@ export default function MainApp({
       }));
       const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
       window.localStorage.removeItem(backupKey);
+    } else if (field === 'memo' && (!value || value.length === 0)) {
+      // 메모가 0이 되는 순간, 즉시 같은 조 선생님의 데이터를 조회하여 가져옴
+      const currentLog = logs[index];
+      const cleanMyStudent = (currentLog?.student || "").trim();
+      let didFetchSibling = false;
+      let siblingMemoValue = "";
+      
+      if (cleanMyStudent) {
+        const shift = shifts[index];
+        const todaysData = allScheduleData[date] || {};
+        const rawList = todaysData[shift] || [];
+        const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
+        const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
+        
+        const siblingRecord = list.find(r => {
+          if (r.teacher === currentUser) return false;
+          if ((r.student || "").trim() !== cleanMyStudent) return false;
+          const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
+          if (siblingGroup !== myGroup) return false;
+          const siblingStatus = formatStatusIfDate(r.status) || "";
+          if (siblingStatus.includes("선생님휴가")) return false;
+          return siblingStatus.trim() !== "";
+        });
+        
+        if (siblingRecord) {
+          const statusStr = formatStatusIfDate(siblingRecord.status) || "";
+          const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
+          const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
+          const isKyungrodang = cleanMyStudent.includes("경로당");
+
+          let tagParts = [];
+          let memoParts = [];
+          let isMemoStarted = false;
+          let loadedHeadcount = "";
+          let startIndex = 0;
+
+          if (isShowHeadcount && rawParts.length > 0 && /^\\d{1,2}$/.test(rawParts[0])) {
+            loadedHeadcount = rawParts[0];
+            startIndex = 1;
+          }
+
+          for (let i = startIndex; i < rawParts.length; i++) {
+            const part = rawParts[i];
+            if (!isMemoStarted) {
+              const subParts = part.split('/').map(p => p.trim());
+              const isAllTags = subParts.every(p => {
+                if (p === "") return true;
+                const spaceParts = p.split(/\\s+/);
+                return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
+              });
+
+              if (isAllTags) {
+                tagParts.push(part);
+              } else {
+                isMemoStarted = true;
+                memoParts.push(part);
+              }
+            } else {
+              memoParts.push(part);
+            }
+          }
+
+          if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
+            const lastTag = tagParts[tagParts.length - 1];
+            if (/^\\d{1,2}$/.test(lastTag)) {
+              if (isKyungrodang || tagParts.length > 1) {
+                tagParts.pop();
+                memoParts.unshift(lastTag);
+              }
+            }
+          }
+
+          let loadedTags = [[]];
+          if (tagParts.length > 0) {
+            const combinedTagStr = tagParts.join(',');
+            const studentTagStrs = combinedTagStr.split('/');
+            loadedTags = studentTagStrs.map(str =>
+              str.split(/[,\\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
+            );
+          }
+          loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
+
+          if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
+            if (/^\\d{1,2}$/.test(memoParts[0].trim())) {
+              loadedHeadcount = memoParts[0].trim();
+              memoParts.shift();
+            }
+          }
+          const loadedMemo = memoParts.join(', ');
+
+          didFetchSibling = true;
+          siblingMemoValue = loadedMemo;
+          
+          setLogs(prev => {
+            const newLogs = { ...prev };
+            newLogs[index] = {
+              ...newLogs[index],
+              selectedTags: loadedTags,
+              memo: loadedMemo
+            };
+            if (loadedHeadcount) {
+              newLogs[index].headcount = loadedHeadcount;
+            }
+            return newLogs;
+          });
+        }
+      }
+      
+      if (!didFetchSibling) {
+        setLogs(prev => ({ ...prev, [index]: { ...prev[index], memo: "" } }));
+      }
+
+      if (validationErrorIndex === index) setValidationErrorIndex(null);
+
+      const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
+      if (didFetchSibling && siblingMemoValue.trim() !== "") {
+        try { window.localStorage.setItem(backupKey, siblingMemoValue); } catch (e) { }
+      } else {
+        window.localStorage.removeItem(backupKey);
+      }
+      return; // 기본 처리 종료
     } else {
       setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
     }
