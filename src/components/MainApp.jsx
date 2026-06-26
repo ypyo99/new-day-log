@@ -114,6 +114,57 @@ export default function MainApp({
 
   const [weatherData, setWeatherData] = useState(null);
 
+  // 서버의 최신 버전을 저장할 상태 (초기 접속 시 기록)
+  const [appVersion, setAppVersion] = useState(null);
+
+  // [버전 체크 및 자동 새로고침 로직]
+  // 브라우저 탭을 다시 열거나, 처음 앱에 들어왔을 때 서버의 /version.json 을 확인하여
+  // 현재 버전과 다르면 강제로 새로고침(최신화)을 수행합니다.
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        // 캐시를 피하기 위해 타임스탬프 쿼리 파라미터를 붙여 항상 최신 상태를 요청합니다.
+        const res = await fetch(`/version.json?t=${new Date().getTime()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version) {
+            setAppVersion((prevVersion) => {
+              // 처음 접속해서 버전이 없을 때는 기억만 해둡니다.
+              if (!prevVersion) {
+                return data.version;
+              }
+              // 이미 기억하는 버전이 있는데, 서버 버전과 다르면 새로운 버전이 배포된 것입니다.
+              if (prevVersion !== data.version) {
+                console.log('새로운 업데이트가 감지되어 새로고침합니다.');
+                window.location.reload(true);
+                return prevVersion;
+              }
+              return data.version;
+            });
+          }
+        }
+      } catch (e) {
+        // 오프라인이거나 에러 발생 시엔 무시합니다.
+        console.warn('버전 체크 실패:', e);
+      }
+    };
+
+    // 앱 처음 켤 때 1번 확인
+    checkVersion();
+
+    // 사용자가 다른 앱(또는 다른 브라우저 탭)을 보다가 현재 화면으로 다시 돌아올 때마다 확인
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkVersion();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -2214,14 +2265,14 @@ export default function MainApp({
       const cleanMyStudent = (currentLog?.student || "").trim();
       let didFetchSibling = false;
       let siblingMemoValue = "";
-      
+
       if (cleanMyStudent) {
         const shift = shifts[index];
         const todaysData = allScheduleData[date] || {};
         const rawList = todaysData[shift] || [];
         const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
         const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
-        
+
         const siblingRecord = list.find(r => {
           if (r.teacher === currentUser) return false;
           if ((r.student || "").trim() !== cleanMyStudent) return false;
@@ -2231,7 +2282,7 @@ export default function MainApp({
           if (siblingStatus.includes("선생님휴가")) return false;
           return siblingStatus.trim() !== "";
         });
-        
+
         if (siblingRecord) {
           const statusStr = formatStatusIfDate(siblingRecord.status) || "";
           const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -2300,7 +2351,7 @@ export default function MainApp({
 
           didFetchSibling = true;
           siblingMemoValue = loadedMemo;
-          
+
           setLogs(prev => {
             const newLogs = { ...prev };
             newLogs[index] = {
@@ -2315,7 +2366,7 @@ export default function MainApp({
           });
         }
       }
-      
+
       if (!didFetchSibling) {
         setLogs(prev => ({ ...prev, [index]: { ...prev[index], memo: "" } }));
       }
@@ -2812,7 +2863,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260622
+            v260626-vcontrol
           </div>
         </div>
       </div>
