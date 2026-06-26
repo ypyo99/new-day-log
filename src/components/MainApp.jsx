@@ -1363,7 +1363,7 @@ export default function MainApp({
             // 건너뜀
           } else {
             if (!/^\d+/.test(hc)) {
-              setValidationErrorMsg(`${targetNameForHeadcount} 수업 내용이 있으면 왼쪽의 [인원] 입력란에 참석인원을 입력해야 합니다.`);
+              setValidationErrorMsg(`${targetNameForHeadcount} 수업 내용이 있으면 왼쪽의 [인원] 입력란에 '0' 또는 참석한 인원을 입력해야 합니다.`);
               setValidationErrorIndex(i);
               setValidationErrorType("headcount");
               setShowValidationError(true);
