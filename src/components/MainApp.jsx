@@ -1922,6 +1922,15 @@ export default function MainApp({
         const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = (log.student || "") !== (original.student || "");
         const isLocationDiff = (log.location || "") !== (original.location || "");
+        
+        // --- 보조강사 일정 복제 방지 로직 일치화 ---
+        const currentHasAssistant = (log.student || "").includes("보조강사");
+        const originalHasAssistant = (original.student || "").includes("보조강사");
+        if (currentHasAssistant && !originalHasAssistant) {
+          return false; // 복제가 이루어지지 않을 것이므로 차이가 없는 것으로 취급
+        }
+        // ------------------------------------------
+
         return isStudentDiff || isLocationDiff;
       });
     });
@@ -1958,6 +1967,15 @@ export default function MainApp({
         const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = student !== (original.student || "").trim();
         const isLocationDiff = location !== (original.location || "").trim();
+
+        // --- 보조강사 일정 복제 방지 로직 일치화 ---
+        const currentHasAssistant = student.includes("보조강사");
+        const originalHasAssistant = (original.student || "").includes("보조강사");
+        if (currentHasAssistant && !originalHasAssistant) {
+          return false; // 복제가 이루어지지 않을 것이므로 차이가 없는 것으로 취급
+        }
+        // ------------------------------------------
+
         return isStudentDiff || isLocationDiff;
       });
 
@@ -2936,18 +2954,12 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (date >= getLocalDateString(new Date()) && (
+                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
-                    disabled={!!noNewScheduleToRepeat}
-                    className={`text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all ${!!noNewScheduleToRepeat ? 'bg-gray-400 text-white cursor-not-allowed opacity-90' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation'}`}
-                    title={
-                      noNewScheduleToRepeat === "current_is_false_20days" ? "20일 근무일 이내의 일정만 복제할 수 있습니다." :
-                        noNewScheduleToRepeat === "no_future_dates" ? "이후 동일한 요일의 날짜가 없습니다." :
-                          noNewScheduleToRepeat === "already_identical" ? "이후 동일 요일에 이미 동일한 일정이 모두 등록되어 있습니다." :
-                            "현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
-                    }
+                    className="text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation"
+                    title="현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
                   >
                     <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
                   </button>
