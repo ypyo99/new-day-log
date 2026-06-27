@@ -1695,7 +1695,7 @@ export default function MainApp({
         const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = (log.student || "") !== (original.student || "");
         const isLocationDiff = (log.location || "") !== (original.location || "");
-        
+
         // --- 보조강사 일정 복제 방지 (마지막 날 이후 빈칸인 곳 복사 방지) ---
         const currentHasAssistant = (log.student || "").includes("보조강사");
         const originalHasAssistant = (original.student || "").includes("보조강사");
@@ -1993,7 +1993,7 @@ export default function MainApp({
       const targetOriginal = getMyOriginalRecord(targetDate, shifts[index]);
       const isStudentDiff = (currentLog.student || "").trim() !== (targetOriginal.student || "").trim();
       const isLocationDiff = (currentLog.location || "").trim() !== (targetOriginal.location || "").trim();
-      
+
       // --- 보조강사 일정 복제 방지 (마지막 날 이후 빈칸인 곳 복사 방지) ---
       const currentHasAssistant = (currentLog.student || "").includes("보조강사");
       const originalHasAssistant = (targetOriginal.student || "").includes("보조강사");
@@ -2001,7 +2001,7 @@ export default function MainApp({
         return false; // 복제 건너뜀
       }
       // ------------------------------------------------------------------
-      
+
       return isStudentDiff || isLocationDiff;
     }).map(d => ({ date: d, times: [shifts[index]] }));
 
@@ -2881,7 +2881,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260626-vcontrol
+            v260627
           </div>
         </div>
       </div>
