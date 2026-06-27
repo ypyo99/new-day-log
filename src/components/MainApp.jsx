@@ -524,7 +524,8 @@ export default function MainApp({
 
     // 날짜 순서대로 정렬
     alerts.sort((a, b) => a.diffDays - b.diffDays);
-    setSpecialAlerts(alerts.map(a => a.msg));
+    // 일정 3일전부터 폰트 색상을 변경하기 위해 msg뿐만 아니라 diffDays도 함께 저장합니다.
+    setSpecialAlerts(alerts);
   }, [date, holidaysFullList]);
 
   useEffect(() => {
@@ -3079,11 +3080,17 @@ export default function MainApp({
                           📅 주요 일정 안내
                         </h4>
                         <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
-                          {specialAlerts.map((msg, idx) => (
-                            <p key={idx} className="font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight text-blue-700 tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block">
-                              • {msg}
-                            </p>
-                          ))}
+                          {specialAlerts.map((alert, idx) => {
+                            // 3일 이내인 일정인지 확인합니다
+                            const isClose = alert.diffDays <= 3;
+                            return (
+                              <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${isClose ? '' : 'text-blue-700'}`}>
+                                <span className={isClose ? 'shine-text-top' : ''}>
+                                  • {alert.msg}
+                                </span>
+                              </p>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>

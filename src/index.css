@@ -105,3 +105,28 @@ input[type="date"].opacity-0::-webkit-calendar-picker-indicator {
     top: calc(1.5rem + env(safe-area-inset-top)) !important;
   }
 }
+
+@keyframes shineText {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+
+.shine-text-normal {
+  background: linear-gradient(120deg, #4338ca 40%, #a5b4fc 50%, #4338ca 60%);
+  background-size: 300% 100%;
+  color: transparent !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shineText 2.5s linear infinite;
+  display: inline;
+}
+
+.shine-text-top {
+  background: linear-gradient(120deg, #7f1d1d 40%, #ffaaaa 50%, #7f1d1d 60%);
+  background-size: 300% 100%;
+  color: transparent !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shineText 2.5s linear infinite;
+  display: inline;
+}
