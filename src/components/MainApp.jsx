@@ -104,10 +104,28 @@ export default function MainApp({
   const [isSaveComplete, setIsSaveComplete] = useState(false);
 
   const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
+  const [showAssistantConflictModal, setShowAssistantConflictModal] = useState(false);
+  const [assistantConflictData, setAssistantConflictData] = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [repeatTargetDates, setRepeatTargetDates] = useState([]);
   const [repeatMode, setRepeatMode] = useState('all');
   const [repeatShiftIndex, setRepeatShiftIndex] = useState(null);
+
+  const handleAssistantConflictProceed = () => {
+    setShowAssistantConflictModal(false);
+    if (!assistantConflictData) return;
+    
+    if (assistantConflictData.mode === 'all') {
+      setRepeatMode('all');
+      setRepeatTargetDates(assistantConflictData.validTargetDates);
+      setShowRepeatConfirm(true);
+    } else {
+      setRepeatMode('shift');
+      setRepeatShiftIndex(assistantConflictData.index);
+      setRepeatTargetDates(assistantConflictData.validTargetDates);
+      setShowRepeatConfirm(true);
+    }
+  };
 
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
@@ -1726,10 +1744,9 @@ export default function MainApp({
     }
 
     if (hasOriginalAssistantConflict) {
-      const confirmResult = window.confirm("현재 일정을 복제할 미래 날짜에 보조강사 일정이 있습니다. 복제작업을 수행하시겠습니까?");
-      if (!confirmResult) {
-        return;
-      }
+      setAssistantConflictData({ mode: 'all', validTargetDates });
+      setShowAssistantConflictModal(true);
+      return;
     }
 
     setRepeatMode('all');
@@ -2051,10 +2068,9 @@ export default function MainApp({
     }
 
     if (hasOriginalAssistantConflict) {
-      const confirmResult = window.confirm("현재 일정을 복제할 미래 날짜에 보조강사 일정이 있습니다. 복제작업을 수행하시겠습니까?");
-      if (!confirmResult) {
-        return;
-      }
+      setAssistantConflictData({ mode: 'shift', validTargetDates, index });
+      setShowAssistantConflictModal(true);
+      return;
     }
 
     setRepeatMode('shift');
@@ -3436,6 +3452,37 @@ export default function MainApp({
               >
                 {isSaveComplete ? "확인" : "잠시만 기다려주세요..."}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAssistantConflictModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[55] px-4">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+            <div className="bg-yellow-500 py-4 px-6 text-center">
+              <h3 className="text-xl font-bold text-white tracking-wide">보조강사 일정 덮어쓰기 주의</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed">
+                현재 일정을 복제할 미래 날짜에<br/>
+                <span className="bg-[#FFFF00] text-black px-1.5 py-0.5 rounded mx-1 whitespace-nowrap">보조강사</span><br/>
+                일정이 있습니다. 복제하시겠습니까?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAssistantConflictProceed}
+                  className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                >
+                  예
+                </button>
+                <button
+                  onClick={() => setShowAssistantConflictModal(false)}
+                  className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                >
+                  아니오
+                </button>
+              </div>
             </div>
           </div>
         </div>
