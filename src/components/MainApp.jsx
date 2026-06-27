@@ -1688,6 +1688,8 @@ export default function MainApp({
       return;
     }
 
+    let hasOriginalAssistantConflict = false;
+
     const validTargetDates = targetDates.map(targetDate => {
       let changedTimes = [];
       shifts.forEach((shiftTime, i) => {
@@ -1705,6 +1707,9 @@ export default function MainApp({
         // ------------------------------------------------------------------
 
         if (isStudentDiff || isLocationDiff) {
+          if (originalHasAssistant) {
+            hasOriginalAssistantConflict = true;
+          }
           changedTimes.push(shiftTime);
         }
       });
@@ -1719,6 +1724,14 @@ export default function MainApp({
       setTimeout(() => setErrorMessage(""), 3000);
       return;
     }
+
+    if (hasOriginalAssistantConflict) {
+      const confirmResult = window.confirm("현재 일정을 복제할 미래 날짜에 보조강사 일정이 있습니다. 복제작업을 수행하시겠습니까?");
+      if (!confirmResult) {
+        return;
+      }
+    }
+
     setRepeatMode('all');
     setRepeatTargetDates(validTargetDates);
     setShowRepeatConfirm(true);
@@ -2006,6 +2019,8 @@ export default function MainApp({
       return;
     }
 
+    let hasOriginalAssistantConflict = false;
+
     const validTargetDates = targetDates.filter(targetDate => {
       const currentLog = logs[index];
       const targetOriginal = getMyOriginalRecord(targetDate, shifts[index]);
@@ -2020,6 +2035,12 @@ export default function MainApp({
       }
       // ------------------------------------------------------------------
 
+      if (isStudentDiff || isLocationDiff) {
+        if (originalHasAssistant) {
+          hasOriginalAssistantConflict = true;
+        }
+      }
+
       return isStudentDiff || isLocationDiff;
     }).map(d => ({ date: d, times: [shifts[index]] }));
 
@@ -2027,6 +2048,13 @@ export default function MainApp({
       setErrorMessage(<span>⚠️ 이미 동일한 일정이 등록되어 있습니다.</span>);
       setTimeout(() => setErrorMessage(""), 3000);
       return;
+    }
+
+    if (hasOriginalAssistantConflict) {
+      const confirmResult = window.confirm("현재 일정을 복제할 미래 날짜에 보조강사 일정이 있습니다. 복제작업을 수행하시겠습니까?");
+      if (!confirmResult) {
+        return;
+      }
     }
 
     setRepeatMode('shift');
