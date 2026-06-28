@@ -627,10 +627,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
             }
 
             let alignHorizontal = "center";
+            let alignVertical = "middle";
             if (rowObj.category === "진행") {
               alignHorizontal = "left";
+              alignVertical = "top";
             }
-            cell.alignment = { vertical: "middle", horizontal: alignHorizontal, wrapText: true };
+            cell.alignment = { vertical: alignVertical, horizontal: alignHorizontal, wrapText: true };
           }
         });
 
@@ -1228,8 +1230,10 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               cellStyle.backgroundColor = "#ffffff";
                             }
 
+                            const alignClass = row.category === "진행" ? "align-top text-left" : "align-middle text-center";
+
                             return (
-                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 align-middle text-center text-[11px] sm:text-xs md:text-sm lg:text-[15px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>
+                              <td key={dateStr} className={`border border-gray-300 py-1.5 px-0.5 ${alignClass} text-[11px] sm:text-xs md:text-sm lg:text-[15px] break-all whitespace-pre-wrap leading-snug ${cellClass}`} style={cellStyle}>
                                 {/* 내용이 많아도 최대 72px(약 3~4줄) 높이에서 고정, 넘치면 스크롤 */}
                                 <div style={{ maxHeight: '72px', overflowY: 'auto' }}>
                                   {cellContent || '\u00A0'}
@@ -1399,7 +1403,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                     <span className={`truncate block max-w-[120px] mx-auto ${locationTextClass}`} title={isHoliday ? (holidayInfo.content1 || '공휴일') : item.location}>{(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content1 || '공휴일') : (item.location || '-')}</span>
                                   )}
                                 </td>
-                                <td className="border-b border-gray-200 align-middle py-2 px-1" style={targetStyle}>
+                                <td className="border-b border-gray-200 align-top py-2 px-1 text-left" style={targetStyle}>
                                   <span className={`text-xs font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={isHoliday ? (item.render.teacher ? (holidayInfo.content2 || '') : '') : (item.status || '')}>
                                     {(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content2 || '-') : (item.status || '-')}
                                   </span>

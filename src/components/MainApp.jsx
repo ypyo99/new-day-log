@@ -3467,7 +3467,7 @@ export default function MainApp({
       {showAssistantConflictModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[55] px-4">
           <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
-            <div className="bg-yellow-500 py-4 px-6 text-center">
+            <div className="bg-blue-500 py-4 px-6 text-center">
               <h3 className="text-xl font-bold text-white tracking-wide">보조강사 일정 덮어쓰기 주의</h3>
             </div>
             <div className="p-6">
@@ -3479,7 +3479,7 @@ export default function MainApp({
               <div className="flex gap-3">
                 <button
                   onClick={handleAssistantConflictProceed}
-                  className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                  className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
                 >
                   예
                 </button>
