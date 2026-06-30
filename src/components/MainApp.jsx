@@ -243,6 +243,11 @@ export default function MainApp({
 
         if (!fetchSuccess) throw new Error("Failed to fetch after retries");
 
+        if (res && res.status === 429) {
+          setWeatherData({ error: true, msg: '일일 트래픽 초과' });
+          return;
+        }
+
         if (text.includes("Unauthorized")) {
           setWeatherData({ error: true, msg: 'API 키 미승인(동기화 1~2시간 소요)' });
           return;
@@ -262,6 +267,8 @@ export default function MainApp({
             extractedError = reasonMatch[1]; // 예: HTTP_ERROR, SERVICE_KEY_IS_NOT_REGISTERED_ERROR
           } else if (errMsgMatch) {
             extractedError = errMsgMatch[1];
+          } else if (text.includes('API rate limit exceeded')) {
+            extractedError = '일일 트래픽 초과';
           }
 
           if (extractedError.includes('SERVICE_KEY_IS_NOT_REGISTERED_ERROR')) {
