@@ -144,8 +144,10 @@ export default function MainApp({
         // 캐시를 피하기 위해 타임스탬프 쿼리 파라미터를 붙여 항상 최신 상태를 요청합니다.
         const res = await fetch(`/version.json?t=${new Date().getTime()}`);
         if (res.ok) {
-          const data = await res.json();
-          if (data && data.version) {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+            if (data && data.version) {
             setAppVersion((prevVersion) => {
               // 처음 접속해서 버전이 없을 때는 기억만 해둡니다.
               if (!prevVersion) {
@@ -161,7 +163,8 @@ export default function MainApp({
             });
           }
         }
-      } catch (e) {
+      }
+    } catch (e) {
         // 오프라인이거나 에러 발생 시엔 무시합니다.
         console.warn('버전 체크 실패:', e);
       }
