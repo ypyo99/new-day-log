@@ -565,7 +565,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                         const parsedStatus = parseWeeklyStatus(cellData.status);
                         const isAssistant = cellData.student && cellData.student.includes("보조강사");
                         const isKyungrodang = (cellData.student || "").includes("경로당") || (cellData.student || "").includes("복지관") || (cellData.location || "").includes("경로당") || ((cellData.location || "").includes("복지관") && (cellData.location || "").trim() !== "복지관");
-                        const isHoliday = (cellData.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.student.replace(/\s/g, ''))) ||
+                        const isHoliday = !!specialDayInfo || (cellData.student && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.student.replace(/\s/g, ''))) ||
                           (cellData.status && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.status.replace(/\s/g, ''))) ||
                           (cellData.location && /공휴일|근로자의날|어린이날|휴일|공휴/.test(cellData.location.replace(/\s/g, '')));
                         const cardBgClass = isAssistant ? "bg-[#FFFF00]" : isKyungrodang ? "bg-orange-100" : "bg-white";
