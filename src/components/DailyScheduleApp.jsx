@@ -720,9 +720,16 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               });
             }
           }
+        }
 
-          const dates = currentDatesMap[name];
-          const validDates = dates.filter(d => {
+        const dates = currentDatesMap[name];
+        const getTLocal = (s) => {
+          if (!s) return 9999;
+          const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+          return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+        };
+        const currentShiftT = getTLocal(row.time);
+        const validDates = dates.filter(d => {
             if (d.date.getTime() < todayDateObj.getTime()) return true;
             if (d.date.getTime() === todayDateObj.getTime()) {
               return getTLocal(d.shift) <= currentShiftT;
