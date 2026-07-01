@@ -267,7 +267,10 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
                const explicitCount = parseInt(matchObj[1], 10);
                const currentLen = studentHistoryMap[name].length;
-               studentOffsetsMap[name] = explicitCount - currentLen;
+               const newOffset = explicitCount - currentLen;
+               if (studentOffsetsMap[name] === undefined || newOffset > studentOffsetsMap[name]) {
+                   studentOffsetsMap[name] = newOffset;
+               }
            }
         }
       });

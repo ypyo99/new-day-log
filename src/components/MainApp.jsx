@@ -1081,7 +1081,10 @@ export default function MainApp({
                 const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
                 const explicitCount = parseInt(matchObj[1], 10);
                 const currentLen = studentDatesMap[name].length;
-                studentOffsetsMap[name] = explicitCount - currentLen;
+                const newOffset = explicitCount - currentLen;
+                if (studentOffsetsMap[name] === undefined || newOffset > studentOffsetsMap[name]) {
+                  studentOffsetsMap[name] = newOffset;
+                }
               }
             }
           });
@@ -1201,7 +1204,10 @@ export default function MainApp({
               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
               const explicitCount = parseInt(matchObj[1], 10);
               const currentLen = validDates.length;
-              currentOffsetsMap[name] = explicitCount - currentLen;
+              const newOffset = explicitCount - currentLen;
+              if (currentOffsetsMap[name] === undefined || newOffset > currentOffsetsMap[name]) {
+                  currentOffsetsMap[name] = newOffset;
+              }
             }
 
             const offset = currentOffsetsMap[name] || 0;

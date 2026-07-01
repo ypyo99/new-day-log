@@ -569,13 +569,16 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
             const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
             if (!alreadyHas) {
-              if (hasExplicitCount) {
-                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                const explicitCount = parseInt(matchObj[1], 10);
-                const currentLen = studentDatesMap[name].length;
-                studentOffsetsMap[name] = explicitCount - (currentLen + 1);
-              }
               studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+            }
+            if (hasExplicitCount) {
+              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+              const explicitCount = parseInt(matchObj[1], 10);
+              const currentLen = studentDatesMap[name].length;
+              const newOffset = explicitCount - currentLen;
+              if (studentOffsetsMap[name] === undefined || newOffset > studentOffsetsMap[name]) {
+                studentOffsetsMap[name] = newOffset;
+              }
             }
           }
         });
@@ -693,9 +696,12 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
               const explicitCount = parseInt(matchObj[1], 10);
               const currentLen = validDatesForOffset.length;
-              currentOffsetsMap[name] = explicitCount - currentLen;
+              const newOffset = explicitCount - currentLen;
+              
+              if (currentOffsetsMap[name] === undefined || newOffset > currentOffsetsMap[name]) {
+                  currentOffsetsMap[name] = newOffset;
 
-              // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용하되, 순서를 유지합니다.
+                  // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용하되, 순서를 유지합니다.
               parsedData.forEach(prevRow => {
                 if (prevRow.sessionCounts) {
                   prevRow.sessionCounts.forEach(sc => {
