@@ -1056,7 +1056,7 @@ export default function MainApp({
             const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
             const isAbsentOrCanceled = hasIndependentKeyword(personalStatus, ["결석", "선생님휴가"]) || (hasEndOrCancel && !hasAttendance);
             const textToMatch = (hRow.memo || hRow.status || "");
-            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
             const hasExplicitCount = memoMatches.length > 0;
 
             if (!isAbsentOrCanceled || hasExplicitCount) {
@@ -1070,13 +1070,8 @@ export default function MainApp({
               const hShift = hRow.shift || "";
 
               let isNew = false;
-              if (selectedTeam === "취업팀") {
-                const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
-                if (!alreadyHas) isNew = true;
-              } else {
-                const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime());
-                if (!alreadyHas) isNew = true;
-              }
+              const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
+              if (!alreadyHas) isNew = true;
 
               if (isNew) {
                 studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
@@ -1170,7 +1165,7 @@ export default function MainApp({
             const isAbsent = hasIndependentKeyword(currentStatus, ["결석", "선생님휴가"]) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
             const textToMatch = (log.memo || fullRealtimeStatus);
             // [수정된 부분 끝]
-            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
             const hasExplicitCount = memoMatches.length > 0;
 
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
@@ -1178,29 +1173,39 @@ export default function MainApp({
 
             if (!isAbsent || hasExplicitCount) {
               let isNew = false;
-              if (selectedTeam === "취업팀") {
-                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
-                if (!alreadyHas) isNew = true;
-              } else {
-                const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
-                if (!alreadyHas) isNew = true;
-              }
+              const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
+              if (!alreadyHas) isNew = true;
 
               if (isNew) {
                 currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
               }
             }
 
+            const getTLocal = (s) => {
+              if (!s) return 9999;
+              const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+              return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+            };
+            const currentShiftT = getTLocal(shift);
+
+            const dates = currentDatesMap[name];
+            const validDates = dates.filter(d => {
+              if (d.date.getTime() < todayDateObj.getTime()) return true;
+              if (d.date.getTime() === todayDateObj.getTime()) {
+                return getTLocal(d.shift) <= currentShiftT;
+              }
+              return false;
+            });
+
             if (hasExplicitCount) {
               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
               const explicitCount = parseInt(matchObj[1], 10);
-              const currentLen = currentDatesMap[name].length;
+              const currentLen = validDates.length;
               currentOffsetsMap[name] = explicitCount - currentLen;
             }
 
-            const dates = currentDatesMap[name];
             const offset = currentOffsetsMap[name] || 0;
-            countsForSlot.push({ name, count: dates.length + offset, dates: [...dates] });
+            countsForSlot.push({ name, count: validDates.length + offset, dates: [...validDates] });
           });
           if (countsForSlot.length > 0) newCounts[index] = countsForSlot;
         });

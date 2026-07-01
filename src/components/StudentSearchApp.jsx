@@ -247,14 +247,13 @@ export default function StudentSearchApp({ onNavigateBack }) {
 
     allForStudent.forEach(r => {
       const textToMatch = (r.memo || "");
-      const memoMatch = textToMatch.match(/(\d+)\s*회차/);
+      const memoMatch = textToMatch.match(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/);
       
       const isAbsentOrCanceled = (r.attendanceTag || "").includes("결석") || (r.attendanceTag || "").includes("선생님휴가") || (r.attendanceTag || "").includes("종료") || (r.attendanceTag || "").includes("취소");
       const isAttended = !isAbsentOrCanceled && r.attendanceTag && r.attendanceTag !== "기록있음";
 
       const dateKey = r.colDate.getTime();
-      const teamName = r.team;
-      const specificKey = teamName === "취업팀" ? `${dateKey}_${r.time}_${r.group}` : `${dateKey}`;
+      const specificKey = `${dateKey}_${r.time}_${r.group}`;
 
       if (memoMatch) {
          currentSession = parseInt(memoMatch[1], 10);

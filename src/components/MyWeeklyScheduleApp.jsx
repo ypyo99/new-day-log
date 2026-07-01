@@ -244,7 +244,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         }
         const isAbsent = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
         const textToMatch = hRow.status || "";
-        const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차/g));
+        const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
         const hasExplicitCount = memoMatches.length > 0;
         
         if (!isAbsent || hasExplicitCount) {
@@ -256,13 +256,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            const dateObj = hRow.log_date;
            
            let isNew = false;
-           if (team === "취업팀") {
-               const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
-               if (!alreadyHas) isNew = true;
-           } else {
-               const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj);
-               if (!alreadyHas) isNew = true;
-           }
+           const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
+           if (!alreadyHas) isNew = true;
            
            if (isNew) {
                studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
@@ -389,13 +384,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                     const h = histList[i];
                     if (h.date < dateStr) count++;
                     else if (h.date === dateStr) {
-                        if (team === "취업팀") {
-                           count++;
-                           if (h.shift === slot) break;
-                        } else {
-                           count++;
-                           break;
-                        }
+                        count++;
+                        if (h.shift === slot) break;
                     } else break;
                 }
                 
