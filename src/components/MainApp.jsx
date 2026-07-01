@@ -2271,6 +2271,7 @@ export default function MainApp({
 
   useEffect(() => {
     if (availableDates.length === 0) return;
+    if (isFetchingSchedule || isSyncing) return;
 
     const todayStr = getInitialWeekday();
     if (date === todayStr && !isSkipDate(date)) return;
@@ -2283,7 +2284,7 @@ export default function MainApp({
         if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
       }
     }
-  }, [availableDates, date]);
+  }, [availableDates, date, isFetchingSchedule, isSyncing]);
 
   const handlePrevDay = async () => {
     if (isDataLoading) return;
