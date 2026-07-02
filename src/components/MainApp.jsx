@@ -728,8 +728,8 @@ export default function MainApp({
       try {
         const parsed = JSON.parse(cachedTeachers);
         if (!Array.isArray(parsed)) throw new Error('Not array');
-        const dbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
-        const hasDefaultTeacher = parsed && dbNames.length > 0 && parsed.some(t => dbNames.includes(t));
+        const activeDbNames = dbTeachers.filter(t => t.team === selectedTeam && t.is_active !== false).map(t => t.name);
+        const hasDefaultTeacher = parsed && activeDbNames.length > 0 && parsed.some(t => activeDbNames.includes(t));
         if (parsed && parsed.length > 0 && hasDefaultTeacher) {
           let filteredParsed = parsed;
           if (selectedTeam === "1팀") {
@@ -738,9 +738,15 @@ export default function MainApp({
               return clean !== "천은선" && clean !== "서승희" && clean !== "천은선서승희";
             });
           }
+          // 캐시에 있는 이름 중 퇴사한 선생님은 강제 제외
+          filteredParsed = filteredParsed.filter(name => {
+            const dbT = dbTeachers.find(t => t.team === selectedTeam && t.name === name);
+            if (dbT && dbT.is_active === false) return false;
+            return true;
+          });
+
           const teacherSet = new Set(filteredParsed);
-          const currentDbNames = dbTeachers.filter(t => t.team === selectedTeam).map(t => t.name);
-          currentDbNames.forEach(name => {
+          activeDbNames.forEach(name => {
             if (selectedTeam === "1팀") {
               const clean = (name || "").replace(/\s/g, "");
               if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
