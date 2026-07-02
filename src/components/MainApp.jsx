@@ -360,7 +360,14 @@ export default function MainApp({
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
-          const sorted = (data || []).sort((a, b) => {
+          const validNotices = (data || []).filter(notice => {
+            if (!notice.end_date) return true;
+            const endDate = new Date(notice.end_date);
+            endDate.setHours(0, 0, 0, 0);
+            return endDate >= today;
+          });
+
+          const sorted = validNotices.sort((a, b) => {
             const isTopA = a.is_top || false;
             const isTopB = b.is_top || false;
             if (isTopA !== isTopB) {
