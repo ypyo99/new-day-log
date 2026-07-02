@@ -193,14 +193,25 @@ export default function MainApp({
         const targetDate = new Date(now);
         const targetDateStr = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
 
-        // 캐시 확인 (하루 한 번만 호출)
-        const cachedData = window.localStorage.getItem('sungdong_weather');
+        // 캐시 확인 (하루 한 번만 호출, 단 시간대별 예보를 저장하여 현재 시간에 맞게 렌더링)
+        const cachedData = window.localStorage.getItem('sungdong_weather_v2');
         if (cachedData) {
           try {
             const parsed = JSON.parse(cachedData);
             if (parsed.date === targetDateStr && parsed.data && !parsed.data.error) {
-              setWeatherData(parsed.data);
-              return;
+              const currentHour = now.getHours();
+              let weatherDesc = parsed.data.hourlyDesc ? parsed.data.hourlyDesc[currentHour] : parsed.data.weatherDesc;
+              if (!weatherDesc && parsed.data.hourlyDesc) {
+                const availableHours = Object.keys(parsed.data.hourlyDesc).map(Number).sort((a,b)=>a-b);
+                const futureHours = availableHours.filter(h => h >= currentHour);
+                if (futureHours.length > 0) weatherDesc = parsed.data.hourlyDesc[futureHours[0]];
+                else if (availableHours.length > 0) weatherDesc = parsed.data.hourlyDesc[availableHours[availableHours.length - 1]];
+              }
+              
+              if (weatherDesc && parsed.data.hourlyDesc) {
+                setWeatherData({ ...parsed.data, weatherDesc });
+                return;
+              }
             }
           } catch (e) { }
         }
@@ -289,8 +300,7 @@ export default function MainApp({
 
           let maxTemp = null;
           let minTemp = null;
-          let sky = null;
-          let pty = null;
+          const hourlyWeather = {};
 
           items.forEach(item => {
             // 오늘 날짜의 데이터만 추출
@@ -298,27 +308,49 @@ export default function MainApp({
               if (item.category === 'TMX') maxTemp = parseFloat(item.fcstValue);
               if (item.category === 'TMN') minTemp = parseFloat(item.fcstValue);
 
-              // 현재 또는 가까운 미래의 날씨 상태
-              if (item.category === 'SKY' && sky === null) sky = item.fcstValue;
-              if (item.category === 'PTY' && pty === null) pty = item.fcstValue;
+              const hour = parseInt(item.fcstTime.substring(0, 2), 10);
+              if (!hourlyWeather[hour]) hourlyWeather[hour] = { sky: null, pty: null, pop: null };
+              
+              if (item.category === 'SKY') hourlyWeather[hour].sky = item.fcstValue;
+              if (item.category === 'PTY') hourlyWeather[hour].pty = item.fcstValue;
+              if (item.category === 'POP') hourlyWeather[hour].pop = item.fcstValue;
             }
           });
 
-          let weatherDesc = '날씨 정보';
-          if (pty === '0') {
-            if (sky === '1') weatherDesc = '맑음 ☀️';
-            else if (sky === '3') weatherDesc = '구름많음 ⛅';
-            else if (sky === '4') weatherDesc = '흐림 ☁️';
-          } else {
-            if (pty === '1' || pty === '4') weatherDesc = '비 🌧️';
-            else if (pty === '2') weatherDesc = '비/눈 🌨️';
-            else if (pty === '3') weatherDesc = '눈 ❄️';
-          }
+          const hourlyDesc = {};
+          Object.keys(hourlyWeather).forEach(h => {
+            const { sky, pty, pop } = hourlyWeather[h];
+            if (sky === null || pty === null) return;
+            let desc = '날씨 정보';
+            if (pty === '0') {
+              if (sky === '1') desc = '맑음 ☀️';
+              else if (sky === '3') desc = '구름많음 ⛅';
+              else if (sky === '4') desc = '흐림 ☁️';
+            } else {
+              if (pty === '1' || pty === '4') desc = '비 🌧️';
+              else if (pty === '2') desc = '비/눈 🌨️';
+              else if (pty === '3') desc = '눈 ❄️';
+            }
+            if (pop !== null && pop !== undefined) {
+              desc += ` ☔${pop}%`;
+            }
+            hourlyDesc[h] = desc;
+          });
 
           if (maxTemp !== null && minTemp !== null) {
-            const resultData = { minTemp, maxTemp, weatherDesc, isTomorrow: false };
-            setWeatherData(resultData);
-            window.localStorage.setItem('sungdong_weather', JSON.stringify({ date: targetDateStr, data: resultData }));
+            const currentHour = now.getHours();
+            let weatherDesc = hourlyDesc[currentHour];
+            if (!weatherDesc) {
+              const availableHours = Object.keys(hourlyDesc).map(Number).sort((a,b)=>a-b);
+              const futureHours = availableHours.filter(h => h >= currentHour);
+              if (futureHours.length > 0) weatherDesc = hourlyDesc[futureHours[0]];
+              else if (availableHours.length > 0) weatherDesc = hourlyDesc[availableHours[availableHours.length - 1]];
+              else weatherDesc = '정보 없음';
+            }
+
+            const resultData = { minTemp, maxTemp, hourlyDesc, isTomorrow: false };
+            setWeatherData({ ...resultData, weatherDesc });
+            window.localStorage.setItem('sungdong_weather_v2', JSON.stringify({ date: targetDateStr, data: resultData }));
           } else {
             setWeatherData({ error: true, msg: '데이터 없음' });
           }
@@ -2836,7 +2868,14 @@ export default function MainApp({
                             날씨 정보 준비 중 ({weatherData.msg})
                           </span>
                         ) : (
-                          <span className="text-[15px] sm:text-[18px] text-red-700 font-bold ml-auto text-right leading-tight">
+                          <span 
+                            className="text-[15px] sm:text-[18px] text-red-700 font-bold ml-auto text-right leading-tight hover:underline cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open('https://weather.naver.com', '_blank');
+                            }}
+                            title="네이버 날씨로 이동"
+                          >
                             {weatherData.isTomorrow ? '내일: ' : ''}{weatherData.weatherDesc} ({weatherData.minTemp}℃ / {weatherData.maxTemp}℃)
                           </span>
                         )}
