@@ -261,8 +261,17 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           }
         }
 
+        const inactiveTeachersWithRecordsExcel = new Set();
+        teamData.forEach(item => {
+          const dbT = getGlobalTeachersList().find(t => t.team === tName && t.name === item.teacher);
+          if (dbT && dbT.is_active === false) {
+            inactiveTeachersWithRecordsExcel.add(item.teacher);
+          }
+        });
+
         const teamTeacherShiftsMap = {};
         getGlobalTeachersList().filter(t => t.team === tName).forEach(rec => {
+          if (rec.is_active === false && !inactiveTeachersWithRecordsExcel.has(rec.name)) return;
           const teacher = rec.name;
           const group = getTeacherGroup(tName, teacher);
           if (isExcludedTeacherForExport(teacher)) return;
@@ -788,11 +797,20 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
   const uniqueDates = Array.from(new Set(filteredData.map(item => item.log_date))).sort();
 
+  const inactiveTeachersWithRecordsUI = new Set();
+  filteredData.forEach(item => {
+    const dbT = getGlobalTeachersList().find(t => t.team === currentTeam && t.name === item.teacher);
+    if (dbT && dbT.is_active === false) {
+      inactiveTeachersWithRecordsUI.add(item.teacher);
+    }
+  });
+
   const teacherShiftsMap = {};
 
   getGlobalTeachersList()
     .filter(t => t.team === currentTeam && (teacherFilter === "전체" || t.name === teacherFilter))
     .forEach(rec => {
+      if (rec.is_active === false && !inactiveTeachersWithRecordsUI.has(rec.name)) return;
       const g = getTeacherGroup(currentTeam, rec.name);
       const shifts = [rec.shift1, rec.shift2, rec.shift3].map(s => (s || "").trim()).filter(Boolean);
       if (shifts.length === 0) {
