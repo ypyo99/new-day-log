@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
-import { getSavedItem, setGlobalTeachersList, formatTeacherRow } from '../utils/helpers';
+import { getSavedItem, setGlobalTeachersList, formatTeacherRow, getLocalDateString } from '../utils/helpers';
 import { User, Home } from './Icons';
 
 export default function TeacherManagementApp({ onNavigateBack }) {
@@ -18,8 +18,14 @@ export default function TeacherManagementApp({ onNavigateBack }) {
     name: '',
     shift1: '9:30~10:30',
     shift2: '10:30~11:30',
-    shift3: '11:30~12:30'
+    shift3: '11:30~12:30',
+    is_active: true
   });
+
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetName, setTransferTargetName] = useState("");
+  const [transferDate, setTransferDate] = useState("");
+  const [transferSource, setTransferSource] = useState(null);
 
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [pwdInput, setPwdInput] = useState("");
@@ -71,9 +77,10 @@ export default function TeacherManagementApp({ onNavigateBack }) {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const finalValue = type === 'checkbox' ? checked : value;
     setFormData(prev => {
-      const next = { ...prev, [name]: value };
+      const next = { ...prev, [name]: finalValue };
       if (name === 'team') {
         if (value === '3팀') {
           next.shift1 = '13:00~14:00';
@@ -103,7 +110,8 @@ export default function TeacherManagementApp({ onNavigateBack }) {
       name: formData.name,
       shift1: formData.shift1,
       shift2: formData.shift2,
-      shift3: formData.shift3
+      shift3: formData.shift3,
+      is_active: formData.is_active
     };
 
     setIsLoading(true);
@@ -140,7 +148,8 @@ export default function TeacherManagementApp({ onNavigateBack }) {
       name: teacher.name,
       shift1: teacher.shift1 || '',
       shift2: teacher.shift2 || '',
-      shift3: teacher.shift3 || ''
+      shift3: teacher.shift3 || '',
+      is_active: teacher.is_active !== false
     });
     setCurrentId(teacher.id);
     setIsEditing(true);
@@ -156,6 +165,36 @@ export default function TeacherManagementApp({ onNavigateBack }) {
       } catch (err) {
         console.error(err);
         alert('삭제에 실패했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleTransferClick = (teacher) => {
+    setTransferSource(teacher);
+    setTransferDate(getLocalDateString(new Date()));
+    setTransferTargetName("");
+    setShowTransferModal(true);
+  };
+
+  const handleTransferSubmit = async () => {
+    if (!transferTargetName) return alert("이관 받을 선생님을 선택하세요.");
+    if (!transferDate) return alert("기준 일자를 선택하세요.");
+    if (window.confirm(`${transferSource.name} 선생님의 ${transferDate} 이후 일정을 ${transferTargetName} 선생님으로 모두 이관하시겠습니까?`)) {
+      setIsLoading(true);
+      try {
+        const { error } = await supabaseClient
+          .from('daily_logs')
+          .update({ teacher: transferTargetName })
+          .eq('team', transferSource.team)
+          .eq('teacher', transferSource.name)
+          .gte('log_date', transferDate);
+        if (error) throw error;
+        alert("일정 이관이 완료되었습니다.");
+        setShowTransferModal(false);
+      } catch(e) {
+        alert("이관 오류: " + e.message);
       } finally {
         setIsLoading(false);
       }
@@ -244,6 +283,10 @@ export default function TeacherManagementApp({ onNavigateBack }) {
                   <input type="text" name="shift3" value={formData.shift3} onChange={handleInputChange} placeholder="11:30~12:30" className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base" />
                 </div>
               </div>
+              <div className="flex items-center gap-2 mt-2 px-1">
+                <input type="checkbox" id="is_active" name="is_active" checked={formData.is_active} onChange={handleInputChange} className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" />
+                <label htmlFor="is_active" className="text-sm font-bold text-gray-700 select-none cursor-pointer">현재 재직 중 (체크 해제 시 메인 화면의 선생님 목록에서 숨김 처리됩니다)</label>
+              </div>
             </form>
           </div>
         ) : (
@@ -272,25 +315,29 @@ export default function TeacherManagementApp({ onNavigateBack }) {
               </thead>
               <tbody>
                 {teachers.length > 0 ? teachers.sort((a, b) => a.team.localeCompare(b.team) || ((a.seq_num || 999) - (b.seq_num || 999)) || a.group.localeCompare(b.group) || a.name.localeCompare(b.name)).map(t => (
-                  <tr key={t.id} className={`border-b border-gray-100 ${t.team === '2팀' || t.team === '취업팀' ? 'bg-sky-50 hover:bg-sky-100' : 'hover:bg-gray-50'}`}>
+                  <tr key={t.id} className={`border-b border-gray-100 ${t.is_active === false ? 'bg-gray-200 opacity-60' : (t.team === '2팀' || t.team === '취업팀' ? 'bg-sky-50 hover:bg-sky-100' : 'hover:bg-gray-50')}`}>
                     <td className="py-2 px-1 border-r border-gray-100 w-10 text-xs sm:text-sm">{t.team.replace('팀', '')}</td>
                     <td className="py-2 px-1 border-r border-gray-100 w-10 text-xs sm:text-sm">{t.group.replace('조', '')}</td>
                     <td className="py-2 px-1 border-r border-gray-100 w-12 whitespace-nowrap text-xs sm:text-sm">{t.seq_num}</td>
                     <td className="py-2 px-2 border-r border-gray-100 font-bold text-xs sm:text-sm">
-                      {t.name.includes('/') ? (
-                        t.name.split('/').map((namePart, idx, arr) => (
-                          <span key={idx} className="block whitespace-nowrap">
-                            {namePart}{idx < arr.length - 1 ? '/' : ''}
-                          </span>
-                        ))
-                      ) : (
-                        t.name
-                      )}
+                      {t.is_active === false && <span className="text-xs text-red-600 bg-red-100 px-1 py-0.5 rounded mr-1 whitespace-nowrap">퇴사</span>}
+                      <span className={t.is_active === false ? 'line-through text-gray-500' : ''}>
+                        {t.name.includes('/') ? (
+                          t.name.split('/').map((namePart, idx, arr) => (
+                            <span key={idx} className="block whitespace-nowrap">
+                              {namePart}{idx < arr.length - 1 ? '/' : ''}
+                            </span>
+                          ))
+                        ) : (
+                          t.name
+                        )}
+                      </span>
                     </td>
                     {isAdmin && (
                       <td className="py-2 px-2 border-r border-gray-100 space-x-1 whitespace-nowrap">
-                        <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300">수정</button>
-                        <button onClick={() => handleDelete(t.id)} className="px-2 py-1 bg-red-200 text-red-800 text-xs font-bold rounded hover:bg-red-300">삭제</button>
+                        <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300 mb-1 sm:mb-0">수정</button>
+                        <button onClick={() => handleDelete(t.id)} className="px-2 py-1 bg-red-200 text-red-800 text-xs font-bold rounded hover:bg-red-300 mb-1 sm:mb-0">삭제</button>
+                        <button onClick={() => handleTransferClick(t)} className="px-2 py-1 bg-purple-200 text-purple-800 text-xs font-bold rounded hover:bg-purple-300">이관</button>
                       </td>
                     )}
                     <td className="py-2 px-2 border-r border-gray-100 text-sm text-gray-600">{t.shift1}</td>
@@ -317,6 +364,36 @@ export default function TeacherManagementApp({ onNavigateBack }) {
             <div className="flex gap-2 text-black">
               <button onClick={() => setShowPwdModal(false)} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold touch-manipulation">취소</button>
               <button onClick={checkPassword} className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold touch-manipulation">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTransferModal && transferSource && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full">
+            <h3 className="text-lg font-bold text-gray-800 mb-2 border-b pb-2">일정 이관</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              <strong>{transferSource.team} {transferSource.name}</strong> 선생님의 향후 일정을 다른 선생님에게 일괄 이관합니다.
+            </p>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">기준 일자 (해당일 포함 이후)</label>
+                <input type="date" value={transferDate} onChange={e => setTransferDate(e.target.value)} className="w-full border p-2 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">이관 받을 선생님</label>
+                <select value={transferTargetName} onChange={e => setTransferTargetName(e.target.value)} className="w-full border p-2 rounded-lg text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-purple-400">
+                  <option value="">-- 선생님 선택 --</option>
+                  {teachers.filter(t => t.team === transferSource.team && t.is_active !== false && t.id !== transferSource.id).map(t => (
+                    <option key={t.id} value={t.name}>{t.name} ({t.group})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowTransferModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-bold">취소</button>
+              <button onClick={handleTransferSubmit} disabled={isLoading} className="flex-1 py-2.5 bg-purple-600 text-white rounded-lg font-bold disabled:opacity-50">이관 실행</button>
             </div>
           </div>
         </div>

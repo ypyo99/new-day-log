@@ -106,7 +106,8 @@ export const formatTeacherRow = (t) => ({
   name: t.name,
   shift1: t.shift1 || '',
   shift2: t.shift2 || '',
-  shift3: t.shift3 || ''
+  shift3: t.shift3 || '',
+  is_active: t.is_active !== false
 });
 
 export const setGlobalTeachersList = (list) => {
@@ -164,7 +165,7 @@ export const getTeacherDefaultShift = (team, teacherName, groupName = null, teac
 
 export const getTeamTeacherNames = (team, teacherList = null) => {
   return (teacherList || getGlobalTeachersList())
-    .filter(t => t.team === team)
+    .filter(t => t.team === team && t.is_active !== false)
     .sort((a, b) => getTeacherSortWeight(team, a.name, teacherList) - getTeacherSortWeight(team, b.name, teacherList))
     .map(t => t.name);
 };
