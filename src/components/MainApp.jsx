@@ -676,7 +676,7 @@ export default function MainApp({
       const teacherSet = new Set();
 
       if (dbTeachers.length > 0) {
-        dbTeachers.filter(t => t.team === team).forEach(t => {
+        dbTeachers.filter(t => t.team === team && t.is_active !== false).forEach(t => {
           if (team === "1팀") {
             const clean = (t.name || "").replace(/\s/g, "");
             if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
@@ -688,6 +688,9 @@ export default function MainApp({
       if (data && data.length > 0) {
         data.forEach(row => {
           if (row.teacher) {
+            const dbT = dbTeachers.find(t => t.team === team && t.name === row.teacher);
+            if (dbT && dbT.is_active === false) return; // 퇴사한 선생님 필터링
+
             if (team === "1팀") {
               const clean = (row.teacher || "").replace(/\s/g, "");
               if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
