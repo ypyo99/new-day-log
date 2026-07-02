@@ -2869,7 +2869,7 @@ export default function MainApp({
                           </span>
                         ) : (
                           <span 
-                            className="text-[15px] sm:text-[18px] text-red-700 font-bold ml-auto text-right leading-tight hover:underline cursor-pointer"
+                            className="text-[14px] sm:text-[16px] text-red-700 font-bold ml-auto text-right leading-tight hover:underline cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
                               window.open('https://weather.naver.com', '_blank');
