@@ -3012,7 +3012,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260703-resign
+            v260704-ClassCount
           </div>
         </div>
       </div>
