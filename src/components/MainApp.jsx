@@ -1052,7 +1052,6 @@ export default function MainApp({
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
           .select('log_date, student, status, teacher, shift')
-          .eq('team', selectedTeam)
           .neq('student', '')
           .not('student', 'is', null)
           .lte('log_date', date)
