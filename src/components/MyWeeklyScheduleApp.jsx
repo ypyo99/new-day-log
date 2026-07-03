@@ -190,7 +190,6 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
           const { data: histData, error: histError } = await supabaseClient
             .from('daily_logs')
             .select('log_date, student, status, teacher, shift')
-            .eq('team', team)
             .neq('student', '')
             .not('student', 'is', null)
             .lte('log_date', endStr)
