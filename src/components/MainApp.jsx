@@ -114,7 +114,7 @@ export default function MainApp({
   const handleAssistantConflictProceed = () => {
     setShowAssistantConflictModal(false);
     if (!assistantConflictData) return;
-    
+
     if (assistantConflictData.mode === 'all') {
       setRepeatMode('all');
       setRepeatTargetDates(assistantConflictData.validTargetDates);
@@ -148,23 +148,23 @@ export default function MainApp({
           if (contentType && contentType.includes('application/json')) {
             const data = await res.json();
             if (data && data.version) {
-            setAppVersion((prevVersion) => {
-              // 처음 접속해서 버전이 없을 때는 기억만 해둡니다.
-              if (!prevVersion) {
+              setAppVersion((prevVersion) => {
+                // 처음 접속해서 버전이 없을 때는 기억만 해둡니다.
+                if (!prevVersion) {
+                  return data.version;
+                }
+                // 이미 기억하는 버전이 있는데, 서버 버전과 다르면 새로운 버전이 배포된 것입니다.
+                if (prevVersion !== data.version) {
+                  console.log('새로운 업데이트가 감지되어 새로고침합니다.');
+                  window.location.reload(true);
+                  return prevVersion;
+                }
                 return data.version;
-              }
-              // 이미 기억하는 버전이 있는데, 서버 버전과 다르면 새로운 버전이 배포된 것입니다.
-              if (prevVersion !== data.version) {
-                console.log('새로운 업데이트가 감지되어 새로고침합니다.');
-                window.location.reload(true);
-                return prevVersion;
-              }
-              return data.version;
-            });
+              });
+            }
           }
         }
-      }
-    } catch (e) {
+      } catch (e) {
         // 오프라인이거나 에러 발생 시엔 무시합니다.
         console.warn('버전 체크 실패:', e);
       }
@@ -202,12 +202,12 @@ export default function MainApp({
               const currentHour = now.getHours();
               let weatherDesc = parsed.data.hourlyDesc ? parsed.data.hourlyDesc[currentHour] : parsed.data.weatherDesc;
               if (!weatherDesc && parsed.data.hourlyDesc) {
-                const availableHours = Object.keys(parsed.data.hourlyDesc).map(Number).sort((a,b)=>a-b);
+                const availableHours = Object.keys(parsed.data.hourlyDesc).map(Number).sort((a, b) => a - b);
                 const futureHours = availableHours.filter(h => h >= currentHour);
                 if (futureHours.length > 0) weatherDesc = parsed.data.hourlyDesc[futureHours[0]];
                 else if (availableHours.length > 0) weatherDesc = parsed.data.hourlyDesc[availableHours[availableHours.length - 1]];
               }
-              
+
               if (weatherDesc && parsed.data.hourlyDesc) {
                 setWeatherData({ ...parsed.data, weatherDesc });
                 return;
@@ -310,7 +310,7 @@ export default function MainApp({
 
               const hour = parseInt(item.fcstTime.substring(0, 2), 10);
               if (!hourlyWeather[hour]) hourlyWeather[hour] = { sky: null, pty: null, pop: null };
-              
+
               if (item.category === 'SKY') hourlyWeather[hour].sky = item.fcstValue;
               if (item.category === 'PTY') hourlyWeather[hour].pty = item.fcstValue;
               if (item.category === 'POP') hourlyWeather[hour].pop = item.fcstValue;
@@ -323,7 +323,7 @@ export default function MainApp({
 
           Object.keys(hourlyWeather).forEach(h => {
             const { sky, pty, pop } = hourlyWeather[h];
-            
+
             const hourNum = Number(h);
             const popNum = Number(pop || 0);
             if (hourNum < 12) amPop = Math.max(amPop, popNum);
@@ -347,7 +347,7 @@ export default function MainApp({
             const currentHour = now.getHours();
             let weatherDesc = hourlyDesc[currentHour];
             if (!weatherDesc) {
-              const availableHours = Object.keys(hourlyDesc).map(Number).sort((a,b)=>a-b);
+              const availableHours = Object.keys(hourlyDesc).map(Number).sort((a, b) => a - b);
               const futureHours = availableHours.filter(h => h >= currentHour);
               if (futureHours.length > 0) weatherDesc = hourlyDesc[futureHours[0]];
               else if (availableHours.length > 0) weatherDesc = hourlyDesc[availableHours[availableHours.length - 1]];
@@ -1262,7 +1262,7 @@ export default function MainApp({
               const currentLen = validDates.length;
               const newOffset = explicitCount - currentLen;
               if (currentOffsetsMap[name] === undefined || newOffset > currentOffsetsMap[name]) {
-                  currentOffsetsMap[name] = newOffset;
+                currentOffsetsMap[name] = newOffset;
               }
             }
 
@@ -2030,7 +2030,7 @@ export default function MainApp({
         const original = getMyOriginalRecord(targetDate, shiftTime);
         const isStudentDiff = (log.student || "") !== (original.student || "");
         const isLocationDiff = (log.location || "") !== (original.location || "");
-        
+
         // --- 보조강사 일정 복제 방지 로직 일치화 ---
         const currentHasAssistant = (log.student || "").includes("보조강사");
         const originalHasAssistant = (original.student || "").includes("보조강사");
@@ -2876,7 +2876,7 @@ export default function MainApp({
                             날씨 정보 준비 중 ({weatherData.msg})
                           </span>
                         ) : (
-                          <div 
+                          <div
                             className="flex items-center gap-1.5 ml-auto cursor-pointer hover:opacity-80 active:scale-95 transition-all bg-white/50 px-2 py-0.5 rounded-lg border border-red-200/50"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -3035,7 +3035,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260627
+            v260703-resign
           </div>
         </div>
       </div>
@@ -3563,8 +3563,8 @@ export default function MainApp({
             </div>
             <div className="p-6">
               <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed">
-                현재 일정을 복제할 미래 날짜에<br/>
-                <span className="bg-[#FFFF00] text-black px-1.5 py-0.5 rounded mx-1 whitespace-nowrap">보조강사</span><br/>
+                현재 일정을 복제할 미래 날짜에<br />
+                <span className="bg-[#FFFF00] text-black px-1.5 py-0.5 rounded mx-1 whitespace-nowrap">보조강사</span><br />
                 일정이 있습니다. 복제하시겠습니까?
               </p>
               <div className="flex gap-3">
