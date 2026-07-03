@@ -194,7 +194,7 @@ export default function MainApp({
         const targetDateStr = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
 
         // 캐시 확인 (하루 한 번만 호출, 단 시간대별 예보를 저장하여 현재 시간에 맞게 렌더링)
-        const cachedData = window.localStorage.getItem('sungdong_weather_v2');
+        const cachedData = window.localStorage.getItem('sungdong_weather_v3');
         if (cachedData) {
           try {
             const parsed = JSON.parse(cachedData);
@@ -318,21 +318,27 @@ export default function MainApp({
           });
 
           const hourlyDesc = {};
+          let amPop = 0;
+          let pmPop = 0;
+
           Object.keys(hourlyWeather).forEach(h => {
             const { sky, pty, pop } = hourlyWeather[h];
+            
+            const hourNum = Number(h);
+            const popNum = Number(pop || 0);
+            if (hourNum < 12) amPop = Math.max(amPop, popNum);
+            else pmPop = Math.max(pmPop, popNum);
+
             if (sky === null || pty === null) return;
             let desc = '날씨 정보';
             if (pty === '0') {
-              if (sky === '1') desc = '맑음 ☀️';
-              else if (sky === '3') desc = '구름많음 ⛅';
-              else if (sky === '4') desc = '흐림 ☁️';
+              if (sky === '1') desc = '☀️ 맑음';
+              else if (sky === '3') desc = '⛅ 구름많음';
+              else if (sky === '4') desc = '☁️ 흐림';
             } else {
-              if (pty === '1' || pty === '4') desc = '비 🌧️';
-              else if (pty === '2') desc = '비/눈 🌨️';
-              else if (pty === '3') desc = '눈 ❄️';
-            }
-            if (pop !== null && pop !== undefined) {
-              desc += ` ☔${pop}%`;
+              if (pty === '1' || pty === '4') desc = '☔ 비';
+              else if (pty === '2') desc = '🌨️ 비/눈';
+              else if (pty === '3') desc = '❄️ 눈';
             }
             hourlyDesc[h] = desc;
           });
@@ -348,9 +354,11 @@ export default function MainApp({
               else weatherDesc = '정보 없음';
             }
 
-            const resultData = { minTemp, maxTemp, hourlyDesc, isTomorrow: false };
+            const isRain = weatherDesc.includes('비') || weatherDesc.includes('눈');
+
+            const resultData = { minTemp, maxTemp, hourlyDesc, amPop, pmPop, isRain, isTomorrow: false };
             setWeatherData({ ...resultData, weatherDesc });
-            window.localStorage.setItem('sungdong_weather_v2', JSON.stringify({ date: targetDateStr, data: resultData }));
+            window.localStorage.setItem('sungdong_weather_v3', JSON.stringify({ date: targetDateStr, data: resultData }));
           } else {
             setWeatherData({ error: true, msg: '데이터 없음' });
           }
@@ -2868,16 +2876,22 @@ export default function MainApp({
                             날씨 정보 준비 중 ({weatherData.msg})
                           </span>
                         ) : (
-                          <span 
-                            className="text-[14px] sm:text-[16px] text-red-700 font-bold ml-auto text-right leading-tight hover:underline cursor-pointer"
+                          <div 
+                            className="flex items-center gap-1.5 ml-auto cursor-pointer hover:opacity-80 active:scale-95 transition-all bg-white/50 px-2 py-0.5 rounded-lg border border-red-200/50"
                             onClick={(e) => {
                               e.stopPropagation();
                               window.open('https://weather.naver.com', '_blank');
                             }}
                             title="네이버 날씨로 이동"
                           >
-                            {weatherData.isTomorrow ? '내일: ' : ''}{weatherData.weatherDesc} ({weatherData.minTemp}℃ / {weatherData.maxTemp}℃)
-                          </span>
+                            <span className={`text-[15px] sm:text-[16px] font-bold tracking-tight whitespace-nowrap ${weatherData.isRain ? 'text-blue-600' : 'text-gray-600'}`}>
+                              {weatherData.isTomorrow ? '내일 ' : ''}{weatherData.weatherDesc}
+                            </span>
+                            <span className="text-gray-300 mx-0.5 text-[13px]">|</span>
+                            <span className="text-[15px] sm:text-[16px] font-bold text-gray-600 whitespace-nowrap">
+                              🌡️ {weatherData.minTemp}° / <span className="text-red-500">{weatherData.maxTemp}°</span>
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
