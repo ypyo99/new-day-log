@@ -712,13 +712,6 @@ export default function MainApp({
   const fetchTeachersFromSheet = async (team) => {
     setIsFetchingTeachers(true);
     try {
-      const { data, error } = await supabaseClient
-        .from('daily_logs')
-        .select('teacher')
-        .eq('team', team);
-
-      if (error) throw error;
-
       let fetchedTeachers = [];
       const teacherSet = new Set();
 
@@ -729,21 +722,6 @@ export default function MainApp({
             if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
           }
           teacherSet.add(t.name);
-        });
-      }
-
-      if (data && data.length > 0) {
-        data.forEach(row => {
-          if (row.teacher) {
-            const dbT = dbTeachers.find(t => t.team === team && t.name === row.teacher);
-            if (dbT && dbT.is_active === false) return; // 퇴사한 선생님 필터링
-
-            if (team === "1팀") {
-              const clean = (row.teacher || "").replace(/\s/g, "");
-              if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
-            }
-            teacherSet.add(row.teacher);
-          }
         });
       }
 
@@ -819,7 +797,7 @@ export default function MainApp({
   }, [selectedTeam, dbTeachers]);
 
   useEffect(() => {
-    if (!selectedTeam || !currentUser) { setAllScheduleData({}); return; }
+    if (!isLoggedIn || !selectedTeam || !currentUser) { setAllScheduleData({}); return; }
 
     let isMounted = true;
 
@@ -890,7 +868,7 @@ export default function MainApp({
     fetchScheduleAll();
 
     return () => { isMounted = false; };
-  }, [selectedTeam, currentUser, refreshTrigger]);
+  }, [isLoggedIn, selectedTeam, currentUser, refreshTrigger]);
 
   useEffect(() => {
     const todaysData = allScheduleData[date] || {};
