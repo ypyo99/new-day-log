@@ -1049,7 +1049,10 @@ export default function MainApp({
 
             if (!isAbsentOrCanceled || hasExplicitCount) {
               const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
-              if (hRow.log_date === date && hRow.teacher === currentUser) return;
+              if (hRow.log_date === date) {
+                if (hRow.teacher === currentUser) return;
+                if (shifts.includes(hRow.shift)) return;
+              }
 
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
               if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
