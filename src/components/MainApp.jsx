@@ -748,51 +748,6 @@ export default function MainApp({
 
   useEffect(() => {
     if (!selectedTeam) { setTeachers([]); setCurrentUser(""); return; }
-    const cachedTeachers = window.localStorage.getItem(`sungdong_teachers_${selectedTeam}`);
-    if (cachedTeachers) {
-      try {
-        const parsed = JSON.parse(cachedTeachers);
-        if (!Array.isArray(parsed)) throw new Error('Not array');
-        const activeDbNames = dbTeachers.filter(t => t.team === selectedTeam && t.is_active !== false).map(t => t.name);
-        const hasDefaultTeacher = parsed && activeDbNames.length > 0 && parsed.some(t => activeDbNames.includes(t));
-        if (parsed && parsed.length > 0 && hasDefaultTeacher) {
-          let filteredParsed = parsed;
-          if (selectedTeam === "1팀") {
-            filteredParsed = parsed.filter(t => {
-              const clean = (t || "").replace(/\s/g, "");
-              return clean !== "천은선" && clean !== "서승희" && clean !== "천은선서승희";
-            });
-          }
-          // 캐시에 있는 이름 중 퇴사한 선생님은 강제 제외
-          filteredParsed = filteredParsed.filter(name => {
-            const dbT = dbTeachers.find(t => t.team === selectedTeam && t.name === name);
-            if (dbT && dbT.is_active === false) return false;
-            return true;
-          });
-
-          const teacherSet = new Set(filteredParsed);
-          activeDbNames.forEach(name => {
-            if (selectedTeam === "1팀") {
-              const clean = (name || "").replace(/\s/g, "");
-              if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") return;
-            }
-            teacherSet.add(name);
-          });
-
-          const merged = Array.from(teacherSet);
-          const sortedCached = merged.sort((a, b) => {
-            const tA = dbTeachers.find(t => t.team === selectedTeam && t.name === a);
-            const tB = dbTeachers.find(t => t.team === selectedTeam && t.name === b);
-            const seqA = tA && tA.seq_num !== '' && tA.seq_num !== null ? parseInt(tA.seq_num, 10) : 999;
-            const seqB = tB && tB.seq_num !== '' && tB.seq_num !== null ? parseInt(tB.seq_num, 10) : 999;
-            if (seqA !== seqB) return seqA - seqB;
-            return getTeacherSortWeight(selectedTeam, a) - getTeacherSortWeight(selectedTeam, b);
-          });
-          setTeachers(sortedCached);
-          return;
-        }
-      } catch (e) { }
-    }
     fetchTeachersFromSheet(selectedTeam);
   }, [selectedTeam, dbTeachers]);
 
