@@ -11,6 +11,12 @@ import {
 } from '../utils/helpers';
 import { User, MainCalendarIcon, Home, Clock } from './Icons';
 
+const hasIndependentKeyword = (str, keywords) => {
+  if (!str) return false;
+  const tokens = str.split(/[,/]+/).map(t => t.trim());
+  return tokens.some(token => keywords.includes(token));
+};
+
 const mapShiftToOfficial = (team, teacherName, originalShift) => {
   if (!originalShift || !teacherName) return originalShift;
   const officialShifts = getTeacherShifts(team, teacherName);
@@ -190,6 +196,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
           const { data: histData, error: histError } = await supabaseClient
             .from('daily_logs')
             .select('log_date, student, status, teacher, shift')
+            .eq('team', team)
             .neq('student', '')
             .not('student', 'is', null)
             .lte('log_date', endStr)
@@ -229,6 +236,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
     const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
     const studentHistoryMap = {};
     const studentOffsetsMap = {};
+    const seenDateShiftMap = {}; // name -> Set of "date|shift" already processed
     
     allTeamRecords.forEach(hRow => {
       if (!hRow.student) return;
@@ -241,22 +249,41 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
           const segments = personalStatus.split('/');
           if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
         }
-        const isAbsent = personalStatus.includes("결석") || personalStatus.includes("종료") || personalStatus.includes("취소") || personalStatus.includes("선생님휴가");
+        
+        const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
+        const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
+        const isAbsent = hasIndependentKeyword(personalStatus, ["결석", "선생님휴가"]) || (hasEndOrCancel && !hasAttendance);
+        
         const textToMatch = hRow.status || "";
         const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
         const hasExplicitCount = memoMatches.length > 0;
         
         if (!isAbsent || hasExplicitCount) {
            if (!studentHistoryMap[name]) studentHistoryMap[name] = [];
-           if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
+           if (!studentOffsetsMap[name]) studentOffsetsMap[name] = [];
+           if (!seenDateShiftMap[name]) seenDateShiftMap[name] = new Set();
            
            const hGroup = getTeacherGroup(team, hRow.teacher);
            const hShift = mapShiftToOfficial(team, hRow.teacher, hRow.shift);
            const dateObj = hRow.log_date;
+           const dateShiftKey = `${dateObj}|${hShift}`;
+           
+           // 이미 처리한 date+shift 조합이면 스킵 (빈 상태 중복 레코드 방지)
+           if (seenDateShiftMap[name].has(dateShiftKey)) {
+             return;
+           }
+           seenDateShiftMap[name].add(dateShiftKey);
            
            let isNew = false;
-           const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
-           if (!alreadyHas) isNew = true;
+           if (!isAbsent) {
+               if (team === "취업팀") {
+                   const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
+                   if (!alreadyHas) isNew = true;
+               } else {
+                   const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj);
+                   if (!alreadyHas) isNew = true;
+               }
+           }
            
            if (isNew) {
                studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
@@ -267,10 +294,14 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                const explicitCount = parseInt(matchObj[1], 10);
                const currentLen = studentHistoryMap[name].length;
                const newOffset = explicitCount - currentLen;
-               if (studentOffsetsMap[name] === undefined || newOffset > studentOffsetsMap[name]) {
-                   studentOffsetsMap[name] = newOffset;
-               }
+               studentOffsetsMap[name].push({ date: dateObj, shift: hShift, offset: newOffset });
            }
+        } else {
+           if (!seenDateShiftMap[name]) seenDateShiftMap[name] = new Set();
+           const hShift = mapShiftToOfficial(team, hRow.teacher, hRow.shift);
+           const dateObj = hRow.log_date;
+           const dateShiftKey = `${dateObj}|${hShift}`;
+           seenDateShiftMap[name].add(dateShiftKey);
         }
       });
     });
@@ -381,19 +412,31 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                 if (excludeKeywords.some(kw => name.includes(kw))) return;
                 
                 const histList = studentHistoryMap[name] || [];
-                let count = 0;
-                for (let i = 0; i < histList.length; i++) {
-                    const h = histList[i];
-                    if (h.date < dateStr) count++;
-                    else if (h.date === dateStr) {
-                        count++;
-                        if (h.shift === slot) break;
-                    } else break;
-                }
                 
-                const offset = studentOffsetsMap[name] || 0;
-                if (count > 0 || offset > 0) {
-                    countsForCell.push({ name: name, count: count + offset });
+                const getTLocal = (s) => {
+                  if (!s) return 9999;
+                  const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+                  return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+                };
+                const currentShiftT = getTLocal(slot);
+                
+                const validDates = histList.filter(h => {
+                    if (h.date < dateStr) return true;
+                    if (h.date === dateStr) return getTLocal(h.shift) <= currentShiftT;
+                    return false;
+                });
+                const count = validDates.length;
+                
+                const offsets = studentOffsetsMap[name] || [];
+                let applicableOffset = 0;
+                offsets.forEach(o => {
+                    if (o.date <= dateStr && o.offset > applicableOffset) {
+                        applicableOffset = o.offset;
+                    }
+                });
+                
+                if (count > 0 || applicableOffset > 0) {
+                    countsForCell.push({ name: name, count: count + applicableOffset });
                 }
             });
 
