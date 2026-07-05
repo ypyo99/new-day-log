@@ -252,7 +252,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         
         const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
         const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
-        const isAbsent = hasIndependentKeyword(personalStatus, ["결석", "선생님휴가"]) || (hasEndOrCancel && !hasAttendance);
+        const isAbsent = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
         
         const textToMatch = hRow.status || "";
         const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));

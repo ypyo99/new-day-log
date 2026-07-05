@@ -1042,7 +1042,7 @@ export default function MainApp({
             // ('종료' 버튼 클릭 시에는 회차에서 차감되지 않도록 조건에서 제외함)
             const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
             const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
-            const isAbsentOrCanceled = hasIndependentKeyword(personalStatus, ["결석"]) || (hasIndependentKeyword(personalStatus, ["선생님휴가"]) && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
+            const isAbsentOrCanceled = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
             const textToMatch = (hRow.memo || hRow.status || "");
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
             const hasExplicitCount = memoMatches.length > 0;
@@ -1156,7 +1156,7 @@ export default function MainApp({
 
             // 결석이거나, (선생님휴가이되 출석은 없는 경우)이거나, 출석 없이 취소만 있는 경우 결석(isAbsent = true)으로 판정합니다.
             // 이 판정 결과에 따라 화면의 렌더링 회차가 즉시 1 차감됩니다.
-            const isAbsent = hasIndependentKeyword(currentStatus, ["결석"]) || (hasIndependentKeyword(currentStatus, ["선생님휴가"]) && !hasCurrentAttendance) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
+            const isAbsent = (currentStatus.includes("결석") && !hasCurrentAttendance) || (currentStatus.includes("선생님휴가") && !hasCurrentAttendance) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
             const textToMatch = (log.memo || fullRealtimeStatus);
             // [수정된 부분 끝]
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));

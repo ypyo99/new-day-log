@@ -249,7 +249,9 @@ export default function StudentSearchApp({ onNavigateBack }) {
       const textToMatch = (r.memo || "");
       const memoMatch = textToMatch.match(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/);
       
-      const isAbsentOrCanceled = (r.attendanceTag || "").includes("결석") || (r.attendanceTag || "").includes("선생님휴가") || (r.attendanceTag || "").includes("종료") || (r.attendanceTag || "").includes("취소");
+      const attTag = r.attendanceTag || "";
+      const hasAtt = /(^|[,/])\s*(1|출석)\s*([,/]|$)/.test(attTag);
+      const isAbsentOrCanceled = (attTag.includes("결석") && !hasAtt) || (attTag.includes("선생님휴가") && !hasAtt) || (attTag.includes("종료") && !hasAtt) || (attTag.includes("취소") && !hasAtt);
       const isAttended = !isAbsentOrCanceled && r.attendanceTag && r.attendanceTag !== "기록있음";
 
       const dateKey = r.colDate.getTime();
@@ -529,7 +531,8 @@ export default function StudentSearchApp({ onNavigateBack }) {
                   <div className="space-y-2.5 md:space-y-3">
                     {filteredRecords.map((rec, idx) => {
                       const isAttended = rec.attendanceTag.includes("출석");
-                      const isAbsent = rec.attendanceTag.includes("결석");
+                      const hasAttUi = /(^|[,/])\s*(1|출석)\s*([,/]|$)/.test(rec.attendanceTag);
+                      const isAbsent = rec.attendanceTag.includes("결석") && !hasAttUi;
                       const isCanceled = rec.attendanceTag.includes("종료") || rec.attendanceTag.includes("취소");
                       const borderColor = isAbsent ? "border-l-red-400" : isCanceled ? "border-l-gray-400" : isAttended ? "border-l-blue-400" : "border-l-teal-300";
                       const bgColor = isAbsent ? "bg-red-50/50" : isCanceled ? "bg-gray-50/50" : "bg-white";

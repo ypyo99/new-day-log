@@ -549,7 +549,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
           const hasEndOrCancel = checkIsCanceled(personalStatus);
           const hasAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
-          const isAbsentOrCanceled = personalStatus.includes("결석") || personalStatus.includes("선생님휴가") || (hasEndOrCancel && !hasAttendance);
+          const isAbsentOrCanceled = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
           const textToMatch = (hRow.memo || hRow.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
           const hasExplicitCount = memoMatches.length > 0;
@@ -651,7 +651,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           }
           const hasCurrentEndOrCancel = checkIsCanceled(personalStatus);
           const hasCurrentAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
-          const isAbsent = personalStatus.includes("결석") || personalStatus.includes("선생님휴가") || (hasCurrentEndOrCancel && !hasCurrentAttendance);
+          const isAbsent = (personalStatus.includes("결석") && !hasCurrentAttendance) || (personalStatus.includes("선생님휴가") && !hasCurrentAttendance) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
           const textToMatch = (row.memo || row.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
           const hasExplicitCount = memoMatches.length > 0;
