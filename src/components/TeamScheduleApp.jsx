@@ -1372,8 +1372,8 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             // 텍스트 클래스 계산
                             let studentTextClass = "text-gray-800";
                             let locationTextClass = "text-black";
-                            let statusTextClass = item.status?.includes('결석') || item.status?.includes('종료') || item.status?.includes('취소') ? 'text-red-500'
-                              : item.status?.includes('선생님휴가') ? 'text-black'
+                            let statusTextClass = item.status?.includes('결석') || item.status?.includes('종료') || item.status?.includes('취소') ? 'text-gray-300'
+                              : item.status?.includes('선생님휴가') ? 'text-gray-300'
                                 : item.status?.includes('휴가') ? 'text-gray-400'
                                   : item.status ? 'text-black'
                                     : 'text-gray-400';

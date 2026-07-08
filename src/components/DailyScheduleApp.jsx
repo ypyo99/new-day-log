@@ -974,11 +974,14 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                             const hasEnd = row.status.includes("종료");
                             const hasAbsenceOrCancel = row.status.includes("결석") || checkIsCanceled(row.status);
                             const hasVacation = row.status.includes("휴가");
+                            const hasTeacherVacation = row.status.includes("선생님휴가");
                             
-                            if (hasEnd) {
-                              statusColorClass = "text-gray-600 font-bold";
+                            if (hasTeacherVacation) {
+                              statusColorClass = "text-gray-500 font-bold";
+                            } else if (hasEnd) {
+                              statusColorClass = "text-gray-500 font-bold";
                             } else if (hasAbsenceOrCancel) {
-                              statusColorClass = "text-red-600 font-bold";
+                              statusColorClass = "text-gray-500 font-bold";
                             } else if (hasVacation) {
                               statusColorClass = "text-gray-800 font-bold";
                             }
