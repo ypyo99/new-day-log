@@ -3183,9 +3183,9 @@ export default function MainApp({
                   const hasGrayTag = allSelectedTags.includes("선생님휴가");
                   let memoTextColorClass = "text-gray-900";
                   if (hasRedTag) {
-                    memoTextColorClass = "text-gray-300";
+                    memoTextColorClass = "text-gray-500";
                   } else if (hasGrayTag) {
-                    memoTextColorClass = "text-gray-300";
+                    memoTextColorClass = "text-gray-500";
                   }
 
                   return (
@@ -3354,7 +3354,7 @@ export default function MainApp({
                               aria-hidden="true"
                             >
                               {!logs[index]?.memo ? (
-                                <span className={(hasGrayTag || hasRedTag) ? "text-gray-300" : "text-gray-500"}>메모</span>
+                                <span className={(hasGrayTag || hasRedTag) ? "text-gray-500" : "text-gray-500"}>메모</span>
                               ) : (
                                 logs[index].memo.split(/(\d+회차)/g).map((part, i) =>
                                   /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
