@@ -710,7 +710,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                       const validDates = sc.dates.filter(d => {
                         if (d.date.getTime() < todayDateObj.getTime()) return true;
                         if (d.date.getTime() === todayDateObj.getTime()) {
-                          if (team === '취업팀') {
+                          if (teamName === '취업팀') {
                               return getTLocal(d.shift) <= currentShiftT;
                           } else {
                               return true;
@@ -735,7 +735,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         const validDates = dates.filter(d => {
             if (d.date.getTime() < todayDateObj.getTime()) return true;
             if (d.date.getTime() === todayDateObj.getTime()) {
-              if (team === '취업팀') {
+              if (teamName === '취업팀') {
                   return getTLocal(d.shift) <= currentShiftT;
               } else {
                   return true;
