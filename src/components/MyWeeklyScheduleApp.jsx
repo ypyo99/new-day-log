@@ -254,7 +254,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
         const isAbsent = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
         
-        const textToMatch = hRow.status || "";
+        const textToMatch = (hRow.memo || hRow.status || "");
         const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
         const hasExplicitCount = memoMatches.length > 0;
         
@@ -266,9 +266,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            const hGroup = getTeacherGroup(team, hRow.teacher);
            const hShift = mapShiftToOfficial(team, hRow.teacher, hRow.shift);
            const dateObj = hRow.log_date;
-           const dateShiftKey = `${dateObj}|${hShift}`;
-           
-           // 이미 처리한 date+shift 조합이면 스킵 (빈 상태 중복 레코드 방지)
+           const dateShiftKey = `${dateObj}|${hShift}|${hGroup}`;
+           // 이미 처리한 date+shift+group 조합이면 스킵 (빈 상태 중복 레코드 방지)
            if (seenDateShiftMap[name].has(dateShiftKey)) {
              return;
            }
@@ -276,13 +275,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            
            let isNew = false;
            if (!isAbsent) {
-               if (team === "취업팀") {
-                   const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
-                   if (!alreadyHas) isNew = true;
-               } else {
-                   const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj);
-                   if (!alreadyHas) isNew = true;
-               }
+               const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
+               if (!alreadyHas) isNew = true;
            }
            
            if (isNew) {
@@ -309,6 +303,18 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
     // 시간대가 빠른 것부터 회차 계산을 위해 정렬
     Object.keys(studentHistoryMap).forEach(name => {
       studentHistoryMap[name].sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        const getT = (s) => {
+          if (!s) return 9999;
+          const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+          return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+        };
+        return getT(a.shift) - getT(b.shift);
+      });
+    });
+
+    Object.keys(studentOffsetsMap).forEach(name => {
+      studentOffsetsMap[name].sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         const getT = (s) => {
           if (!s) return 9999;
@@ -430,7 +436,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                 const offsets = studentOffsetsMap[name] || [];
                 let applicableOffset = 0;
                 offsets.forEach(o => {
-                    if (o.date <= dateStr && o.offset > applicableOffset) {
+                    if (o.date < dateStr || (o.date === dateStr && getTLocal(o.shift) <= currentShiftT)) {
                         applicableOffset = o.offset;
                     }
                 });

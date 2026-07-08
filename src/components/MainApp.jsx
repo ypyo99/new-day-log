@@ -1073,9 +1073,7 @@ export default function MainApp({
                 const explicitCount = parseInt(matchObj[1], 10);
                 const currentLen = studentDatesMap[name].length;
                 const newOffset = explicitCount - currentLen;
-                if (studentOffsetsMap[name] === undefined || newOffset > studentOffsetsMap[name]) {
-                  studentOffsetsMap[name] = newOffset;
-                }
+                studentOffsetsMap[name] = newOffset;
               }
             }
           });
@@ -1196,9 +1194,7 @@ export default function MainApp({
               const explicitCount = parseInt(matchObj[1], 10);
               const currentLen = validDates.length;
               const newOffset = explicitCount - currentLen;
-              if (currentOffsetsMap[name] === undefined || newOffset > currentOffsetsMap[name]) {
-                currentOffsetsMap[name] = newOffset;
-              }
+              currentOffsetsMap[name] = newOffset;
             }
 
             const offset = currentOffsetsMap[name] || 0;

@@ -575,9 +575,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const explicitCount = parseInt(matchObj[1], 10);
               const currentLen = studentDatesMap[name].length;
               const newOffset = explicitCount - currentLen;
-              if (studentOffsetsMap[name] === undefined || newOffset > studentOffsetsMap[name]) {
-                studentOffsetsMap[name] = newOffset;
-              }
+              studentOffsetsMap[name] = newOffset;
             }
           }
         });
@@ -661,16 +659,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
           if (!isAbsent || hasExplicitCount) {
             let isNew = false;
-            if (teamName === "취업팀") {
-              const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
-              if (!alreadyHas) {
-                isNew = true;
-              }
-            } else {
-              const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime());
-              if (!alreadyHas) {
-                isNew = true;
-              }
+            const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
+            if (!alreadyHas) {
+              isNew = true;
             }
             if (isNew) {
               currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
@@ -697,8 +688,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const currentLen = validDatesForOffset.length;
               const newOffset = explicitCount - currentLen;
               
-              if (currentOffsetsMap[name] === undefined || newOffset > currentOffsetsMap[name]) {
-                  currentOffsetsMap[name] = newOffset;
+              currentOffsetsMap[name] = newOffset;
 
                   // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용하되, 순서를 유지합니다.
               parsedData.forEach(prevRow => {
@@ -719,8 +709,6 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               });
             }
           }
-        }
-
         const dates = currentDatesMap[name];
         const getTLocal = (s) => {
           if (!s) return 9999;
