@@ -255,7 +255,10 @@ export default function StudentSearchApp({ onNavigateBack }) {
       const isAttended = !isAbsentOrCanceled && r.attendanceTag && r.attendanceTag !== "기록있음";
 
       const dateKey = r.colDate.getTime();
-      const specificKey = `${dateKey}_${r.time}_${r.group}`;
+      // 취업팀이 아닌 경우: 같은 날 같은 그룹이면 시간대 무관하게 동일 회차로 처리
+      const specificKey = r.team === '취업팀'
+        ? `${dateKey}_${r.time}_${r.group}`
+        : `${dateKey}_${r.group}`;
 
       if (memoMatch) {
          currentSession = parseInt(memoMatch[1], 10);
