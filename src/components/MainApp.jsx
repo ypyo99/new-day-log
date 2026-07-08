@@ -1061,7 +1061,13 @@ export default function MainApp({
               const hShift = hRow.shift || "";
 
               let isNew = false;
-              const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
+              const alreadyHas = studentDatesMap[name].some(d => {
+                  if (selectedTeam === '취업팀') {
+                      return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                  } else {
+                      return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                  }
+              });
               if (!alreadyHas) isNew = true;
 
               if (isNew) {
@@ -1165,7 +1171,13 @@ export default function MainApp({
 
             if (!isAbsent || hasExplicitCount) {
               let isNew = false;
-              const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup);
+              const alreadyHas = currentDatesMap[name].some(d => {
+                  if (selectedTeam === '취업팀') {
+                      return d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup;
+                  } else {
+                      return d.date.getTime() === todayDateObj.getTime() && d.group === currentUserGroup;
+                  }
+              });
               if (!alreadyHas) isNew = true;
 
               if (isNew) {
@@ -1184,7 +1196,11 @@ export default function MainApp({
             const validDates = dates.filter(d => {
               if (d.date.getTime() < todayDateObj.getTime()) return true;
               if (d.date.getTime() === todayDateObj.getTime()) {
-                return getTLocal(d.shift) <= currentShiftT;
+                if (selectedTeam === '취업팀') {
+                  return getTLocal(d.shift) <= currentShiftT;
+                } else {
+                  return true;
+                }
               }
               return false;
             });

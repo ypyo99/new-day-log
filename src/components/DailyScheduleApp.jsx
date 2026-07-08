@@ -566,7 +566,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             const hGroup = getTeacherGroup(teamName, hRow.teacher);
             const hShift = hRow.shift || "";
 
-            const alreadyHas = studentDatesMap[name].some(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup);
+            const alreadyHas = studentDatesMap[name].some(d => {
+                if (teamName === '취업팀') {
+                    return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                } else {
+                    return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                }
+            });
             if (!alreadyHas) {
               studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
             }
@@ -659,7 +665,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
           if (!isAbsent || hasExplicitCount) {
             let isNew = false;
-            const alreadyHas = currentDatesMap[name].some(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group);
+            const alreadyHas = currentDatesMap[name].some(d => {
+                if (teamName === '취업팀') {
+                    return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
+                } else {
+                    return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+                }
+            });
             if (!alreadyHas) {
               isNew = true;
             }
@@ -698,7 +710,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                       const validDates = sc.dates.filter(d => {
                         if (d.date.getTime() < todayDateObj.getTime()) return true;
                         if (d.date.getTime() === todayDateObj.getTime()) {
-                          return getTLocal(d.shift) <= currentShiftT;
+                          if (team === '취업팀') {
+                              return getTLocal(d.shift) <= currentShiftT;
+                          } else {
+                              return true;
+                          }
                         }
                         return false;
                       });
@@ -719,7 +735,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         const validDates = dates.filter(d => {
             if (d.date.getTime() < todayDateObj.getTime()) return true;
             if (d.date.getTime() === todayDateObj.getTime()) {
-              return getTLocal(d.shift) <= currentShiftT;
+              if (team === '취업팀') {
+                  return getTLocal(d.shift) <= currentShiftT;
+              } else {
+                  return true;
+              }
             }
             return false;
           });

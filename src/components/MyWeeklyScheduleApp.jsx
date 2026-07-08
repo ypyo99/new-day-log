@@ -275,7 +275,13 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            
            let isNew = false;
            if (!isAbsent) {
-               const alreadyHas = studentHistoryMap[name].some(d => d.date === dateObj && d.shift === hShift && d.group === hGroup);
+               const alreadyHas = studentHistoryMap[name].some(d => {
+                   if (team === '취업팀') {
+                       return d.date === dateObj && d.shift === hShift && d.group === hGroup;
+                   } else {
+                       return d.date === dateObj && d.group === hGroup;
+                   }
+               });
                if (!alreadyHas) isNew = true;
            }
            
@@ -428,7 +434,13 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                 
                 const validDates = histList.filter(h => {
                     if (h.date < dateStr) return true;
-                    if (h.date === dateStr) return getTLocal(h.shift) <= currentShiftT;
+                    if (h.date === dateStr) {
+                        if (team === '취업팀') {
+                            return getTLocal(h.shift) <= currentShiftT;
+                        } else {
+                            return true;
+                        }
+                    }
                     return false;
                 });
                 const count = validDates.length;
@@ -436,8 +448,16 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                 const offsets = studentOffsetsMap[name] || [];
                 let applicableOffset = 0;
                 offsets.forEach(o => {
-                    if (o.date < dateStr || (o.date === dateStr && getTLocal(o.shift) <= currentShiftT)) {
+                    if (o.date < dateStr) {
                         applicableOffset = o.offset;
+                    } else if (o.date === dateStr) {
+                        if (team === '취업팀') {
+                            if (getTLocal(o.shift) <= currentShiftT) {
+                                applicableOffset = o.offset;
+                            }
+                        } else {
+                            applicableOffset = o.offset;
+                        }
                     }
                 });
                 
