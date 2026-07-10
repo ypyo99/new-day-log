@@ -380,8 +380,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         let changed = false;
         while (
           temp.getDay() === 0 ||
-          temp.getDay() === 6 ||
-          checkIsHoliday(temp)
+          temp.getDay() === 6
         ) {
           temp.setDate(temp.getDate() + 1);
           changed = true;
@@ -818,8 +817,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         tempDate.setDate(tempDate.getDate() + daysToAdd);
       } while (
         tempDate.getDay() === 0 ||
-        tempDate.getDay() === 6 ||
-        checkIsHoliday(tempDate)
+        tempDate.getDay() === 6
       );
       tempDate.setHours(0, 0, 0, 0);
       return tempDate;
@@ -832,8 +830,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
     d.setHours(0, 0, 0, 0);
     while (
       d.getDay() === 0 ||
-      d.getDay() === 6 ||
-      checkIsHoliday(d)
+      d.getDay() === 6
     ) {
       d.setDate(d.getDate() + 1);
     }
@@ -949,9 +946,57 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              <div className="bg-white rounded-xl shadow-sm border border-gray-400 w-full flex-1 flex flex-col overflow-hidden">
-                <div className="overflow-auto relative rounded-xl flex-1">
-                  <table className="w-full table-fixed text-center border-collapse">
+              {(() => {
+                const _y = currentDisplayDate.getFullYear();
+                const _m = String(currentDisplayDate.getMonth() + 1).padStart(2, '0');
+                const _d = String(currentDisplayDate.getDate()).padStart(2, '0');
+                const _currentDateStr = `${_y}-${_m}-${_d}`;
+                const _currentDateStrShort = `${_m}-${_d}`;
+                const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
+
+                if (currentHoliday) {
+                  const text = `${currentHoliday.name || ''} ${currentHoliday.content1 || ''} ${currentHoliday.content2 || ''}`;
+                  let icon = '🎉';
+                  if (/설날|추석|명절|한가위|설 연휴/.test(text)) icon = '🌕';
+                  else if (/광복절|삼일절|3\.1절|개천절|제헌절|한글날/.test(text)) icon = <img src="/korea_flag.png" alt="태극기" className="h-[1em] w-auto inline-block align-middle drop-shadow-sm rounded-[2px]" />;
+                  else if (/어린이날/.test(text)) icon = '🎈';
+                  else if (/부처님|석가탄신일|초파일/.test(text)) icon = '🪷';
+                  else if (/성탄절|크리스마스/.test(text)) icon = '🎄';
+                  else if (/선거|투표/.test(text)) icon = '🗳️';
+                  else if (/현충일/.test(text)) icon = '🕯️';
+                  else if (/근로자의|노동절/.test(text)) icon = '💪';
+                  else if (/간담회|회의/.test(text)) icon = '☕';
+                  else if (/교육|워크숍/.test(text)) icon = '💡';
+                  else if (/대체공휴일|임시공휴일|휴일|휴무/.test(text)) icon = '🏖️';
+
+                  return (
+                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 sm:p-8 text-center shadow-lg my-4 mx-auto max-w-2xl w-full animate-fadeIn">
+                      <div className="flex justify-center mb-4">
+                        <div className="bg-red-100 p-3 rounded-full">
+                          <span className="text-4xl sm:text-5xl">{icon}</span>
+                        </div>
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-black text-red-700 mb-3 tracking-tight">
+                        {currentHoliday.name}
+                      </h3>
+                      {currentHoliday.content1 && (
+                        <p className="text-lg sm:text-xl font-bold text-red-600 mb-2 whitespace-pre-wrap">
+                          {currentHoliday.content1}
+                        </p>
+                      )}
+                      {currentHoliday.content2 && (
+                        <p className="text-[15px] sm:text-lg font-medium text-red-500 bg-white/50 inline-block px-4 py-2 rounded-xl border border-red-100 mt-2 whitespace-pre-wrap break-keep leading-snug">
+                          {currentHoliday.content2}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-400 w-full flex-1 flex flex-col overflow-hidden">
+                    <div className="overflow-auto relative rounded-xl flex-1">
+                      <table className="w-full table-fixed text-center border-collapse">
                     <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-blue-500">
                       <tr className="bg-blue-600 text-white text-sm landscape:text-[17px] md:text-base leading-normal">
                         <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[10%] md:w-[10%] break-keep bg-blue-600">조</th>
@@ -965,32 +1010,17 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                       {scheduleData.length === 0 ? (
                         <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white">일정 데이터가 없습니다.</td></tr>
                       ) : (
-                        (() => {
-                          const _y = currentDisplayDate.getFullYear();
-                          const _m = String(currentDisplayDate.getMonth() + 1).padStart(2, '0');
-                          const _d = String(currentDisplayDate.getDate()).padStart(2, '0');
-                          const _currentDateStr = `${_y}-${_m}-${_d}`;
-                          const _currentDateStrShort = `${_m}-${_d}`;
-                          const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
+                        scheduleData.map((row, index) => {
+                          const isNewTeacher = index > 0 && row.render.teacher;
+                          const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
 
-                          return scheduleData.map((row, index) => {
-                            const isNewTeacher = index > 0 && row.render.teacher;
-                            const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
+                          const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
 
-                            const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
-
-                            const isFirstShiftForTeacher = !!row.render.teacher;
-                            let displayStudent = row.student || "";
-                            let displayLocation = row.location || "";
-                            let displayStatus = row.status || "";
-                            let isHolidayOverride = false;
-
-                            if (currentHoliday && isFirstShiftForTeacher) {
-                              displayStudent = currentHoliday.name || "공휴일";
-                              displayLocation = currentHoliday.content1 || "";
-                              displayStatus = "";
-                              isHolidayOverride = true;
-                            }
+                          const isFirstShiftForTeacher = !!row.render.teacher;
+                          let displayStudent = row.student || "";
+                          let displayLocation = row.location || "";
+                          let displayStatus = row.status || "";
+                          let isHolidayOverride = false;
 
                           let statusColorClass = "text-black font-bold";
                           if (displayStatus) {
@@ -1164,21 +1194,34 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                             </tr>
                           );
                         })
-                      })()
-                    )}
-                    </tbody>
-                  </table>
+                      )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
+          </div>
 
-            <SummarySection
-              data={scheduleData}
-              date={currentDisplayDate}
-              team={selectedTeam}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            />
+            {(() => {
+              const _y = currentDisplayDate.getFullYear();
+              const _m = String(currentDisplayDate.getMonth() + 1).padStart(2, '0');
+              const _d = String(currentDisplayDate.getDate()).padStart(2, '0');
+              const _currentDateStr = `${_y}-${_m}-${_d}`;
+              const _currentDateStrShort = `${_m}-${_d}`;
+              const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
+              if (currentHoliday) return null;
+              
+              return (
+                <SummarySection
+                  data={scheduleData}
+                  date={currentDisplayDate}
+                  team={selectedTeam}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                />
+              );
+            })()}
 
           </div>
         </div>
