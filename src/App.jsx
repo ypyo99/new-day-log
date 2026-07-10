@@ -8,16 +8,35 @@ import {
   fetchAllTeachersFromDb
 } from './utils/helpers';
 
-const ClassroomApp = lazy(() => import('./components/ClassroomApp'));
-const DailyScheduleApp = lazy(() => import('./components/DailyScheduleApp'));
-const TeamScheduleApp = lazy(() => import('./components/TeamScheduleApp'));
-const MyWeeklyScheduleApp = lazy(() => import('./components/MyWeeklyScheduleApp'));
-const StudentSearchApp = lazy(() => import('./components/StudentSearchApp'));
-const TeacherManagementApp = lazy(() => import('./components/TeacherManagementApp'));
-const AutoScheduleApp = lazy(() => import('./components/AutoScheduleApp'));
-const HolidayManagementApp = lazy(() => import('./components/HolidayManagementApp'));
-const NangmanStudioApp = lazy(() => import('./components/NangmanStudioApp'));
-const NoticeManagementApp = lazy(() => import('./components/NoticeManagementApp'));
+const lazyWithRetry = (componentImport) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+    );
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        window.location.reload(true);
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+
+const ClassroomApp = lazyWithRetry(() => import('./components/ClassroomApp'));
+const DailyScheduleApp = lazyWithRetry(() => import('./components/DailyScheduleApp'));
+const TeamScheduleApp = lazyWithRetry(() => import('./components/TeamScheduleApp'));
+const MyWeeklyScheduleApp = lazyWithRetry(() => import('./components/MyWeeklyScheduleApp'));
+const StudentSearchApp = lazyWithRetry(() => import('./components/StudentSearchApp'));
+const TeacherManagementApp = lazyWithRetry(() => import('./components/TeacherManagementApp'));
+const AutoScheduleApp = lazyWithRetry(() => import('./components/AutoScheduleApp'));
+const HolidayManagementApp = lazyWithRetry(() => import('./components/HolidayManagementApp'));
+const NangmanStudioApp = lazyWithRetry(() => import('./components/NangmanStudioApp'));
+const NoticeManagementApp = lazyWithRetry(() => import('./components/NoticeManagementApp'));
 
 const LoadingFallback = () => (
   <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gray-50">

@@ -1,10 +1,6 @@
 // 팀 별 오늘 일정 보기
 
 
-
-
-
-
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import {
@@ -47,10 +43,10 @@ const mapShiftToOfficial = (team, teacherName, originalShift) => {
 
 const checkIsCanceled = (status) => {
   if (!status) return false;
-  
+
   // 텍스트를 콤마(,)나 슬래시(/)로 분리합니다.
   const tokens = status.split(/[,/]+/).map(t => t.trim());
-  
+
   // 취소, 종료 단어는 첫 번째 또는 두 번째 단어로 온 경우만 인정합니다.
   const isFirstWord = tokens[0] === "취소" || tokens[0] === "종료";
   const isSecondWord = tokens.length > 1 && (tokens[1] === "취소" || tokens[1] === "종료");
@@ -357,16 +353,25 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
   useEffect(() => {
     const loadHolidays = async () => {
       try {
-        const { data, error } = await supabaseClient.from('holidays').select('date');
+        const { data, error } = await supabaseClient.from('holidays').select('*');
         if (!error && data) {
-          const list = data.map(d => d.date);
-          console.log("Loaded holidaysDbList:", list);
-          setHolidaysDbList(list);
+          console.log("Loaded holidaysDbList:", data);
+          setHolidaysDbList(data);
         }
       } catch (e) { console.error("holidays fetch error", e); }
     };
     loadHolidays();
   }, []);
+
+  const checkIsHoliday = (dateObj) => {
+    if (!holidaysDbList || holidaysDbList.length === 0) return false;
+    const _y = dateObj.getFullYear();
+    const _m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const _d = String(dateObj.getDate()).padStart(2, '0');
+    const _currentDateStr = `${_y}-${_m}-${_d}`;
+    const _currentDateStrShort = `${_m}-${_d}`;
+    return holidaysDbList.some(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
+  };
 
   useEffect(() => {
     if (holidaysDbList.length > 0) {
@@ -376,8 +381,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         while (
           temp.getDay() === 0 ||
           temp.getDay() === 6 ||
-          holidaysDbList.includes(getLocalDateString(temp)) ||
-          holidaysDbList.includes(getLocalDateString(temp).substring(5))
+          checkIsHoliday(temp)
         ) {
           temp.setDate(temp.getDate() + 1);
           changed = true;
@@ -567,11 +571,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             const hShift = hRow.shift || "";
 
             const alreadyHas = studentDatesMap[name].some(d => {
-                if (teamName === '취업팀') {
-                    return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
-                } else {
-                    return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
-                }
+              if (teamName === '취업팀') {
+                return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+              } else {
+                return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+              }
             });
             if (!alreadyHas) {
               studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
@@ -666,11 +670,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           if (!isAbsent || hasExplicitCount) {
             let isNew = false;
             const alreadyHas = currentDatesMap[name].some(d => {
-                if (teamName === '취업팀') {
-                    return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
-                } else {
-                    return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
-                }
+              if (teamName === '취업팀') {
+                return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
+              } else {
+                return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+              }
             });
             if (!alreadyHas) {
               isNew = true;
@@ -699,10 +703,10 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const explicitCount = parseInt(matchObj[1], 10);
               const currentLen = validDatesForOffset.length;
               const newOffset = explicitCount - currentLen;
-              
+
               currentOffsetsMap[name] = newOffset;
 
-                  // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용하되, 순서를 유지합니다.
+              // 이전 행들에도 동일한 학생이 있다면 회차를 소급 적용하되, 순서를 유지합니다.
               parsedData.forEach(prevRow => {
                 if (prevRow.sessionCounts) {
                   prevRow.sessionCounts.forEach(sc => {
@@ -711,9 +715,9 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                         if (d.date.getTime() < todayDateObj.getTime()) return true;
                         if (d.date.getTime() === todayDateObj.getTime()) {
                           if (teamName === '취업팀') {
-                              return getTLocal(d.shift) <= currentShiftT;
+                            return getTLocal(d.shift) <= currentShiftT;
                           } else {
-                              return true;
+                            return true;
                           }
                         }
                         return false;
@@ -725,20 +729,20 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               });
             }
           }
-        const dates = currentDatesMap[name];
-        const getTLocal = (s) => {
-          if (!s) return 9999;
-          const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
-          return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
-        };
-        const currentShiftT = getTLocal(row.time);
-        const validDates = dates.filter(d => {
+          const dates = currentDatesMap[name];
+          const getTLocal = (s) => {
+            if (!s) return 9999;
+            const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+            return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+          };
+          const currentShiftT = getTLocal(row.time);
+          const validDates = dates.filter(d => {
             if (d.date.getTime() < todayDateObj.getTime()) return true;
             if (d.date.getTime() === todayDateObj.getTime()) {
               if (teamName === '취업팀') {
-                  return getTLocal(d.shift) <= currentShiftT;
+                return getTLocal(d.shift) <= currentShiftT;
               } else {
-                  return true;
+                return true;
               }
             }
             return false;
@@ -815,8 +819,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       } while (
         tempDate.getDay() === 0 ||
         tempDate.getDay() === 6 ||
-        holidaysDbList.includes(getLocalDateString(tempDate)) ||
-        holidaysDbList.includes(getLocalDateString(tempDate).substring(5))
+        checkIsHoliday(tempDate)
       );
       tempDate.setHours(0, 0, 0, 0);
       return tempDate;
@@ -830,8 +833,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
     while (
       d.getDay() === 0 ||
       d.getDay() === 6 ||
-      holidaysDbList.includes(getLocalDateString(d)) ||
-      holidaysDbList.includes(getLocalDateString(d).substring(5))
+      checkIsHoliday(d)
     ) {
       d.setDate(d.getDate() + 1);
     }
@@ -963,19 +965,40 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                       {scheduleData.length === 0 ? (
                         <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white">일정 데이터가 없습니다.</td></tr>
                       ) : (
-                        scheduleData.map((row, index) => {
-                          const isNewTeacher = index > 0 && row.render.teacher;
-                          const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
+                        (() => {
+                          const _y = currentDisplayDate.getFullYear();
+                          const _m = String(currentDisplayDate.getMonth() + 1).padStart(2, '0');
+                          const _d = String(currentDisplayDate.getDate()).padStart(2, '0');
+                          const _currentDateStr = `${_y}-${_m}-${_d}`;
+                          const _currentDateStrShort = `${_m}-${_d}`;
+                          const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
 
-                          const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
+                          return scheduleData.map((row, index) => {
+                            const isNewTeacher = index > 0 && row.render.teacher;
+                            const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
+
+                            const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
+
+                            const isFirstShiftForTeacher = !!row.render.teacher;
+                            let displayStudent = row.student || "";
+                            let displayLocation = row.location || "";
+                            let displayStatus = row.status || "";
+                            let isHolidayOverride = false;
+
+                            if (currentHoliday && isFirstShiftForTeacher) {
+                              displayStudent = currentHoliday.name || "공휴일";
+                              displayLocation = currentHoliday.content1 || "";
+                              displayStatus = "";
+                              isHolidayOverride = true;
+                            }
 
                           let statusColorClass = "text-black font-bold";
-                          if (row.status) {
-                            const hasEnd = row.status.includes("종료");
-                            const hasAbsenceOrCancel = row.status.includes("결석") || checkIsCanceled(row.status);
-                            const hasVacation = row.status.includes("휴가");
-                            const hasTeacherVacation = row.status.includes("선생님휴가");
-                            
+                          if (displayStatus) {
+                            const hasEnd = displayStatus.includes("종료");
+                            const hasAbsenceOrCancel = displayStatus.includes("결석") || checkIsCanceled(displayStatus);
+                            const hasVacation = displayStatus.includes("휴가");
+                            const hasTeacherVacation = displayStatus.includes("선생님휴가");
+
                             if (hasTeacherVacation) {
                               statusColorClass = "text-gray-500 font-bold";
                             } else if (hasEnd) {
@@ -988,8 +1011,10 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                           }
 
                           let studentCellBg = "";
-                          const combinedText = (row.student || "") + " " + (row.location || "");
-                          if (row.status && row.status.includes("선생님휴가")) {
+                          const combinedText = displayStudent + " " + displayLocation;
+                          if (isHolidayOverride) {
+                            studentCellBg = "bg-[#dcfce7]";
+                          } else if (displayStatus && displayStatus.includes("선생님휴가")) {
                             studentCellBg = "bg-gray-100";
                           } else if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
                             studentCellBg = "bg-red-200";
@@ -999,19 +1024,19 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                             studentCellBg = "bg-orange-100";
                           } else {
                             const pinkLocs = ["방문", "사근복지관", "삼부", "성원"];
-                            if (row.location && pinkLocs.some(loc => row.location.includes(loc))) {
+                            if (displayLocation && pinkLocs.some(loc => displayLocation.includes(loc))) {
                               studentCellBg = "bg-pink-100";
                             }
                           }
 
-                          const locTextForDisplay = (row.location && row.location.trim() !== '-') ? row.location.trim() : "";
+                          const locTextForDisplay = (displayLocation && displayLocation.trim() !== '-') ? displayLocation.trim() : "";
                           const isLocationUrl = locTextForDisplay && (locTextForDisplay.startsWith('http') || locTextForDisplay.startsWith('//') || locTextForDisplay.startsWith('data:') || locTextForDisplay.includes('drive.google.com'));
-                          const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !(row.student || "").includes("보조강사") && selectedTeam !== '취업팀' && !isLocationUrl;
+                          const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !displayStudent.includes("보조강사") && (selectedTeam !== '취업팀' || isHolidayOverride) && !isLocationUrl;
 
-                          const hasKiosk = ((row.student || "") + (locTextForDisplay)).includes("키오스크");
-                          const studentNames = (row.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean);
+                          const hasKiosk = (displayStudent + locTextForDisplay).includes("키오스크");
+                          const studentNames = displayStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean);
                           const isMultipleStudents = studentNames.length >= 2;
-                          const stuLen = (row.student || "").length;
+                          const stuLen = displayStudent.length;
 
                           let dynamicStuSizeClass = hasKiosk ? "text-[15px] md:text-[16px] landscape:text-[19px]" : "text-[16px] md:text-[18px] landscape:text-[20px]";
                           if (stuLen >= 9) {
@@ -1077,15 +1102,15 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                               <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
                                 <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
-                                  {(!row.student || row.student.trim() === '-') ? null : (
-                                    <span className="whitespace-nowrap text-center">{row.student.replace(/\n/g, ' ')}</span>
+                                  {(!displayStudent || displayStudent.trim() === '-') ? null : (
+                                    <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center"}>{displayStudent.replace(/\n/g, ' ')}</span>
                                   )}
-                                  {showLocationText && row.student && row.student.trim() !== '-' && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
-                                    <span className="whitespace-nowrap text-center mt-0.5 font-medium text-gray-500 text-[1.0em]">({locTextForDisplay})</span>
+                                  {showLocationText && displayStudent && displayStudent.trim() !== '-' && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
+                                    <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center mt-0.5 font-medium text-gray-500 text-[1.0em]"}>({locTextForDisplay})</span>
                                   )}
                                 </div>
                                 <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
-                                  {(!row.status || row.status.trim() === '-') ? null : row.status.split(/(\d+회차)/g).map((part, i) =>
+                                  {(!displayStatus || displayStatus.trim() === '-') ? null : displayStatus.split(/(\d+회차)/g).map((part, i) =>
                                     /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
                                   )}
                                 </div>
@@ -1139,7 +1164,8 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                             </tr>
                           );
                         })
-                      )}
+                      })()
+                    )}
                     </tbody>
                   </table>
                 </div>
