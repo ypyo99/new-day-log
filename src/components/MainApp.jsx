@@ -2987,6 +2987,29 @@ export default function MainApp({
     );
   }
 
+  const [cy, cm, cd] = date.split('-');
+  const selectedDateObj = new Date(parseInt(cy, 10), parseInt(cm, 10) - 1, parseInt(cd, 10));
+  const currentSelectedHoliday = holidaysFullList.find(h => {
+    if (!h || !h.date) return false;
+    const rawDate = h.date.trim();
+    let holidayObj = null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(rawDate)) {
+      const [hy, hm, hd] = rawDate.split('-');
+      holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(rawDate)) {
+      const [hy, hm, hd] = rawDate.split('/');
+      holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    } else if (/^\d{1,2}-\d{1,2}$/.test(rawDate)) {
+      const [hm, hd] = rawDate.split('-');
+      holidayObj = new Date(selectedDateObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    } else if (/^\d{1,2}\/\d{1,2}$/.test(rawDate)) {
+      const [hm, hd] = rawDate.split('/');
+      holidayObj = new Date(selectedDateObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    }
+    if (!holidayObj) return false;
+    return holidayObj.getTime() === selectedDateObj.getTime();
+  });
+
   return (
     <div className="min-h-[100dvh] bg-transparent font-sans pb-6">
       <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-md z-20 relative flex justify-between items-center shrink-0 min-h-[70px]">
@@ -3035,7 +3058,7 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (
+                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && !currentSelectedHoliday && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
@@ -3156,27 +3179,6 @@ export default function MainApp({
           <div className="px-5 pb-5 pt-3">
             <form onSubmit={handleSubmit} className="space-y-6">
               {(() => {
-                const [y, m, d] = date.split('-');
-                const selectedObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
-
-                const currentSelectedHoliday = holidaysFullList.find(h => {
-                  if (!h || !h.date) return false;
-                  const rawDate = h.date.trim();
-                  let holidayObj = null;
-                  if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-                    const [hy, hm, hd] = rawDate.split('-');
-                    holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
-                  } else if (/^\d{1,2}-\d{1,2}$/.test(rawDate)) {
-                    const [hm, hd] = rawDate.split('-');
-                    holidayObj = new Date(selectedObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
-                  } else if (/^\d{1,2}\/\d{1,2}$/.test(rawDate)) {
-                    const [hm, hd] = rawDate.split('/');
-                    holidayObj = new Date(selectedObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
-                  }
-                  if (!holidayObj) return false;
-                  return holidayObj.getTime() === selectedObj.getTime();
-                });
-
                 if (currentSelectedHoliday) {
                   return (
                     <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 sm:p-8 text-center shadow-lg my-4 animate-fadeIn">
