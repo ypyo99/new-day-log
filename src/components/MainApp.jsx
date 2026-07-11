@@ -566,14 +566,7 @@ export default function MainApp({
         // name과 content1이 동일하면 content1을 표시하지 않음 (중복 방지)
         const content1 = (h.content1 && h.content1.trim() !== name.trim()) ? ` (${h.content1})` : '';
 
-        let alertMsg = '';
-        if (diffDays === 0) {
-          alertMsg = `오늘(${mm}/${dd} ${dayName}) — ${name}${content1}`;
-        } else if (diffDays === 1) {
-          alertMsg = `내일(${mm}/${dd} ${dayName}) — ${name}${content1}`;
-        } else {
-          alertMsg = `${diffDays}일 후(${mm}/${dd} ${dayName}) — ${name}${content1}`;
-        }
+        const alertMsg = `${mm}/${dd} ${dayName} — ${name}${content1}`;
 
         alerts.push({ diffDays, msg: alertMsg });
       }

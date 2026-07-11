@@ -956,7 +956,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                 if (currentHoliday) {
                   const text = `${currentHoliday.name || ''} ${currentHoliday.content1 || ''} ${currentHoliday.content2 || ''}`;
-                  let icon = '🎉';
+                  let icon = '💡';
                   if (/설날|추석|명절|한가위|설 연휴/.test(text)) icon = '🌕';
                   else if (/광복절|삼일절|3\.1절|개천절|제헌절|한글날/.test(text)) icon = <img src="/korea_flag.png" alt="태극기" className="h-[1em] w-auto inline-block align-middle drop-shadow-sm rounded-[2px]" />;
                   else if (/어린이날/.test(text)) icon = '🎈';
@@ -997,211 +997,211 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                   <div className="bg-white rounded-xl shadow-sm border border-gray-400 w-full flex-1 flex flex-col overflow-hidden">
                     <div className="overflow-auto relative rounded-xl flex-1">
                       <table className="w-full table-fixed text-center border-collapse">
-                    <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-blue-500">
-                      <tr className="bg-blue-600 text-white text-sm landscape:text-[17px] md:text-base leading-normal">
-                        <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[10%] md:w-[10%] break-keep bg-blue-600">조</th>
-                        <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[20%] md:w-[18%] break-keep sticky left-0 z-30 bg-blue-600 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">선생님</th>
-                        <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[17%] md:w-[18%] break-keep bg-blue-600">시간</th>
-                        <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[37%] md:w-[38%] break-keep bg-blue-600 text-white">학생(장소)</th>
-                        <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[16%] md:w-[16%] break-keep bg-blue-600 text-white">회차</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-gray-700 text-xs md:text-sm">
-                      {scheduleData.length === 0 ? (
-                        <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white">일정 데이터가 없습니다.</td></tr>
-                      ) : (
-                        scheduleData.map((row, index) => {
-                          const isNewTeacher = index > 0 && row.render.teacher;
-                          const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
+                        <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-blue-500">
+                          <tr className="bg-blue-600 text-white text-sm landscape:text-[17px] md:text-base leading-normal">
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[10%] md:w-[10%] break-keep bg-blue-600">조</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[20%] md:w-[18%] break-keep sticky left-0 z-30 bg-blue-600 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">선생님</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[17%] md:w-[18%] break-keep bg-blue-600">시간</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[37%] md:w-[38%] break-keep bg-blue-600 text-white">학생(장소)</th>
+                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[16%] md:w-[16%] break-keep bg-blue-600 text-white">회차</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-gray-700 text-xs md:text-sm">
+                          {scheduleData.length === 0 ? (
+                            <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white">일정 데이터가 없습니다.</td></tr>
+                          ) : (
+                            scheduleData.map((row, index) => {
+                              const isNewTeacher = index > 0 && row.render.teacher;
+                              const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
 
-                          const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
+                              const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
 
-                          const isFirstShiftForTeacher = !!row.render.teacher;
-                          let displayStudent = row.student || "";
-                          let displayLocation = row.location || "";
-                          let displayStatus = row.status || "";
-                          let isHolidayOverride = false;
+                              const isFirstShiftForTeacher = !!row.render.teacher;
+                              let displayStudent = row.student || "";
+                              let displayLocation = row.location || "";
+                              let displayStatus = row.status || "";
+                              let isHolidayOverride = false;
 
-                          let statusColorClass = "text-black font-bold";
-                          if (displayStatus) {
-                            const hasEnd = displayStatus.includes("종료");
-                            const hasAbsenceOrCancel = displayStatus.includes("결석") || checkIsCanceled(displayStatus);
-                            const hasVacation = displayStatus.includes("휴가");
-                            const hasTeacherVacation = displayStatus.includes("선생님휴가");
+                              let statusColorClass = "text-black font-bold";
+                              if (displayStatus) {
+                                const hasEnd = displayStatus.includes("종료");
+                                const hasAbsenceOrCancel = displayStatus.includes("결석") || checkIsCanceled(displayStatus);
+                                const hasVacation = displayStatus.includes("휴가");
+                                const hasTeacherVacation = displayStatus.includes("선생님휴가");
 
-                            if (hasTeacherVacation) {
-                              statusColorClass = "text-gray-500 font-bold";
-                            } else if (hasEnd) {
-                              statusColorClass = "text-gray-500 font-bold";
-                            } else if (hasAbsenceOrCancel) {
-                              statusColorClass = "text-gray-500 font-bold";
-                            } else if (hasVacation) {
-                              statusColorClass = "text-gray-800 font-bold";
-                            }
-                          }
+                                if (hasTeacherVacation) {
+                                  statusColorClass = "text-gray-500 font-bold";
+                                } else if (hasEnd) {
+                                  statusColorClass = "text-gray-500 font-bold";
+                                } else if (hasAbsenceOrCancel) {
+                                  statusColorClass = "text-gray-500 font-bold";
+                                } else if (hasVacation) {
+                                  statusColorClass = "text-gray-800 font-bold";
+                                }
+                              }
 
-                          let studentCellBg = "";
-                          const combinedText = displayStudent + " " + displayLocation;
-                          if (isHolidayOverride) {
-                            studentCellBg = "bg-[#dcfce7]";
-                          } else if (displayStatus && displayStatus.includes("선생님휴가")) {
-                            studentCellBg = "bg-gray-100";
-                          } else if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
-                            studentCellBg = "bg-red-200";
-                          } else if (combinedText.includes("보조강사")) {
-                            studentCellBg = "bg-[#FFFF00]";
-                          } else if (combinedText.includes("경로당") || combinedText.includes("도선복지관")) {
-                            studentCellBg = "bg-orange-100";
-                          } else {
-                            const pinkLocs = ["방문", "사근복지관", "삼부", "성원"];
-                            if (displayLocation && pinkLocs.some(loc => displayLocation.includes(loc))) {
-                              studentCellBg = "bg-pink-100";
-                            }
-                          }
+                              let studentCellBg = "";
+                              const combinedText = displayStudent + " " + displayLocation;
+                              if (isHolidayOverride) {
+                                studentCellBg = "bg-[#dcfce7]";
+                              } else if (displayStatus && displayStatus.includes("선생님휴가")) {
+                                studentCellBg = "bg-gray-100";
+                              } else if (row.isSpecial || combinedText.includes("공휴일") || combinedText.includes("간담회")) {
+                                studentCellBg = "bg-red-200";
+                              } else if (combinedText.includes("보조강사")) {
+                                studentCellBg = "bg-[#FFFF00]";
+                              } else if (combinedText.includes("경로당") || combinedText.includes("도선복지관")) {
+                                studentCellBg = "bg-orange-100";
+                              } else {
+                                const pinkLocs = ["방문", "사근복지관", "삼부", "성원"];
+                                if (displayLocation && pinkLocs.some(loc => displayLocation.includes(loc))) {
+                                  studentCellBg = "bg-pink-100";
+                                }
+                              }
 
-                          const locTextForDisplay = (displayLocation && displayLocation.trim() !== '-') ? displayLocation.trim() : "";
-                          const isLocationUrl = locTextForDisplay && (locTextForDisplay.startsWith('http') || locTextForDisplay.startsWith('//') || locTextForDisplay.startsWith('data:') || locTextForDisplay.includes('drive.google.com'));
-                          const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !displayStudent.includes("보조강사") && (selectedTeam !== '취업팀' || isHolidayOverride) && !isLocationUrl;
+                              const locTextForDisplay = (displayLocation && displayLocation.trim() !== '-') ? displayLocation.trim() : "";
+                              const isLocationUrl = locTextForDisplay && (locTextForDisplay.startsWith('http') || locTextForDisplay.startsWith('//') || locTextForDisplay.startsWith('data:') || locTextForDisplay.includes('drive.google.com'));
+                              const showLocationText = locTextForDisplay && locTextForDisplay !== "복지관" && !displayStudent.includes("보조강사") && (selectedTeam !== '취업팀' || isHolidayOverride) && !isLocationUrl;
 
-                          const hasKiosk = (displayStudent + locTextForDisplay).includes("키오스크");
-                          const studentNames = displayStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean);
-                          const isMultipleStudents = studentNames.length >= 2;
-                          const stuLen = displayStudent.length;
+                              const hasKiosk = (displayStudent + locTextForDisplay).includes("키오스크");
+                              const studentNames = displayStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean);
+                              const isMultipleStudents = studentNames.length >= 2;
+                              const stuLen = displayStudent.length;
 
-                          let dynamicStuSizeClass = hasKiosk ? "text-[15px] md:text-[16px] landscape:text-[19px]" : "text-[16px] md:text-[18px] landscape:text-[20px]";
-                          if (stuLen >= 9) {
-                            dynamicStuSizeClass = "text-[12px] min-[360px]:text-[13px] md:text-[15px] landscape:text-[17px] tracking-tighter";
-                          } else if (stuLen >= 6) {
-                            dynamicStuSizeClass = "text-[14px] min-[360px]:text-[15px] md:text-[16px] landscape:text-[18px] tracking-tight";
-                          }
+                              let dynamicStuSizeClass = hasKiosk ? "text-[15px] md:text-[16px] landscape:text-[19px]" : "text-[16px] md:text-[18px] landscape:text-[20px]";
+                              if (stuLen >= 9) {
+                                dynamicStuSizeClass = "text-[12px] min-[360px]:text-[13px] md:text-[15px] landscape:text-[17px] tracking-tighter";
+                              } else if (stuLen >= 6) {
+                                dynamicStuSizeClass = "text-[14px] min-[360px]:text-[15px] md:text-[16px] landscape:text-[18px] tracking-tight";
+                              }
 
-                          return (
-                            <tr key={index} className="border-b border-gray-400 hover:bg-blue-50 transition bg-white">
-                              {row.render.group && <td className={`${tdClass} font-medium text-gray-800 text-[1.2em] landscape:text-[1.5em]`} rowSpan={row.rowspan.group} style={topBorderStyle}>{typeof row.group === 'string' ? row.group.replace('조', '').trim() : row.group}</td>}
+                              return (
+                                <tr key={index} className="border-b border-gray-400 hover:bg-blue-50 transition bg-white">
+                                  {row.render.group && <td className={`${tdClass} font-medium text-gray-800 text-[1.2em] landscape:text-[1.5em]`} rowSpan={row.rowspan.group} style={topBorderStyle}>{typeof row.group === 'string' ? row.group.replace('조', '').trim() : row.group}</td>}
 
-                              {row.render.teacher && (
-                                <td className={`${tdClass} bg-blue-100 font-bold text-gray-900 text-[16px] landscape:text-[20px] md:text-[18px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`} rowSpan={row.rowspan.teacher} style={topBorderStyle}>
-                                  {typeof row.teacher === 'string' ? (
-                                    row.teacher.includes('/') ? (
-                                      row.teacher.split('/').map((namePart, idx, arr) => {
-                                        const displayName = idx < arr.length - 1 ? namePart.trim() + '/' : namePart.trim();
-                                        return (
-                                          <div key={idx} className="leading-tight whitespace-nowrap">{displayName}</div>
-                                        );
-                                      })
-                                    ) : (
-                                      row.teacher.trim().split(/\s+/).map((namePart, idx) => (
-                                        <div key={idx} className="leading-tight whitespace-nowrap">{namePart}</div>
-                                      ))
-                                    )
-                                  ) : (
-                                    <div className="leading-tight whitespace-nowrap">{row.teacher}</div>
+                                  {row.render.teacher && (
+                                    <td className={`${tdClass} bg-blue-100 font-bold text-gray-900 text-[16px] landscape:text-[20px] md:text-[18px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`} rowSpan={row.rowspan.teacher} style={topBorderStyle}>
+                                      {typeof row.teacher === 'string' ? (
+                                        row.teacher.includes('/') ? (
+                                          row.teacher.split('/').map((namePart, idx, arr) => {
+                                            const displayName = idx < arr.length - 1 ? namePart.trim() + '/' : namePart.trim();
+                                            return (
+                                              <div key={idx} className="leading-tight whitespace-nowrap">{displayName}</div>
+                                            );
+                                          })
+                                        ) : (
+                                          row.teacher.trim().split(/\s+/).map((namePart, idx) => (
+                                            <div key={idx} className="leading-tight whitespace-nowrap">{namePart}</div>
+                                          ))
+                                        )
+                                      ) : (
+                                        <div className="leading-tight whitespace-nowrap">{row.teacher}</div>
+                                      )}
+                                    </td>
                                   )}
-                                </td>
-                              )}
 
-                              {row.render.time && (
-                                <td className={`${tdClass} text-gray-700 text-[14px] landscape:text-[18px] md:text-[17px] tracking-tighter`} rowSpan={row.rowspan.time} style={topBorderStyle}>
-                                  {typeof row.time === 'string' && row.time.includes('~') ? (
-                                    <>
-                                      {(() => {
-                                        let displayTime = row.time;
-                                        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-                                        const dayStr = dayNames[currentDisplayDate.getDay()];
-                                        if (selectedTeam === '취업팀' && dayStr === '금') {
-                                          const mapping = { "13:00~14:00": "9:30~10:30", "14:00~15:00": "10:30~11:30", "15:00~16:00": "11:30~12:30" };
-                                          displayTime = mapping[row.time] || row.time;
-                                        }
-                                        return (
-                                          <>
-                                            <div className="flex md:hidden landscape:hidden w-full justify-center items-center leading-tight whitespace-nowrap">
-                                              {displayTime.split('~')[0].trim()}~
-                                            </div>
-                                            <div className="hidden md:flex landscape:flex w-full justify-center items-center leading-tight whitespace-nowrap text-center">
-                                              {displayTime.replace(/\s+/g, '')}
-                                            </div>
-                                          </>
-                                        );
-                                      })()}
-                                    </>
-                                  ) : (
-                                    <div className="flex w-full justify-center items-center whitespace-nowrap text-center">{row.time}</div>
+                                  {row.render.time && (
+                                    <td className={`${tdClass} text-gray-700 text-[14px] landscape:text-[18px] md:text-[17px] tracking-tighter`} rowSpan={row.rowspan.time} style={topBorderStyle}>
+                                      {typeof row.time === 'string' && row.time.includes('~') ? (
+                                        <>
+                                          {(() => {
+                                            let displayTime = row.time;
+                                            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                                            const dayStr = dayNames[currentDisplayDate.getDay()];
+                                            if (selectedTeam === '취업팀' && dayStr === '금') {
+                                              const mapping = { "13:00~14:00": "9:30~10:30", "14:00~15:00": "10:30~11:30", "15:00~16:00": "11:30~12:30" };
+                                              displayTime = mapping[row.time] || row.time;
+                                            }
+                                            return (
+                                              <>
+                                                <div className="flex md:hidden landscape:hidden w-full justify-center items-center leading-tight whitespace-nowrap">
+                                                  {displayTime.split('~')[0].trim()}~
+                                                </div>
+                                                <div className="hidden md:flex landscape:flex w-full justify-center items-center leading-tight whitespace-nowrap text-center">
+                                                  {displayTime.replace(/\s+/g, '')}
+                                                </div>
+                                              </>
+                                            );
+                                          })()}
+                                        </>
+                                      ) : (
+                                        <div className="flex w-full justify-center items-center whitespace-nowrap text-center">{row.time}</div>
+                                      )}
+                                    </td>
                                   )}
-                                </td>
-                              )}
 
-                              <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
-                                <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
-                                  {(!displayStudent || displayStudent.trim() === '-') ? null : (
-                                    <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center"}>{displayStudent.replace(/\n/g, ' ')}</span>
-                                  )}
-                                  {showLocationText && displayStudent && displayStudent.trim() !== '-' && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
-                                    <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center mt-0.5 font-medium text-gray-500 text-[1.0em]"}>({locTextForDisplay})</span>
-                                  )}
-                                </div>
-                                <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
-                                  {(!displayStatus || displayStatus.trim() === '-') ? null : displayStatus.split(/(\d+회차)/g).map((part, i) =>
-                                    /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
-                                  )}
-                                </div>
-
-                                {(selectedTeam?.trim() === '취업팀' || selectedTeam?.toLowerCase().includes('취업')) && row.location && (row.location.toLowerCase().startsWith('http') || row.location.toLowerCase().startsWith('data:') || row.location.toLowerCase().includes('drive.google.com') || row.location.toLowerCase().startsWith('=image')) && (
-                                  <div className="mt-2 w-full flex flex-col items-center">
-                                    <div className="relative overflow-hidden rounded-lg border border-blue-400 shadow-sm bg-pink-50 p-1">
-                                      <img
-                                        src={getDirectImageUrl(row.location)}
-                                        alt="Sign"
-                                        className={`${isMultipleStudents ? 'h-28 sm:h-32' : 'h-14 sm:h-16'} w-auto object-contain mix-blend-multiply`}
-                                        onError={(e) => {
-                                          const parent = e.target.closest('div');
-                                          if (parent) parent.style.display = 'none';
-                                        }}
-                                      />
+                                  <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
+                                    <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
+                                      {(!displayStudent || displayStudent.trim() === '-') ? null : (
+                                        <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center"}>{displayStudent.replace(/\n/g, ' ')}</span>
+                                      )}
+                                      {showLocationText && displayStudent && displayStudent.trim() !== '-' && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
+                                        <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center mt-0.5 font-medium text-gray-500 text-[1.0em]"}>({locTextForDisplay})</span>
+                                      )}
                                     </div>
-                                  </div>
-                                )}
-                              </td>
+                                    <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
+                                      {(!displayStatus || displayStatus.trim() === '-') ? null : displayStatus.split(/(\d+회차)/g).map((part, i) =>
+                                        /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
+                                      )}
+                                    </div>
 
-                              <td className={`${tdClass} font-bold text-center text-[13px] landscape:text-[16px] md:text-[15px] transition-colors`} style={topBorderStyle}>
-                                {row.sessionCounts && !row.student?.includes("간담회") ? (
-                                  <div className="flex flex-col w-full justify-center items-center gap-1">
-                                    {row.sessionCounts.map((sc, scIdx) => {
-                                      let sessionCellBg = "bg-gray-300";
-                                      let sessionTextCol = "text-black";
-
-                                      if (sc.count >= 15) {
-                                        sessionCellBg = "bg-orange-600";
-                                        sessionTextCol = "text-white";
-                                      } else if (sc.count >= 10) {
-                                        sessionCellBg = "bg-purple-900";
-                                        sessionTextCol = "text-white";
-                                      } else if (sc.count >= 7) {
-                                        sessionCellBg = "bg-purple-400";
-                                        sessionTextCol = "text-white";
-                                      }
-
-                                      return (
-                                        <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1.5 py-0.5 rounded w-full whitespace-nowrap ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
-                                          {sc.count}회차
+                                    {(selectedTeam?.trim() === '취업팀' || selectedTeam?.toLowerCase().includes('취업')) && row.location && (row.location.toLowerCase().startsWith('http') || row.location.toLowerCase().startsWith('data:') || row.location.toLowerCase().includes('drive.google.com') || row.location.toLowerCase().startsWith('=image')) && (
+                                      <div className="mt-2 w-full flex flex-col items-center">
+                                        <div className="relative overflow-hidden rounded-lg border border-blue-400 shadow-sm bg-pink-50 p-1">
+                                          <img
+                                            src={getDirectImageUrl(row.location)}
+                                            alt="Sign"
+                                            className={`${isMultipleStudents ? 'h-28 sm:h-32' : 'h-14 sm:h-16'} w-auto object-contain mix-blend-multiply`}
+                                            onError={(e) => {
+                                              const parent = e.target.closest('div');
+                                              if (parent) parent.style.display = 'none';
+                                            }}
+                                          />
                                         </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : (
-                                  <span className="text-purple-700">-</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                      </tbody>
-                    </table>
+                                      </div>
+                                    )}
+                                  </td>
+
+                                  <td className={`${tdClass} font-bold text-center text-[13px] landscape:text-[16px] md:text-[15px] transition-colors`} style={topBorderStyle}>
+                                    {row.sessionCounts && !row.student?.includes("간담회") ? (
+                                      <div className="flex flex-col w-full justify-center items-center gap-1">
+                                        {row.sessionCounts.map((sc, scIdx) => {
+                                          let sessionCellBg = "bg-gray-300";
+                                          let sessionTextCol = "text-black";
+
+                                          if (sc.count >= 15) {
+                                            sessionCellBg = "bg-orange-600";
+                                            sessionTextCol = "text-white";
+                                          } else if (sc.count >= 10) {
+                                            sessionCellBg = "bg-purple-900";
+                                            sessionTextCol = "text-white";
+                                          } else if (sc.count >= 7) {
+                                            sessionCellBg = "bg-purple-400";
+                                            sessionTextCol = "text-white";
+                                          }
+
+                                          return (
+                                            <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1.5 py-0.5 rounded w-full whitespace-nowrap ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
+                                              {sc.count}회차
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <span className="text-purple-700">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
-          </div>
+                );
+              })()}
+            </div>
 
             {(() => {
               const _y = currentDisplayDate.getFullYear();
@@ -1211,7 +1211,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const _currentDateStrShort = `${_m}-${_d}`;
               const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
               if (currentHoliday) return null;
-              
+
               return (
                 <SummarySection
                   data={scheduleData}
