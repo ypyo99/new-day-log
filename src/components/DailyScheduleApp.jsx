@@ -1029,8 +1029,22 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                 const hasVacation = displayStatus.includes("휴가");
                                 const hasTeacherVacation = displayStatus.includes("선생님휴가");
 
+                                let hasIndependentAbsence = false;
+                                displayStatus.split(/(결석)/g).forEach((subPart, j, arr) => {
+                                  if (subPart === '결석') {
+                                    const prevChar = arr[j - 1]?.slice(-1) || '';
+                                    const nextChar = arr[j + 1]?.[0] || '';
+                                    const isKoreanOrAlnum = /[가-힣a-zA-Z0-9]/;
+                                    if (!isKoreanOrAlnum.test(prevChar) && !isKoreanOrAlnum.test(nextChar)) {
+                                      hasIndependentAbsence = true;
+                                    }
+                                  }
+                                });
+
                                 if (hasTeacherVacation) {
                                   statusColorClass = "text-gray-500 font-bold";
+                                } else if (hasIndependentAbsence) {
+                                  statusColorClass = "text-red-600 font-bold";
                                 } else if (hasEnd) {
                                   statusColorClass = "text-gray-500 font-bold";
                                 } else if (hasAbsenceOrCancel) {

@@ -3237,10 +3237,13 @@ export default function MainApp({
                         const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
 
                         const allSelectedTags = (logs[index]?.selectedTags || []).flat().filter(Boolean);
-                        const hasRedTag = allSelectedTags.includes("결석") || allSelectedTags.includes("종료") || allSelectedTags.includes("취소");
+                        const hasAbsenceTag = allSelectedTags.includes("결석");
+                        const hasRedTag = allSelectedTags.includes("종료") || allSelectedTags.includes("취소");
                         const hasGrayTag = allSelectedTags.includes("선생님휴가");
                         let memoTextColorClass = "text-gray-900";
-                        if (hasRedTag) {
+                        if (hasAbsenceTag) {
+                          memoTextColorClass = "text-red-600";
+                        } else if (hasRedTag) {
                           memoTextColorClass = "text-gray-500";
                         } else if (hasGrayTag) {
                           memoTextColorClass = "text-gray-500";
