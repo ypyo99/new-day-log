@@ -62,7 +62,45 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <style>
+      .initial-loader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        background-color: #f9fafb;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      .initial-loader-spinner {
+        width: 3rem;
+        height: 3rem;
+        border: 4px solid #2563eb;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: initial-loader-spin 1s linear infinite;
+      }
+      .initial-loader-text {
+        margin-top: 1rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #4b5563;
+        animation: initial-loader-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes initial-loader-spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes initial-loader-pulse {
+        50% { opacity: .5; }
+      }
+    </style>
+    <div class="initial-loader-container">
+      <div class="initial-loader-spinner"></div>
+      <p class="initial-loader-text">화면을 불러오는 중...</p>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
   <script>
     if ('serviceWorker' in navigator) {
