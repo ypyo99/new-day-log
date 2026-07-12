@@ -53,6 +53,13 @@ export default function App() {
 
   useEffect(() => {
     setSessionItem('sungdong_current_view', currentView);
+    // 메뉴(화면) 전환 시 구글 애널리틱스로 페이지 뷰 이벤트 전송
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'page_view', {
+        page_title: currentView,
+        page_path: '/' + currentView
+      });
+    }
   }, [currentView]);
 
   useEffect(() => {
