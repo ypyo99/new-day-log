@@ -128,6 +128,7 @@ export default function MainApp({
   };
 
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
+  const [selectedStudentHistory, setSelectedStudentHistory] = useState(null);
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
   const [weatherData, setWeatherData] = useState(null);
@@ -2973,7 +2974,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260708-ClassCount
+            v260712-Previous Class
           </div>
         </div>
       </div>
@@ -3275,14 +3276,22 @@ export default function MainApp({
                                       else if (c.count >= 7) sessionColorClass = "bg-purple-500 text-white border-purple-600 font-extrabold";
 
                                       return (
-                                        <button
-                                          key={cIdx}
-                                          type="button"
-                                          onClick={() => setSelectedStudentDates(c)}
-                                          className={`${sessionColorClass} border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:brightness-95 active:scale-95`}
-                                        >
-                                          {c.count}회차
-                                        </button>
+                                        <div key={cIdx} className="flex items-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedStudentDates(c)}
+                                            className={`${sessionColorClass} border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:brightness-95 active:scale-95`}
+                                          >
+                                            {c.count}회차
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedStudentHistory(c)}
+                                            className="ml-1 bg-green-100 text-green-800 border-green-300 border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:bg-green-200 active:scale-95 font-bold"
+                                          >
+                                            이전교육
+                                          </button>
+                                        </div>
                                       );
                                     })}
                                   </div>
@@ -3638,6 +3647,77 @@ export default function MainApp({
           </div>
         </div>
       )}
+
+      {selectedStudentHistory && (() => {
+        const history = [];
+        selectedStudentHistory.dates.forEach(d => {
+          const y = d.date.getFullYear();
+          const m = String(d.date.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.date.getDate()).padStart(2, '0');
+          const dateStr = `${y}-${m}-${dd}`;
+
+          const dayData = allScheduleData[dateStr] || {};
+          const shiftData = dayData[d.shift] || [];
+          const list = Array.isArray(shiftData) ? shiftData : [{ teacher: currentUser, ...shiftData }];
+
+          const record = list.find(r => {
+            if (!r.student) return false;
+            const parsedNames = r.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+            return parsedNames.includes(selectedStudentHistory.name);
+          });
+
+          if (record) {
+            let statusStr = formatStatusIfDate(record.status) || "";
+            let memo = statusStr;
+            history.push({ date: dateStr, dayOfWeek: getDayName(dateStr), shift: d.shift, memo: memo, teacher: record.teacher });
+          }
+        });
+
+        history.sort((a, b) => {
+          if (b.date !== a.date) return b.date.localeCompare(a.date);
+          const getT = (s) => {
+            const match = s.match(/(\d+):(\d+)/);
+            return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
+          };
+          return getT(b.shift) - getT(a.shift);
+        });
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentHistory(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+              <div className="bg-green-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
+                <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentHistory.name}님의 이전 교육 기록</h3>
+                <button onClick={() => setSelectedStudentHistory(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-3 sm:p-4 overflow-y-auto space-y-3">
+                {history.map((h, idx) => {
+                  let cleanMemo = h.memo;
+                  if (cleanMemo === "1") cleanMemo = "출석 (메모 없음)";
+                  else if (!cleanMemo) cleanMemo = "내용 없음";
+
+                  return (
+                    <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
+                      <div className="text-sm font-bold text-gray-500 mb-1">
+                        {h.date} ({h.dayOfWeek}) <span className="text-gray-400 ml-1">{h.shift}</span>
+                        {h.teacher && <span className="text-indigo-600 ml-2 font-extrabold tracking-tight">[{h.teacher}]</span>}
+                      </div>
+                      <div className="text-base sm:text-lg font-bold text-gray-800 break-words whitespace-pre-wrap">{cleanMemo}</div>
+                    </div>
+                  );
+                })}
+                {history.length === 0 && (
+                  <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">이전 교육 기록이 없습니다.</div>
+                )}
+              </div>
+              <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0">
+                <button onClick={() => setSelectedStudentHistory(null)} className="px-4 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors active:scale-95 shadow-sm">닫기</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {selectedStudentDates && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentDates(null)}>
