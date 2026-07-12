@@ -3287,7 +3287,7 @@ export default function MainApp({
                                           <button
                                             type="button"
                                             onClick={() => setSelectedStudentHistory(c)}
-                                            className="ml-1 bg-green-100 text-green-800 border-green-300 border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:bg-green-200 active:scale-95 font-bold"
+                                            className="ml-1 bg-green-100 text-green-800 border-green-500 border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:bg-green-200 active:scale-95 font-bold"
                                           >
                                             이전교육
                                           </button>
