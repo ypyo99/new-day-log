@@ -3650,11 +3650,16 @@ export default function MainApp({
 
       {selectedStudentHistory && (() => {
         const history = [];
+        const realToday = new Date();
+        const realTodayStr = `${realToday.getFullYear()}-${String(realToday.getMonth() + 1).padStart(2, '0')}-${String(realToday.getDate()).padStart(2, '0')}`;
+
         selectedStudentHistory.dates.forEach(d => {
           const y = d.date.getFullYear();
           const m = String(d.date.getMonth() + 1).padStart(2, '0');
           const dd = String(d.date.getDate()).padStart(2, '0');
           const dateStr = `${y}-${m}-${dd}`;
+
+          if (dateStr > realTodayStr) return;
 
           const dayData = allScheduleData[dateStr] || {};
           const shiftData = dayData[d.shift] || [];
