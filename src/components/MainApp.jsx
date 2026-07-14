@@ -3683,7 +3683,11 @@ export default function MainApp({
               
               let mergedMemo = "";
               const uniqueMemos = Object.keys(memoGroups);
-              if (uniqueMemos.length === 1) {
+              const isAbsent = uniqueMemos.some(memo => memo.includes("결석"));
+
+              if (isAbsent) {
+                mergedMemo = uniqueMemos.find(memo => memo.includes("결석"));
+              } else if (uniqueMemos.length === 1) {
                 mergedMemo = uniqueMemos[0];
               } else {
                 mergedMemo = uniqueMemos.map(memo => {
