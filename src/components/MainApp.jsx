@@ -3653,29 +3653,26 @@ export default function MainApp({
         const realToday = new Date();
         const realTodayStr = `${realToday.getFullYear()}-${String(realToday.getMonth() + 1).padStart(2, '0')}-${String(realToday.getDate()).padStart(2, '0')}`;
 
-        selectedStudentHistory.dates.forEach(d => {
-          const y = d.date.getFullYear();
-          const m = String(d.date.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.date.getDate()).padStart(2, '0');
-          const dateStr = `${y}-${m}-${dd}`;
-
+        Object.keys(allScheduleData).forEach(dateStr => {
           if (dateStr > realTodayStr) return;
 
           const dayData = allScheduleData[dateStr] || {};
-          const shiftData = dayData[d.shift] || [];
-          const list = Array.isArray(shiftData) ? shiftData : [{ teacher: currentUser, ...shiftData }];
+          Object.keys(dayData).forEach(shiftTime => {
+            const shiftData = dayData[shiftTime] || [];
+            const list = Array.isArray(shiftData) ? shiftData : [{ teacher: currentUser, ...shiftData }];
 
-          const record = list.find(r => {
-            if (!r.student) return false;
-            const parsedNames = r.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-            return parsedNames.includes(selectedStudentHistory.name);
+            const records = list.filter(r => {
+              if (!r.student) return false;
+              const parsedNames = r.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+              return parsedNames.includes(selectedStudentHistory.name);
+            });
+
+            records.forEach(record => {
+              let statusStr = formatStatusIfDate(record.status) || "";
+              let memo = statusStr;
+              history.push({ date: dateStr, dayOfWeek: getDayName(dateStr), shift: shiftTime, memo: memo, teacher: record.teacher });
+            });
           });
-
-          if (record) {
-            let statusStr = formatStatusIfDate(record.status) || "";
-            let memo = statusStr;
-            history.push({ date: dateStr, dayOfWeek: getDayName(dateStr), shift: d.shift, memo: memo, teacher: record.teacher });
-          }
         });
 
         history.sort((a, b) => {
@@ -3702,13 +3699,16 @@ export default function MainApp({
                   if (cleanMemo === "1") cleanMemo = "출석 (메모 없음)";
                   else if (!cleanMemo) cleanMemo = "내용 없음";
 
+                  const isAbsent = cleanMemo.includes("결석");
+                  const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
+
                   return (
                     <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
                       <div className="text-sm font-bold text-gray-500 mb-1">
                         {h.date} ({h.dayOfWeek}) <span className="text-gray-400 ml-1">{h.shift}</span>
                         {h.teacher && <span className="text-indigo-600 ml-2 font-extrabold tracking-tight">[{h.teacher}]</span>}
                       </div>
-                      <div className="text-base sm:text-lg font-bold text-gray-800 break-words whitespace-pre-wrap">{cleanMemo}</div>
+                      <div className={`text-base sm:text-lg font-bold ${textColorClass} break-words whitespace-pre-wrap`}>{cleanMemo}</div>
                     </div>
                   );
                 })}
