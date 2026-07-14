@@ -3667,11 +3667,39 @@ export default function MainApp({
               return parsedNames.includes(selectedStudentHistory.name);
             });
 
-            records.forEach(record => {
-              let statusStr = formatStatusIfDate(record.status) || "";
-              let memo = statusStr;
-              history.push({ date: dateStr, dayOfWeek: getDayName(dateStr), shift: shiftTime, memo: memo, teacher: record.teacher });
-            });
+            if (records.length > 0) {
+              const teacherNames = Array.from(new Set(records.map(r => r.teacher).filter(Boolean))).join(', ');
+              
+              const memoGroups = {};
+              records.forEach(r => {
+                let statusStr = formatStatusIfDate(r.status) || "";
+                let memo = statusStr;
+                if (memo === "1") memo = "출석 (메모 없음)";
+                else if (!memo) memo = "내용 없음";
+                
+                if (!memoGroups[memo]) memoGroups[memo] = [];
+                if (r.teacher) memoGroups[memo].push(r.teacher);
+              });
+              
+              let mergedMemo = "";
+              const uniqueMemos = Object.keys(memoGroups);
+              if (uniqueMemos.length === 1) {
+                mergedMemo = uniqueMemos[0];
+              } else {
+                mergedMemo = uniqueMemos.map(memo => {
+                  const tNames = Array.from(new Set(memoGroups[memo])).join(', ');
+                  return `[${tNames}] ${memo}`;
+                }).join('\n');
+              }
+              
+              history.push({ 
+                date: dateStr, 
+                dayOfWeek: getDayName(dateStr), 
+                shift: shiftTime, 
+                memo: mergedMemo, 
+                teacher: teacherNames 
+              });
+            }
           });
         });
 
@@ -3681,7 +3709,7 @@ export default function MainApp({
             const match = s.match(/(\d+):(\d+)/);
             return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
           };
-          return getT(b.shift) - getT(a.shift);
+          return getT(a.shift) - getT(b.shift);
         });
 
         return (
@@ -3696,8 +3724,6 @@ export default function MainApp({
               <div className="p-3 sm:p-4 overflow-y-auto space-y-3">
                 {history.map((h, idx) => {
                   let cleanMemo = h.memo;
-                  if (cleanMemo === "1") cleanMemo = "출석 (메모 없음)";
-                  else if (!cleanMemo) cleanMemo = "내용 없음";
 
                   const isAbsent = cleanMemo.includes("결석");
                   const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
