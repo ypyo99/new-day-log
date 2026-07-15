@@ -1153,11 +1153,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                         <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center mt-0.5 font-medium text-gray-500 text-[1.0em]"}>({locTextForDisplay})</span>
                                       )}
                                     </div>
-                                    <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
-                                      {(!displayStatus || displayStatus.trim() === '-') ? null : displayStatus.split(/(\d+회차)/g).map((part, i) =>
-                                        /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
-                                      )}
-                                    </div>
+                                    {(displayStatus && displayStatus.trim() !== '-' && displayStatus.trim() !== '\u200B' && displayStatus.trim() !== '') && (
+                                      <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
+                                        {displayStatus.split(/(\d+회차)/g).map((part, i) =>
+                                          /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
+                                        )}
+                                      </div>
+                                    )}
 
                                     {(selectedTeam?.trim() === '취업팀' || selectedTeam?.toLowerCase().includes('취업')) && row.location && (row.location.toLowerCase().startsWith('http') || row.location.toLowerCase().startsWith('data:') || row.location.toLowerCase().includes('drive.google.com') || row.location.toLowerCase().startsWith('=image')) && (
                                       <div className="mt-2 w-full flex flex-col items-center">

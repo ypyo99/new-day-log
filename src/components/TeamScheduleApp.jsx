@@ -481,7 +481,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
               if (isFirstShift && item) {
                 if (rowObj.category === "대상") val = item.student || "";
                 else if (rowObj.category === "장소") val = item.location || "";
-                else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
+                else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status === '\u200B' ? "" : (item.status || ""));
               } else {
                 val = "";
               }
@@ -492,7 +492,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 if (isSignatureUrl) val = ""; // Will overlay image
                 else val = item.location || "";
               }
-              else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status || "");
+              else if (rowObj.category === "진행") val = item.status === "1" ? "1" : (item.status === '\u200B' ? "" : (item.status || ""));
             }
             rowArr.push(val);
           });
@@ -1423,7 +1423,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 </td>
                                 <td className="border-b border-gray-200 align-top py-2 px-1 text-left" style={targetStyle}>
                                   <span className={`text-xs font-bold break-all whitespace-normal block w-full overflow-hidden line-clamp-3 ${statusTextClass}`} title={isHoliday ? (item.render.teacher ? (holidayInfo.content2 || '') : '') : (item.status || '')}>
-                                    {(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content2 || '-') : (item.status || '-')}
+                                    {(isHoliday && !item.render.teacher) ? '' : (isMeeting && !item.render.teacher) ? '' : isHoliday ? (holidayInfo.content2 || '-') : (item.status && item.status !== '\u200B' ? item.status : '-')}
                                   </span>
                                 </td>
                               </tr>
