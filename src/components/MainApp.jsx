@@ -1,3 +1,73 @@
+const ATTENDANCE_TAGS = ['1', '결석', '종료', '선생님휴가'];
+
+  const parseStatusString = (statusStr, cleanMyStudent) => {
+    const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
+    const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
+    const isKyungrodang = cleanMyStudent.includes("경로당");
+
+    let tagParts = [];
+    let memoParts = [];
+    let isMemoStarted = false;
+    let loadedHeadcount = "";
+    let startIndex = 0;
+
+    if (isShowHeadcount && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
+      loadedHeadcount = rawParts[0];
+      startIndex = 1;
+    }
+
+    for (let i = startIndex; i < rawParts.length; i++) {
+      const part = rawParts[i];
+      if (!isMemoStarted) {
+        const subParts = part.split('/').map(p => p.trim());
+        const isAllTags = subParts.every(p => {
+          if (p === "") return true;
+          const spaceParts = p.split(/\s+/);
+          return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
+        });
+
+        if (isAllTags) {
+          tagParts.push(part);
+        } else {
+          isMemoStarted = true;
+          memoParts.push(part);
+        }
+      } else {
+        memoParts.push(part);
+      }
+    }
+
+    if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
+      const lastTag = tagParts[tagParts.length - 1];
+      if (/^\d{1,2}$/.test(lastTag)) {
+        if (isKyungrodang || tagParts.length > 1) {
+          tagParts.pop();
+          memoParts.unshift(lastTag);
+        }
+      }
+    }
+
+    let loadedTags = [[]];
+    if (tagParts.length > 0) {
+      const combinedTagStr = tagParts.join(',');
+      const studentTagStrs = combinedTagStr.split('/');
+      loadedTags = studentTagStrs.map(str =>
+        str.split(/[,\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
+      );
+    }
+    loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
+
+    if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
+      if (/^\d{1,2}$/.test(memoParts[0].trim())) {
+        loadedHeadcount = memoParts[0].trim();
+        memoParts.shift();
+      }
+    }
+    const loadedMemo = memoParts.join(', ').replace(/\u200B/g, '');
+
+    return { loadedTags, loadedMemo, loadedHeadcount };
+  };
+
 // 메인메뉴, 일지 작성 프로그램
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -700,7 +770,7 @@ export default function MainApp({
   const [logsDate, setLogsDate] = useState(date);
 
 
-  const ATTENDANCE_TAGS = ['1', '결석', '종료', '선생님휴가'];
+  
   const RENDER_TAGS = ['1', '결석', '종료', '선생님휴가'];
 
   const fetchTeachersFromSheet = async (team) => {
@@ -821,8 +891,7 @@ export default function MainApp({
 
   useEffect(() => {
     const todaysData = allScheduleData[date] || {};
-    const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
-
+    
     setLogs(prevLogs => {
       const newLogs = { ...prevLogs };
       shifts.forEach((shift, index) => {
@@ -834,31 +903,6 @@ export default function MainApp({
         let loadedStudent = (myRecord.student === undefined || myRecord.student === null) ? "" : myRecord.student;
         let loadedLocation = (myRecord.location === undefined || myRecord.location === null) ? "" : myRecord.location;
         let statusStr = formatStatusIfDate(myRecord.status) || "";
-
-        // 조건 검사: 내 출결상태(statusStr)와 메모가 모두 비어있는 경우
-        // 같은 날짜, 같은 시간대, 같은 학생이 나와 같은 조의 다른 선생님에게 기록이 있고 이미 출결 상태가 입력되어 있다면 연동
-        const hasMyStatusOrMemo = statusStr.trim() !== "";
-
-        if (!hasMyStatusOrMemo && loadedStudent.trim() !== "") {
-          const cleanMyStudent = loadedStudent.trim();
-          // 나와 같은 조의 다른 선생님의 기록 중, 학생 이름이 같고 출결(status) 기록이 존재하는 레코드 탐색
-          const siblingRecord = list.find(r => {
-            if (r.teacher === currentUser) return false;
-            if ((r.student || "").trim() !== cleanMyStudent) return false;
-            // 같은 조인지 확인
-            const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
-            if (siblingGroup !== myGroup) return false;
-
-            // 출결 기록이 존재하는지 여부 확인
-            const siblingStatus = formatStatusIfDate(r.status) || "";
-            if (siblingStatus.includes("선생님휴가")) return false;
-            return siblingStatus.trim() !== "";
-          });
-
-          if (siblingRecord) {
-            statusStr = formatStatusIfDate(siblingRecord.status) || "";
-          }
-        }
 
         const isShowHeadcount = loadedStudent.includes("보조강사") || loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
 
@@ -916,7 +960,6 @@ export default function MainApp({
             str.split(/[,\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
           );
         }
-
         loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
 
         if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
@@ -925,26 +968,23 @@ export default function MainApp({
             memoParts.shift();
           }
         }
-
-        const loadedMemo = memoParts.join(', ');
-        let finalMemo = loadedMemo;
-        if (!finalMemo) {
-          const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-          const backup = window.localStorage.getItem(backupKey);
-          if (backup) finalMemo = backup;
-        }
+        const loadedMemo = memoParts.join(', ').replace(/\u200B/g, '');
 
         newLogs[index] = {
           student: loadedStudent,
-          status: statusStr,
           location: loadedLocation,
           selectedTags: loadedTags,
-          memo: finalMemo,
-          headcount: loadedHeadcount
+          memo: loadedMemo
         };
+        if (loadedHeadcount) {
+          newLogs[index].headcount = loadedHeadcount;
+        } else if (isShowHeadcount) {
+          newLogs[index].headcount = "";
+        }
       });
       return newLogs;
     });
+
     setLogsDate(date);
   }, [date, allScheduleData, selectedTeam, currentUser, dbTeachers, shifts]);
 
@@ -1253,7 +1293,12 @@ export default function MainApp({
       result.push(log.memo);
     }
 
-    return result.join(', ');
+    const finalStr = result.join(', ');
+    if (finalStr === "") {
+      const hasStudentOrLocation = (log.student || "").trim() !== "" || (log.location || "").trim() !== "";
+      return hasStudentOrLocation ? "\u200B" : "";
+    }
+    return finalStr;
   };
 
   const hasChanges = useMemo(() => {
@@ -1266,7 +1311,12 @@ export default function MainApp({
 
       const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
       const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
-      const statusChanged = currentStatusStr !== originalStatus;
+      const isEmptyRow = (log.student || "").trim() === "" && (log.location || "").trim() === "" &&
+                         (original.student || "").trim() === "" && (original.location || "").trim() === "";
+      
+      const normCurrent = currentStatusStr === "\u200B" ? "" : currentStatusStr;
+      const normOriginal = originalStatus === "\u200B" ? "" : originalStatus;
+      const statusChanged = isEmptyRow ? false : normCurrent !== normOriginal;
 
       return studentChanged || locationChanged || statusChanged;
     });
@@ -1338,9 +1388,16 @@ export default function MainApp({
       const originalStatus = formatStatusIfDate(original.status);
       const currentStatusStr = buildStatusString(log);
 
-      const isChanged = (i === forceIndex) || (log.student || "") !== (original.student || "") ||
-        (log.location || "") !== (original.location || "") ||
-        currentStatusStr !== originalStatus;
+      const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
+      const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
+      const isEmptyRow = (log.student || "").trim() === "" && (log.location || "").trim() === "" &&
+                         (original.student || "").trim() === "" && (original.location || "").trim() === "";
+      
+      const normCurrent = currentStatusStr === "\u200B" ? "" : currentStatusStr;
+      const normOriginal = originalStatus === "\u200B" ? "" : originalStatus;
+      const statusChanged = isEmptyRow ? false : normCurrent !== normOriginal;
+      
+      const isChanged = (i === forceIndex) || studentChanged || locationChanged || statusChanged;
 
       let effectiveLocation = log.location || "";
 
@@ -1378,9 +1435,27 @@ export default function MainApp({
         const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
         return tags.length > 0;
       }).length;
-      const hasCheckedAttendance = (checkedCount > 0) || (targetNameForHeadcount && hc !== "");
+      const hasCheckedAttendance = (checkedCount > 0) || (targetNameForHeadcount !== undefined);
 
       const isTeamMeeting = studentNames.some(name => name.includes("팀장간담회"));
+
+      const isKyungrodangLoc = (log.location || "").includes("경로당");
+      const isShowHeadcount = (targetNameForHeadcount !== undefined) || isKyungrodangLoc;
+
+      if (!isFutureDate && isShowHeadcount && memo !== "" && hc === "") {
+        const hasExcusedAttendance = studentNames.some((_, sIdx) => {
+          const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
+          return tags.includes("결석") || (tags.includes("선생님휴가") && !tags.includes("1")) || tags.includes("종료");
+        });
+
+        if (!hasExcusedAttendance) {
+          setValidationErrorMsg('교육 참석인원을 입력하세요!');
+          setValidationErrorIndex(i);
+          setValidationErrorType("headcount");
+          setShowValidationError(true);
+          return false;
+        }
+      }
 
       if (!isFutureDate && studentNames.length >= 2 && !hasAssistant && !isBalGul && !isTeamMeeting) {
         if (checkedCount > 0 && checkedCount < studentNames.length) {
@@ -1410,7 +1485,7 @@ export default function MainApp({
 
         const anyUnchecked = studentNames.some((_, sIdx) => {
           const tags = (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx] : [];
-          return tags.length === 0 && !(targetNameForHeadcount && hc !== "");
+          return tags.length === 0 && !(targetNameForHeadcount !== undefined);
         });
         if (anyUnchecked) {
           const displayNames = studentNames.join('/');
@@ -1427,39 +1502,7 @@ export default function MainApp({
         }
       }
 
-      if (!isFutureDate && targetNameForHeadcount) {
-        const hc = (log.headcount || "").trim();
-        const isKyungrodangEntry = targetNameForHeadcount.includes("경로당");
 
-        if (isKyungrodangEntry) {
-          const isGyeolseok = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("결석") : false);
-          const isVacation = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("선생님휴가") : false);
-          const isCancel = studentNames.some((_, sIdx) => (log.selectedTags && log.selectedTags[sIdx]) ? log.selectedTags[sIdx].includes("종료") : false);
-
-          if (!isGyeolseok && !isVacation && !isCancel && hc === "" && memo !== "") {
-            setValidationErrorMsg(`${targetNameForHeadcount} 참석인원 또는 출결사항을 확인해 주세요!`);
-            setValidationErrorIndex(i);
-            setValidationErrorType("headcount");
-            setShowValidationError(true);
-            return false;
-          }
-        } else {
-          const isAssistant = targetNameForHeadcount.includes("보조강사");
-          const isMemoEmpty = memo === "";
-
-          if (isAssistant && isMemoEmpty) {
-            // 건너뜀
-          } else {
-            if (!/^\d+/.test(hc)) {
-              setValidationErrorMsg(`${targetNameForHeadcount} 수업 내용이 있으면 왼쪽의 [인원] 입력란에 '0' 또는 참석한 인원을 입력해야 합니다.`);
-              setValidationErrorIndex(i);
-              setValidationErrorType("headcount");
-              setShowValidationError(true);
-              return false;
-            }
-          }
-        }
-      }
     }
 
     const batchItems = changedIndices.map(i => {
@@ -2357,127 +2400,6 @@ export default function MainApp({
       }));
       const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
       window.localStorage.removeItem(backupKey);
-    } else if (field === 'memo' && (!value || value.length === 0)) {
-      // 메모가 0이 되는 순간, 즉시 같은 조 선생님의 데이터를 조회하여 가져옴
-      const currentLog = logs[index];
-      const cleanMyStudent = (currentLog?.student || "").trim();
-      let didFetchSibling = false;
-      let siblingMemoValue = "";
-
-      if (cleanMyStudent) {
-        const shift = shifts[index];
-        const todaysData = allScheduleData[date] || {};
-        const rawList = todaysData[shift] || [];
-        const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
-        const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
-
-        const siblingRecord = list.find(r => {
-          if (r.teacher === currentUser) return false;
-          if ((r.student || "").trim() !== cleanMyStudent) return false;
-          const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
-          if (siblingGroup !== myGroup) return false;
-          const siblingStatus = formatStatusIfDate(r.status) || "";
-          if (siblingStatus.includes("선생님휴가")) return false;
-          return siblingStatus.trim() !== "";
-        });
-
-        if (siblingRecord) {
-          const statusStr = formatStatusIfDate(siblingRecord.status) || "";
-          const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-          const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
-          const isKyungrodang = cleanMyStudent.includes("경로당");
-
-          let tagParts = [];
-          let memoParts = [];
-          let isMemoStarted = false;
-          let loadedHeadcount = "";
-          let startIndex = 0;
-
-          if (isShowHeadcount && rawParts.length > 0 && /^\\d{1,2}$/.test(rawParts[0])) {
-            loadedHeadcount = rawParts[0];
-            startIndex = 1;
-          }
-
-          for (let i = startIndex; i < rawParts.length; i++) {
-            const part = rawParts[i];
-            if (!isMemoStarted) {
-              const subParts = part.split('/').map(p => p.trim());
-              const isAllTags = subParts.every(p => {
-                if (p === "") return true;
-                const spaceParts = p.split(/\\s+/);
-                return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
-              });
-
-              if (isAllTags) {
-                tagParts.push(part);
-              } else {
-                isMemoStarted = true;
-                memoParts.push(part);
-              }
-            } else {
-              memoParts.push(part);
-            }
-          }
-
-          if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
-            const lastTag = tagParts[tagParts.length - 1];
-            if (/^\\d{1,2}$/.test(lastTag)) {
-              if (isKyungrodang || tagParts.length > 1) {
-                tagParts.pop();
-                memoParts.unshift(lastTag);
-              }
-            }
-          }
-
-          let loadedTags = [[]];
-          if (tagParts.length > 0) {
-            const combinedTagStr = tagParts.join(',');
-            const studentTagStrs = combinedTagStr.split('/');
-            loadedTags = studentTagStrs.map(str =>
-              str.split(/[,\\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
-            );
-          }
-          loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
-
-          if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
-            if (/^\\d{1,2}$/.test(memoParts[0].trim())) {
-              loadedHeadcount = memoParts[0].trim();
-              memoParts.shift();
-            }
-          }
-          const loadedMemo = memoParts.join(', ');
-
-          didFetchSibling = true;
-          siblingMemoValue = loadedMemo;
-
-          setLogs(prev => {
-            const newLogs = { ...prev };
-            newLogs[index] = {
-              ...newLogs[index],
-              selectedTags: loadedTags,
-              memo: loadedMemo
-            };
-            if (loadedHeadcount) {
-              newLogs[index].headcount = loadedHeadcount;
-            }
-            return newLogs;
-          });
-        }
-      }
-
-      if (!didFetchSibling) {
-        setLogs(prev => ({ ...prev, [index]: { ...prev[index], memo: "" } }));
-      }
-
-      if (validationErrorIndex === index) setValidationErrorIndex(null);
-
-      const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-      if (didFetchSibling && siblingMemoValue.trim() !== "") {
-        try { window.localStorage.setItem(backupKey, siblingMemoValue); } catch (e) { }
-      } else {
-        window.localStorage.removeItem(backupKey);
-      }
-      return; // 기본 처리 종료
     } else {
       setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
     }
@@ -2492,6 +2414,48 @@ export default function MainApp({
         window.localStorage.removeItem(backupKey);
       }
     }
+  };
+  const hasSiblingRecord = (index, studentName) => {
+    const cleanMyStudent = (studentName || "").trim();
+    if (!cleanMyStudent) return false;
+
+    const currentLog = logs[index] || {};
+    const currentTags = currentLog.selectedTags || [[]];
+    const currentMemo = currentLog.memo || "";
+    const currentHeadcount = (currentLog.headcount || "").trim();
+    
+    const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
+    const hasMemo = currentMemo.trim() !== "";
+    if (hasAnyTag || hasMemo) return false;
+
+    const shift = shifts[index];
+    const todaysData = allScheduleData[date] || {};
+    const rawList = todaysData[shift] || [];
+    const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
+    const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
+
+    const siblingRecord = list.find(r => {
+      if (r.teacher === currentUser) return false;
+      const myStudents = cleanMyStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+      const theirStudents = (r.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+      if (theirStudents !== myStudents) return false;
+      const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
+      if (siblingGroup !== myGroup) return false;
+      const siblingStatus = formatStatusIfDate(r.status) || "";
+      if (siblingStatus.includes("선생님휴가")) return false;
+      return siblingStatus.replace(/\u200B/g, '').trim() !== "";
+    });
+
+    if (!siblingRecord) return false;
+    
+    const statusStr = formatStatusIfDate(siblingRecord.status) || "";
+    const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
+    
+    if (loadedMemo === currentMemo && loadedHeadcount === currentHeadcount && JSON.stringify(loadedTags) === JSON.stringify(currentTags)) {
+      return false;
+    }
+
+    return true;
   };
 
   const syncSiblingStatus = (index, newStudentName) => {
@@ -2515,79 +2479,19 @@ export default function MainApp({
 
       const siblingRecord = list.find(r => {
         if (r.teacher === currentUser) return false;
-        if ((r.student || "").trim() !== cleanMyStudent) return false;
+        const myStudents = cleanMyStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+        const theirStudents = (r.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+        if (theirStudents !== myStudents) return false;
         const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
         if (siblingGroup !== myGroup) return false;
         const siblingStatus = formatStatusIfDate(r.status) || "";
         if (siblingStatus.includes("선생님휴가")) return false;
-        return siblingStatus.trim() !== "";
+        return siblingStatus.replace(/\u200B/g, '').trim() !== "";
       });
 
       if (siblingRecord) {
         const statusStr = formatStatusIfDate(siblingRecord.status) || "";
-        const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-        const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
-        const isKyungrodang = cleanMyStudent.includes("경로당");
-
-        let tagParts = [];
-        let memoParts = [];
-        let isMemoStarted = false;
-        let loadedHeadcount = "";
-        let startIndex = 0;
-
-        if (isShowHeadcount && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
-          loadedHeadcount = rawParts[0];
-          startIndex = 1;
-        }
-
-        for (let i = startIndex; i < rawParts.length; i++) {
-          const part = rawParts[i];
-          if (!isMemoStarted) {
-            const subParts = part.split('/').map(p => p.trim());
-            const isAllTags = subParts.every(p => {
-              if (p === "") return true;
-              const spaceParts = p.split(/\s+/);
-              return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
-            });
-
-            if (isAllTags) {
-              tagParts.push(part);
-            } else {
-              isMemoStarted = true;
-              memoParts.push(part);
-            }
-          } else {
-            memoParts.push(part);
-          }
-        }
-
-        if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
-          const lastTag = tagParts[tagParts.length - 1];
-          if (/^\d{1,2}$/.test(lastTag)) {
-            if (isKyungrodang || tagParts.length > 1) {
-              tagParts.pop();
-              memoParts.unshift(lastTag);
-            }
-          }
-        }
-
-        let loadedTags = [[]];
-        if (tagParts.length > 0) {
-          const combinedTagStr = tagParts.join(',');
-          const studentTagStrs = combinedTagStr.split('/');
-          loadedTags = studentTagStrs.map(str =>
-            str.split(/[,\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
-          );
-        }
-        loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
-
-        if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
-          if (/^\d{1,2}$/.test(memoParts[0].trim())) {
-            loadedHeadcount = memoParts[0].trim();
-            memoParts.shift();
-          }
-        }
-        const loadedMemo = memoParts.join(', ');
+        const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
 
         const newLogs = { ...prev };
         newLogs[index] = {
@@ -3352,6 +3256,19 @@ export default function MainApp({
                                   className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'caret-black' : 'caret-white'} ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                                 />
                               </div>
+
+                              {hasSiblingRecord(index, logs[index]?.student) && !isDataLoading && (
+                                <div className="flex w-full !mt-2 animate-fadeIn">
+                                  <button
+                                    type="button"
+                                    onClick={() => syncSiblingStatus(index, logs[index]?.student)}
+                                    className="w-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 text-blue-700 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm active:scale-[0.98]"
+                                  >
+                                    <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    오늘 수업내역 가져오기
+                                  </button>
+                                </div>
+                              )}
 
                               <div className="space-y-1.5 !mt-3">
                                 {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
