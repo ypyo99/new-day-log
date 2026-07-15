@@ -3590,7 +3590,9 @@ export default function MainApp({
               const memoGroups = {};
               records.forEach(r => {
                 let statusStr = formatStatusIfDate(r.status) || "";
-                let memo = statusStr;
+                let memo = statusStr.replace(/\u200B/g, '').trim();
+                memo = memo.replace(/\r\n/g, '\n').split('\n').map(l => l.trimEnd()).join('\n').trim();
+                
                 if (memo === "1") memo = "출석 (메모 없음)";
                 else if (!memo) memo = "내용 없음";
                 
