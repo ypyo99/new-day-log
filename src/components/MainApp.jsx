@@ -2523,7 +2523,6 @@ ${historyText}
 
       // ④ Gemini API 호출 (서버 과부하 시 자동 재시도)
       // Pro 모델에서 무료 한도(Limit: 0) 에러가 발생하므로, 무료 할당량이 넉넉한 안정화된 최신 Flash 모델 사용
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${customApiKey}`;
       const requestBody = JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
@@ -2531,12 +2530,23 @@ ${historyText}
 
       let response = null;
       const MAX_RETRIES = 5;
+      const fallbackModels = [
+        'gemini-3.5-flash',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-flash-latest'
+      ];
+
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const currentModel = fallbackModels[(attempt - 1) % fallbackModels.length];
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${customApiKey}`;
+
         if (attempt > 1) {
           const waitSec = Math.pow(2, attempt - 1); // 2s → 4s → 8s → 16s
           setAiRecommendModal(prev => prev ? ({
             ...prev,
-            retryInfo: `서버 혼잡 — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
+            retryInfo: `서버 혼잡(${currentModel}) — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
           }) : null);
           await new Promise(r => setTimeout(r, waitSec * 1000));
         }
@@ -2545,12 +2555,12 @@ ${historyText}
           headers: { 'Content-Type': 'application/json' },
           body: requestBody
         });
-        // 503(과부하) 또는 429(속도 제한)이면 재시도
-        if (response.status !== 503 && response.status !== 429) break;
+        // 503(과부하), 429(속도 제한), 404(모델 없음) 이면 다음 모델로 재시도
+        if (response.status !== 503 && response.status !== 429 && response.status !== 404) break;
         if (attempt === MAX_RETRIES) {
           const errData = await response.json().catch(() => ({}));
           let errMsg = errData?.error?.message || `서버 과부하 (${response.status}). 잠시 후 다시 시도해 주세요.`;
-          if (errMsg.includes('Quota exceeded')) errMsg = 'AI 추천 일일 무료 사용량을 모두 소진했습니다.\n잠시 후 다시 시도해 주세요.';
+          if (errMsg.includes('Quota exceeded')) errMsg = '무료 사용자는 1분에 5번(하루 20번)까지 제미나이에 요청할 수 있습니다.\n현재는 1분 당 요청 횟수를 초과한 것일 수 있으므로, 잠시 후 다시 시도해 주세요.';
           throw new Error(errMsg);
         }
       }
@@ -2559,7 +2569,7 @@ ${historyText}
         const errData = await response.json().catch(() => ({}));
         let errMsg = errData?.error?.message || `API 오류 (${response.status})`;
         if (errMsg.includes('Quota exceeded')) {
-          errMsg = 'AI 추천 일일 무료 사용량을 모두 소진했습니다.\n잠시 후 다시 시도해 주세요.';
+          errMsg = '무료 사용자는 1분에 5번(하루 20번)까지 제미나이에 요청할 수 있습니다.\n현재는 요청 횟수를 초과한 것일 수 있으므로, 잠시 후 다시 시도해 주세요.';
         } else if (errMsg.includes('not found')) {
           errMsg = '지정된 AI 모델을 찾을 수 없습니다. (API 설정 오류)';
         }
@@ -2584,7 +2594,7 @@ ${historyText}
       setAiRecommendModal(prev => prev ? ({
         ...prev,
         isLoading: false,
-        error: `추천 생성 중 오류가 발생했습니다.\n${err.message}`
+        error: `'교육 토픽 추천 생성' 중 오류가 발생했습니다.\n${err.message}`
       }) : null);
     }
   }, [logs, allScheduleData, date, customApiKey]);
