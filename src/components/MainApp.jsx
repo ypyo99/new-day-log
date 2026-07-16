@@ -2409,7 +2409,7 @@ export default function MainApp({
     if (!studentName) return;
 
     if (!customApiKey) {
-      alert("선생님 이름 우측의 톱니바퀴 아이콘을 눌러서 GEMINI API KEY를 입력하세요!");
+      setShowApiKeyModal(true);
       return;
     }
 
@@ -2513,7 +2513,7 @@ ${historyText}
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${customApiKey}`;
       const requestBody = JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
       });
 
       let response = null;
@@ -3960,7 +3960,11 @@ ${historyText}
                   <p className="text-gray-600 font-bold text-[16px] text-center">
                     {aiRecommendModal.retryInfo
                       ? <span className="text-orange-500">{aiRecommendModal.retryInfo}</span>
-                      : <>과거 교육 이력을 분석하는 중...<br /><span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span></>
+                      : <>
+                          과거 교육 이력을 분석하는 중...<br />
+                          <span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span><br />
+                          <span className="text-gray-400 text-[13px] font-medium mt-2 inline-block">약 1분 정도 시간이 소요됩니다.</span>
+                        </>
                     }
                   </p>
                 </div>
@@ -3973,7 +3977,22 @@ ${historyText}
               {aiRecommendModal.result && !aiRecommendModal.isLoading && (
                 <div className="space-y-3">
                   <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-                    <p className="text-gray-800 font-bold text-[15px] leading-[1.75] whitespace-pre-wrap">{aiRecommendModal.result}</p>
+                    <div className="text-gray-800 font-bold text-[15px] leading-[1.75]">
+                      {aiRecommendModal.result.split('\n').map((line, idx) => {
+                        const trimmed = line.trim();
+                        if (!trimmed) return null;
+                        if (trimmed.match(/^\d+\.\s*📱/)) {
+                          return (
+                            <div key={idx} className={idx === 0 ? "mb-1.5" : "mt-6 mb-1.5"}>
+                              <span className="bg-sky-100 border border-sky-200 text-sky-900 px-2.5 py-1 rounded-md font-extrabold text-[16px] inline-block shadow-sm">
+                                {trimmed}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return <p key={idx} className="ml-1 mb-1 break-keep">{trimmed}</p>;
+                      })}
+                    </div>
                   </div>
                   {aiRecommendModal.historyCount !== undefined && (
                     <p className="text-gray-400 text-[12px] font-semibold text-right pb-1">
@@ -4006,8 +4025,15 @@ ${historyText}
               <Settings className="w-6 h-6 text-violet-600" />
               <h3 className="text-gray-900 font-extrabold text-lg leading-tight">Gemini API 키 설정</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-4 font-semibold break-keep leading-relaxed">
-              오늘의 교육 토픽 추천을 받으려면 본인의 구글 Gemini API KEY를 입력해 주세요. (입력한 키는 브라우저 메모리에만 안전하게 저장됩니다.)
+            <p className="text-sm text-gray-600 mb-2 font-semibold break-keep leading-relaxed">
+              오늘의 교육 토픽 추천을 받으려면 본인의 구글 Gemini API KEY를 입력해 주세요.
+            </p>
+            <p className="text-sm text-gray-500 mb-4 font-semibold break-keep leading-relaxed bg-gray-100 p-3 rounded-lg">
+              💡 아직 키가 없으신가요?<br />
+              <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">
+                https://aistudio.google.com/api-keys
+              </a>
+              <br />위 링크를 눌러서 무료로 발급받을 수 있습니다.
             </p>
             <input
               type="text"
