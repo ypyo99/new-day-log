@@ -2538,15 +2538,19 @@ ${historyText}
         'gemini-flash-latest'
       ];
 
+      let lastErrorReason = '서버 혼잡';
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         const currentModel = fallbackModels[(attempt - 1) % fallbackModels.length];
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${customApiKey}`;
 
         if (attempt > 1) {
-          const waitSec = Math.pow(2, attempt - 1); // 2s → 4s → 8s → 16s
+          let waitSec = Math.pow(2, attempt - 1); // 2s → 4s → 8s → 16s
+          if (lastErrorReason.includes('한도') || lastErrorReason.includes('대기') || lastErrorReason.includes('지원 안되는 모델')) {
+            waitSec = 0.5; // 모델 교체 시 불필요한 대기 없이 즉시 시도
+          }
           setAiRecommendModal(prev => prev ? ({
             ...prev,
-            retryInfo: `서버 혼잡(${currentModel}) — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
+            retryInfo: `${lastErrorReason}(${currentModel}) — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
           }) : null);
           await new Promise(r => setTimeout(r, waitSec * 1000));
         }
@@ -2555,22 +2559,48 @@ ${historyText}
           headers: { 'Content-Type': 'application/json' },
           body: requestBody
         });
+
+        if (response.ok) break;
+
+        const errData = await response.clone().json().catch(() => ({}));
+        const errMsg = errData?.error?.message || '';
+
+        if (response.status === 429) {
+          const match = errMsg.match(/retry in ([\d.]+)s/);
+          if (errMsg.includes('limit: 20') || errMsg.toLowerCase().includes('day')) {
+            lastErrorReason = '1일 한도 초과';
+          } else if (errMsg.includes('limit: 5') || errMsg.toLowerCase().includes('minute')) {
+            lastErrorReason = '1분 한도 초과';
+          } else if (match) {
+            lastErrorReason = `${Math.ceil(parseFloat(match[1]))}초 대기 필요`;
+          } else {
+            lastErrorReason = '사용 한도 초과';
+          }
+        } else if (response.status === 404) {
+          lastErrorReason = '지원 안되는 모델';
+        } else {
+          lastErrorReason = '서버 혼잡';
+        }
+
         // 503(과부하), 429(속도 제한), 404(모델 없음) 이면 다음 모델로 재시도
         if (response.status !== 503 && response.status !== 429 && response.status !== 404) break;
-        if (attempt === MAX_RETRIES) {
-          const errData = await response.json().catch(() => ({}));
-          let errMsg = errData?.error?.message || `서버 과부하 (${response.status}). 잠시 후 다시 시도해 주세요.`;
-          if (errMsg.includes('Quota exceeded')) errMsg = '무료 사용자는 1분에 5번(하루 20번)까지 제미나이에 요청할 수 있습니다.\n현재는 1분 당 요청 횟수를 초과한 것일 수 있으므로, 잠시 후 다시 시도해 주세요.';
-          throw new Error(errMsg);
-        }
       }
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         let errMsg = errData?.error?.message || `API 오류 (${response.status})`;
-        if (errMsg.includes('Quota exceeded')) {
-          errMsg = '무료 사용자는 1분에 5번(하루 20번)까지 제미나이에 요청할 수 있습니다.\n현재는 요청 횟수를 초과한 것일 수 있으므로, 잠시 후 다시 시도해 주세요.';
-        } else if (errMsg.includes('not found')) {
+        if (errMsg.includes('Quota exceeded') || response.status === 429) {
+          const match = errMsg.match(/retry in ([\d.]+)s/);
+          const waitStr = match ? `\n(참고: 약 ${Math.ceil(parseFloat(match[1]))}초 후 한도가 1회 복구됩니다)` : '';
+
+          if (errMsg.includes('limit: 20') || errMsg.toLowerCase().includes('day')) {
+            errMsg = `1일 무료 사용 한도(20회)를 모두 소진했습니다.\n다른 날에 다시 시도하거나 우측 상단의 ⚙️ 설정 아이콘을 눌러 '다른 구글 계정의 API 키'로 교체해 주세요!${waitStr}`;
+          } else if (errMsg.includes('limit: 5') || errMsg.toLowerCase().includes('minute')) {
+            errMsg = `1분당 무료 사용 한도(5회)를 초과했습니다.${match ? `\n약 ${Math.ceil(parseFloat(match[1]))}초 정도 기다리신 후 다시 시도해 주세요.` : '\n약 1분 정도 기다리신 후 다시 시도해 주세요.'}`;
+          } else {
+            errMsg = `요청 한도를 초과했습니다.${match ? `\n약 ${Math.ceil(parseFloat(match[1]))}초 후에 다시 시도해 주세요.` : ''}\n(원인: ${errMsg})`;
+          }
+        } else if (errMsg.includes('not found') || response.status === 404) {
           errMsg = '지정된 AI 모델을 찾을 수 없습니다. (API 설정 오류)';
         }
         throw new Error(errMsg);
@@ -3992,7 +4022,21 @@ ${historyText}
               )}
               {aiRecommendModal.error && !aiRecommendModal.isLoading && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                  <p className="text-red-600 font-bold text-[15px] leading-relaxed whitespace-pre-wrap">{aiRecommendModal.error}</p>
+                  <div className="text-red-600 font-bold text-[15px] leading-relaxed">
+                    {aiRecommendModal.error.split('\n').map((line, idx, arr) => {
+                      const isLimitText = line.includes('1일 무료 사용 한도(20회)');
+                      return (
+                        <span key={idx} className={isLimitText ? "block mb-1 mt-1" : ""}>
+                          {isLimitText ? (
+                            <span className="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md inline-block">{line}</span>
+                          ) : (
+                            line
+                          )}
+                          {idx < arr.length - 1 && !isLimitText && <br />}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
               {aiRecommendModal.result && !aiRecommendModal.isLoading && (
