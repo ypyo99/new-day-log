@@ -2534,10 +2534,10 @@ ${historyText}
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         if (attempt > 1) {
           const waitSec = Math.pow(2, attempt - 1); // 2s → 4s → 8s → 16s
-          setAiRecommendModal(prev => ({
+          setAiRecommendModal(prev => prev ? ({
             ...prev,
             retryInfo: `서버 혼잡 — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
-          }));
+          }) : null);
           await new Promise(r => setTimeout(r, waitSec * 1000));
         }
         response = await fetch(apiUrl, {
@@ -2571,21 +2571,21 @@ ${historyText}
 
       if (!resultText) throw new Error('AI 응답을 받지 못했습니다. 다시 시도해 주세요.');
 
-      setAiRecommendModal(prev => ({
+      setAiRecommendModal(prev => prev ? ({
         ...prev,
         isLoading: false,
         result: resultText.trim(),
         historyCount: totalSessions,
         absentCount
-      }));
+      }) : null);
 
     } catch (err) {
       console.error('AI 추천 오류:', err);
-      setAiRecommendModal(prev => ({
+      setAiRecommendModal(prev => prev ? ({
         ...prev,
         isLoading: false,
         error: `추천 생성 중 오류가 발생했습니다.\n${err.message}`
-      }));
+      }) : null);
     }
   }, [logs, allScheduleData, date, customApiKey]);
 
@@ -3955,11 +3955,9 @@ ${historyText}
                   <p className="text-violet-200 text-[14px] font-semibold mt-0.5">{aiRecommendModal.studentName}님 · {date}</p>
                 </div>
               </div>
-              {!aiRecommendModal.isLoading && (
-                <button onClick={() => setAiRecommendModal(null)} className="text-white/80 active:scale-90 p-1.5 -mr-1">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              )}
+              <button onClick={() => setAiRecommendModal(null)} className="text-white/80 hover:text-white active:scale-90 p-1.5 -mr-1 transition-all touch-manipulation">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
             </div>
 
             {/* 콘텐츠 — flex-basis가 auto여야 내용물 크기만큼 모달이 커짐. minHeight:0은 부모 max-h에 걸렸을 때 스크롤 가능하게 함 */}
@@ -3976,7 +3974,7 @@ ${historyText}
                       : <>
                         과거 교육 이력을 분석하는 중...<br />
                         <span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span><br />
-                        <span className="text-gray-400 text-[13px] font-medium mt-2 inline-block">약 1분 정도 시간이 소요됩니다.</span>
+                        <span className="text-gray-500 text-[13px] font-medium mt-2 inline-block">약 1분 정도 시간이 소요됩니다.</span>
                       </>
                     }
                   </p>
