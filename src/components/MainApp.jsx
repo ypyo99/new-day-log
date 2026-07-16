@@ -104,7 +104,8 @@ import {
   UsersIcon,
   PresentationIcon,
   LucideCalendar,
-  VintageDivider
+  VintageDivider,
+  Settings
 } from './Icons';
 
 // 주어진 문자열을 쉼표(,)나 슬래시(/) 단위로 쪼갠 뒤,
@@ -180,6 +181,12 @@ export default function MainApp({
   const [repeatTargetDates, setRepeatTargetDates] = useState([]);
   const [repeatMode, setRepeatMode] = useState('all');
   const [repeatShiftIndex, setRepeatShiftIndex] = useState(null);
+
+  // ─── AI 교육 추천 모달 상태 ───
+  const [aiRecommendModal, setAiRecommendModal] = useState(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [customApiKey, setCustomApiKey] = useState(() => getSavedItem('custom_gemini_api_key', ""));
+  // { index, studentName, isLoading, result, error }
 
   const handleAssistantConflictProceed = () => {
     setShowAssistantConflictModal(false);
@@ -2385,6 +2392,190 @@ export default function MainApp({
     setErrorMessage(""); setDate(s);
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // ✨ Gemini AI 교육 추천 핸들러 (전체 이력 분석)
+  // ─────────────────────────────────────────────────────────────
+  const handleAiRecommend = useCallback(async (index) => {
+    const rawStudent = logs[index]?.student || '';
+    const parsedNames = rawStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+    const studentName = parsedNames.find(n =>
+      n.length > 0 &&
+      !n.includes('보조강사') &&
+      !n.includes('자체학습') &&
+      !n.includes('경로당') &&
+      !n.includes('복지관')
+    ) || parsedNames[0] || '';
+
+    if (!studentName) return;
+
+    if (!customApiKey) {
+      alert("선생님 이름 우측의 톱니바퀴 아이콘을 눌러서 GEMINI API KEY를 입력하세요!");
+      return;
+    }
+
+    // 모달 열기 + 로딩 시작
+    setAiRecommendModal({ index, studentName, isLoading: true, result: '', error: '' });
+
+    try {
+      // ① 전체 교육 이력 수집 (1회차부터 직전 회차까지, 제한 없음)
+      const EXCLUDE_TAGS = new Set(['1', '결석', '종료', '선생님휴가', '취소']);
+      const allItems = []; // { date, shift, content, isAbsent }
+
+      // 날짜 오름차순 (1회차부터 순서대로)
+      const allDates = Object.keys(allScheduleData).sort((a, b) => a.localeCompare(b));
+
+      for (const d of allDates) {
+        if (d >= date) continue; // 오늘 포함 이후 제외
+        const dayData = allScheduleData[d] || {};
+
+        for (const shiftTime of Object.keys(dayData)) {
+          const shiftList = dayData[shiftTime];
+          const list = Array.isArray(shiftList) ? shiftList : [shiftList];
+
+          for (const rec of list) {
+            if (!rec || !rec.student) continue;
+            const names = rec.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim());
+            if (!names.includes(studentName)) continue;
+
+            const statusStr = (rec.status || '').trim();
+
+            // 결석/취소 여부 판단
+            const isAbsent = hasIndependentKeyword(statusStr, ['결석', '취소', '종료']);
+
+            // 교육 내용 추출: 태그(1, 결석 등)를 콤마 단위로 제거
+            const parts = statusStr.split(',').map(p => p.trim()).filter(p => {
+              if (!p) return false;
+              const subParts = p.split('/').map(s => s.trim());
+              return !subParts.every(s => EXCLUDE_TAGS.has(s) || s === '');
+            });
+            const eduContent = parts.join(', ').trim();
+
+            if (isAbsent) {
+              allItems.push({ date: d, shift: shiftTime, content: '[결석/취소]', isAbsent: true });
+            } else if (eduContent && eduContent.length > 1) {
+              allItems.push({ date: d, shift: shiftTime, content: eduContent, isAbsent: false });
+            }
+          }
+        }
+      }
+
+      // ② 회차 번호 계산 (결석 제외 출석 기준)
+      let sessionNum = 0;
+      const numberedHistory = allItems.map(item => {
+        if (!item.isAbsent) sessionNum++;
+        return { ...item, sessionNum: item.isAbsent ? null : sessionNum };
+      });
+
+      const totalSessions = sessionNum;
+      const attendedItems = numberedHistory.filter(h => !h.isAbsent);
+      const absentCount = numberedHistory.filter(h => h.isAbsent).length;
+
+      // ③ 프롬프트 구성 (전체 커리큘럼 흐름 기반)
+      const historyText = numberedHistory.length > 0
+        ? numberedHistory.map(h =>
+            h.isAbsent
+              ? `[결석] ${h.date}`
+              : `${h.sessionNum}회차 ${h.date}: ${h.content}`
+          ).join('\n')
+        : '(이전 교육 기록 없음)';
+
+      const prompt = `당신은 노인 스마트폰 교육 전문가입니다.
+
+아래는 "${studentName}" 어르신의 전체 교육 이력입니다 (총 ${totalSessions}회 완료, 결석 ${absentCount}회):
+
+${historyText}
+
+---
+
+위 이력을 바탕으로, 오늘(${date}, ${totalSessions + 1}회차)에 가르치면 좋을 주제 3가지를 추천하세요.
+
+[출력 규칙 - 반드시 준수]
+- 인사말, 어르신 이름, 과거 수업 내용 언급 등 불필요한 말은 절대 하지 마세요.
+- 바로 추천 주제 3가지를 출력하세요.
+- 각 항목은 반드시 아래 형식을 지켜서 3번까지 끝까지 작성해야 합니다.
+
+1. 📱 [주제명]
+추천 이유: [이유를 1줄로 간결하게 작성]
+오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
+
+2. 📱 [주제명]
+추천 이유: [이유를 1줄로 간결하게 작성]
+오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
+
+3. 📱 [주제명]
+추천 이유: [이유를 1줄로 간결하게 작성]
+오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
+
+조건: 이미 배운 내용과 중복 금지, 아직 안 다룬 카테고리 포함, ${totalSessions}회차 수준에 맞는 난이도. 반드시 1번, 2번, 3번 항목 모두 끝까지 출력하세요.`;
+
+      // ④ Gemini API 호출 (서버 과부하 시 자동 재시도)
+      // Pro 모델에서 무료 한도(Limit: 0) 에러가 발생하므로, 무료 할당량이 넉넉한 안정화된 최신 Flash 모델 사용
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${customApiKey}`;
+      const requestBody = JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+      });
+
+      let response = null;
+      const MAX_RETRIES = 5;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 1) {
+          const waitSec = Math.pow(2, attempt - 1); // 2s → 4s → 8s → 16s
+          setAiRecommendModal(prev => ({
+            ...prev,
+            retryInfo: `서버 혼잡 — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
+          }));
+          await new Promise(r => setTimeout(r, waitSec * 1000));
+        }
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody
+        });
+        // 503(과부하) 또는 429(속도 제한)이면 재시도
+        if (response.status !== 503 && response.status !== 429) break;
+        if (attempt === MAX_RETRIES) {
+          const errData = await response.json().catch(() => ({}));
+          let errMsg = errData?.error?.message || `서버 과부하 (${response.status}). 잠시 후 다시 시도해 주세요.`;
+          if (errMsg.includes('Quota exceeded')) errMsg = 'AI 추천 일일 무료 사용량을 모두 소진했습니다.\n잠시 후 다시 시도해 주세요.';
+          throw new Error(errMsg);
+        }
+      }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        let errMsg = errData?.error?.message || `API 오류 (${response.status})`;
+        if (errMsg.includes('Quota exceeded')) {
+          errMsg = 'AI 추천 일일 무료 사용량을 모두 소진했습니다.\n잠시 후 다시 시도해 주세요.';
+        } else if (errMsg.includes('not found')) {
+          errMsg = '지정된 AI 모델을 찾을 수 없습니다. (API 설정 오류)';
+        }
+        throw new Error(errMsg);
+      }
+
+      const data = await response.json();
+      const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!resultText) throw new Error('AI 응답을 받지 못했습니다. 다시 시도해 주세요.');
+
+      setAiRecommendModal(prev => ({
+        ...prev,
+        isLoading: false,
+        result: resultText.trim(),
+        historyCount: totalSessions,
+        absentCount
+      }));
+
+    } catch (err) {
+      console.error('AI 추천 오류:', err);
+      setAiRecommendModal(prev => ({
+        ...prev,
+        isLoading: false,
+        error: `추천 생성 중 오류가 발생했습니다.\n${err.message}`
+      }));
+    }
+  }, [logs, allScheduleData, date, customApiKey]);
+
   const handleLogChange = (index, field, value) => {
     if (field === 'student' && (!value || value.trim() === "")) {
       setLogs(prev => ({
@@ -2918,9 +3109,16 @@ export default function MainApp({
               <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
             </div>
             <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
-            <p className="text-base opacity-95 flex items-center mt-1 font-bold">
+            <div className="text-base opacity-95 flex items-center mt-1 font-bold">
               <User className="w-4 h-4 mr-1" /> [{selectedTeam}] {currentUser.replace(/\n/g, ' ')} 선생님
-            </p>
+              <button
+                onClick={() => setShowApiKeyModal(true)}
+                className="ml-2 p-1.5 -m-1.5 rounded-full hover:bg-white/20 active:scale-90 transition-all touch-manipulation"
+                title="API 키 설정"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -3307,6 +3505,27 @@ export default function MainApp({
                                   );
                                 })}
                               </div>
+
+                              {/* ✨ AI 교육 추천 버튼 */}
+                              {logs[index]?.student && logs[index].student.trim() !== '' && (() => {
+                                const rawStudentForAi = logs[index].student;
+                                const parsedForAi = rawStudentForAi.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+                                const firstRealStudent = parsedForAi.find(n => n.length > 0 && !n.includes('보조강사') && !n.includes('자체학습') && !n.includes('경로당') && !n.includes('복지관'));
+                                if (!firstRealStudent) return null;
+                                return (
+                                  <div className="flex w-full !mt-2 !mb-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAiRecommend(index)}
+                                      disabled={isDataLoading || isInfoMissing}
+                                      className="w-full bg-violet-200 hover:bg-violet-300 text-violet-800 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm border border-violet-300 active:scale-[0.98] gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                                    >
+                                      <span className="text-[18px] sm:text-[20px]">✨</span>
+                                      오늘의 교육 토픽 추천
+                                    </button>
+                                  </div>
+                                );
+                              })()}
 
                               <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
                                 {isShowHeadcount && (() => {
@@ -3701,6 +3920,140 @@ export default function MainApp({
           </div>
         </div>
       )}
+      {/* ✨ AI 교육 추천 모달 */}
+      {aiRecommendModal && (
+        <div
+          className="fixed inset-0 z-[75] flex items-center justify-center animate-fadeIn"
+          style={{ background: 'rgba(0,0,0,0.65)' }}
+          onClick={() => { if (!aiRecommendModal.isLoading) setAiRecommendModal(null); }}
+        >
+          {/* 모달 컨테이너 — 내용물에 맞춰 크기가 조절되며 최대 90vh */}
+          <div
+            className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full mx-3 sm:max-w-lg sm:mx-4"
+            style={{ maxHeight: '90vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 헤더 — shrink-0으로 항상 고정 */}
+            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✨</span>
+                <div>
+                  <h3 className="text-white font-extrabold text-[17px] leading-tight">오늘의 교육 토픽 추천</h3>
+                  <p className="text-violet-200 text-[14px] font-semibold mt-0.5">{aiRecommendModal.studentName}님 · {date}</p>
+                </div>
+              </div>
+              {!aiRecommendModal.isLoading && (
+                <button onClick={() => setAiRecommendModal(null)} className="text-white/80 active:scale-90 p-1.5 -mr-1">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              )}
+            </div>
+
+            {/* 콘텐츠 — flex-basis가 auto여야 내용물 크기만큼 모달이 커짐. minHeight:0은 부모 max-h에 걸렸을 때 스크롤 가능하게 함 */}
+            <div className="overflow-y-auto p-4" style={{ minHeight: 0 }}>
+              {aiRecommendModal.isLoading && (
+                <div className="flex flex-col items-center justify-center h-full gap-4 py-10">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin"></div>
+                    <span className="absolute inset-0 flex items-center justify-center text-xl">✨</span>
+                  </div>
+                  <p className="text-gray-600 font-bold text-[16px] text-center">
+                    {aiRecommendModal.retryInfo
+                      ? <span className="text-orange-500">{aiRecommendModal.retryInfo}</span>
+                      : <>과거 교육 이력을 분석하는 중...<br /><span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span></>
+                    }
+                  </p>
+                </div>
+              )}
+              {aiRecommendModal.error && !aiRecommendModal.isLoading && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <p className="text-red-600 font-bold text-[15px] leading-relaxed whitespace-pre-wrap">{aiRecommendModal.error}</p>
+                </div>
+              )}
+              {aiRecommendModal.result && !aiRecommendModal.isLoading && (
+                <div className="space-y-3">
+                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+                    <p className="text-gray-800 font-bold text-[15px] leading-[1.75] whitespace-pre-wrap">{aiRecommendModal.result}</p>
+                  </div>
+                  {aiRecommendModal.historyCount !== undefined && (
+                    <p className="text-gray-400 text-[12px] font-semibold text-right pb-1">
+                      총 {aiRecommendModal.historyCount}회 수업 완료{aiRecommendModal.absentCount > 0 && ` · 결석 ${aiRecommendModal.absentCount}회`} 분석 완료
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 하단 버튼 — 닫기만 */}
+            {!aiRecommendModal.isLoading && (
+              <div className="p-3 border-t bg-gray-50 shrink-0">
+                <button
+                  onClick={() => setAiRecommendModal(null)}
+                  className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[16px] active:scale-95 touch-manipulation transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showApiKeyModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center animate-fadeIn" style={{ background: 'rgba(0,0,0,0.65)' }} onClick={() => setShowApiKeyModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full mx-3 sm:max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-4">
+              <Settings className="w-6 h-6 text-violet-600" />
+              <h3 className="text-gray-900 font-extrabold text-lg leading-tight">Gemini API 키 설정</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4 font-semibold break-keep leading-relaxed">
+              오늘의 교육 토픽 추천을 받으려면 본인의 구글 Gemini API KEY를 입력해 주세요. (입력한 키는 브라우저 메모리에만 안전하게 저장됩니다.)
+            </p>
+            <input
+              type="text"
+              placeholder="AIzaSy..."
+              defaultValue={customApiKey}
+              autoFocus
+              className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-violet-500 font-mono mb-6"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = e.target.value.trim();
+                  setSavedItem('custom_gemini_api_key', val);
+                  setCustomApiKey(val);
+                  setShowApiKeyModal(false);
+                }
+              }}
+              ref={(el) => {
+                if (el && !el.dataset.listenerAdded) {
+                  el.dataset.listenerAdded = true;
+                  el.onSave = () => {
+                    const val = el.value.trim();
+                    setSavedItem('custom_gemini_api_key', val);
+                    setCustomApiKey(val);
+                    setShowApiKeyModal(false);
+                  };
+                }
+              }}
+              id="api-key-input"
+            />
+            <div className="flex gap-2 w-full">
+              <button
+                onClick={() => setShowApiKeyModal(false)}
+                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl active:scale-95 transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => document.getElementById('api-key-input')?.onSave?.()}
+                className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl active:scale-95 transition-all"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4">
           <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
