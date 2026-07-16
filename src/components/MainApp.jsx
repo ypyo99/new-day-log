@@ -2575,7 +2575,7 @@ ${historyText}
           }
           setAiRecommendModal(prev => prev ? ({
             ...prev,
-            retryInfo: `${lastErrorReason}(${currentModel}) — ${waitSec}초 후 재시도 중... (${attempt}/${MAX_RETRIES})`
+            retryInfo: `AI 모델 재시도 중... (${attempt}/${MAX_RETRIES})`
           }) : null);
           await new Promise(r => setTimeout(r, waitSec * 1000));
         }
