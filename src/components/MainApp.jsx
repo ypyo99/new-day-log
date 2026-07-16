@@ -1,72 +1,72 @@
 const ATTENDANCE_TAGS = ['1', '결석', '종료', '선생님휴가'];
 
-  const parseStatusString = (statusStr, cleanMyStudent) => {
-    const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
-    const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
-    const isKyungrodang = cleanMyStudent.includes("경로당");
+const parseStatusString = (statusStr, cleanMyStudent) => {
+  const rawParts = statusStr.split(',').map(s => s.trim()).filter(Boolean);
+  const isShowHeadcount = cleanMyStudent.includes("보조강사") || cleanMyStudent.includes("경로당");
+  const isKyungrodang = cleanMyStudent.includes("경로당");
 
-    let tagParts = [];
-    let memoParts = [];
-    let isMemoStarted = false;
-    let loadedHeadcount = "";
-    let startIndex = 0;
+  let tagParts = [];
+  let memoParts = [];
+  let isMemoStarted = false;
+  let loadedHeadcount = "";
+  let startIndex = 0;
 
-    if (isShowHeadcount && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
-      loadedHeadcount = rawParts[0];
-      startIndex = 1;
-    }
+  if (isShowHeadcount && rawParts.length > 0 && /^\d{1,2}$/.test(rawParts[0])) {
+    loadedHeadcount = rawParts[0];
+    startIndex = 1;
+  }
 
-    for (let i = startIndex; i < rawParts.length; i++) {
-      const part = rawParts[i];
-      if (!isMemoStarted) {
-        const subParts = part.split('/').map(p => p.trim());
-        const isAllTags = subParts.every(p => {
-          if (p === "") return true;
-          const spaceParts = p.split(/\s+/);
-          return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
-        });
+  for (let i = startIndex; i < rawParts.length; i++) {
+    const part = rawParts[i];
+    if (!isMemoStarted) {
+      const subParts = part.split('/').map(p => p.trim());
+      const isAllTags = subParts.every(p => {
+        if (p === "") return true;
+        const spaceParts = p.split(/\s+/);
+        return spaceParts.every(sp => ATTENDANCE_TAGS.includes(sp));
+      });
 
-        if (isAllTags) {
-          tagParts.push(part);
-        } else {
-          isMemoStarted = true;
-          memoParts.push(part);
-        }
+      if (isAllTags) {
+        tagParts.push(part);
       } else {
+        isMemoStarted = true;
         memoParts.push(part);
       }
+    } else {
+      memoParts.push(part);
     }
+  }
 
-    if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
-      const lastTag = tagParts[tagParts.length - 1];
-      if (/^\d{1,2}$/.test(lastTag)) {
-        if (isKyungrodang || tagParts.length > 1) {
-          tagParts.pop();
-          memoParts.unshift(lastTag);
-        }
+  if (isShowHeadcount && tagParts.length > 0 && !loadedHeadcount) {
+    const lastTag = tagParts[tagParts.length - 1];
+    if (/^\d{1,2}$/.test(lastTag)) {
+      if (isKyungrodang || tagParts.length > 1) {
+        tagParts.pop();
+        memoParts.unshift(lastTag);
       }
     }
+  }
 
-    let loadedTags = [[]];
-    if (tagParts.length > 0) {
-      const combinedTagStr = tagParts.join(',');
-      const studentTagStrs = combinedTagStr.split('/');
-      loadedTags = studentTagStrs.map(str =>
-        str.split(/[,\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
-      );
+  let loadedTags = [[]];
+  if (tagParts.length > 0) {
+    const combinedTagStr = tagParts.join(',');
+    const studentTagStrs = combinedTagStr.split('/');
+    loadedTags = studentTagStrs.map(str =>
+      str.split(/[,\s]+/).map(t => t.trim()).filter(t => ATTENDANCE_TAGS.includes(t))
+    );
+  }
+  loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
+
+  if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
+    if (/^\d{1,2}$/.test(memoParts[0].trim())) {
+      loadedHeadcount = memoParts[0].trim();
+      memoParts.shift();
     }
-    loadedTags = loadedTags.map(tags => tags.sort((a, b) => ATTENDANCE_TAGS.indexOf(a) - ATTENDANCE_TAGS.indexOf(b)));
+  }
+  const loadedMemo = memoParts.join(', ').replace(/\u200B/g, '');
 
-    if (isShowHeadcount && memoParts.length > 0 && !loadedHeadcount) {
-      if (/^\d{1,2}$/.test(memoParts[0].trim())) {
-        loadedHeadcount = memoParts[0].trim();
-        memoParts.shift();
-      }
-    }
-    const loadedMemo = memoParts.join(', ').replace(/\u200B/g, '');
-
-    return { loadedTags, loadedMemo, loadedHeadcount };
-  };
+  return { loadedTags, loadedMemo, loadedHeadcount };
+};
 
 // 메인메뉴, 일지 작성 프로그램
 
@@ -777,7 +777,7 @@ export default function MainApp({
   const [logsDate, setLogsDate] = useState(date);
 
 
-  
+
   const RENDER_TAGS = ['1', '결석', '종료', '선생님휴가'];
 
   const fetchTeachersFromSheet = async (team) => {
@@ -898,7 +898,7 @@ export default function MainApp({
 
   useEffect(() => {
     const todaysData = allScheduleData[date] || {};
-    
+
     setLogs(prevLogs => {
       const newLogs = { ...prevLogs };
       shifts.forEach((shift, index) => {
@@ -1319,8 +1319,8 @@ export default function MainApp({
       const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
       const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
       const isEmptyRow = (log.student || "").trim() === "" && (log.location || "").trim() === "" &&
-                         (original.student || "").trim() === "" && (original.location || "").trim() === "";
-      
+        (original.student || "").trim() === "" && (original.location || "").trim() === "";
+
       const normCurrent = currentStatusStr === "\u200B" ? "" : currentStatusStr;
       const normOriginal = originalStatus === "\u200B" ? "" : originalStatus;
       const statusChanged = isEmptyRow ? false : normCurrent !== normOriginal;
@@ -1398,12 +1398,12 @@ export default function MainApp({
       const studentChanged = (log.student || "").trim() !== (original.student || "").trim();
       const locationChanged = (log.location || "").trim() !== (original.location || "").trim();
       const isEmptyRow = (log.student || "").trim() === "" && (log.location || "").trim() === "" &&
-                         (original.student || "").trim() === "" && (original.location || "").trim() === "";
-      
+        (original.student || "").trim() === "" && (original.location || "").trim() === "";
+
       const normCurrent = currentStatusStr === "\u200B" ? "" : currentStatusStr;
       const normOriginal = originalStatus === "\u200B" ? "" : originalStatus;
       const statusChanged = isEmptyRow ? false : normCurrent !== normOriginal;
-      
+
       const isChanged = (i === forceIndex) || studentChanged || locationChanged || statusChanged;
 
       let effectiveLocation = log.location || "";
@@ -2473,10 +2473,10 @@ export default function MainApp({
       // ③ 프롬프트 구성 (전체 커리큘럼 흐름 기반)
       const historyText = numberedHistory.length > 0
         ? numberedHistory.map(h =>
-            h.isAbsent
-              ? `[결석] ${h.date}`
-              : `${h.sessionNum}회차 ${h.date}: ${h.content}`
-          ).join('\n')
+          h.isAbsent
+            ? `[결석] ${h.date}`
+            : `${h.sessionNum}회차 ${h.date}: ${h.content}`
+        ).join('\n')
         : '(이전 교육 기록 없음)';
 
       const prompt = `당신은 노인 스마트폰 교육 전문가입니다.
@@ -2614,7 +2614,7 @@ ${historyText}
     const currentTags = currentLog.selectedTags || [[]];
     const currentMemo = currentLog.memo || "";
     const currentHeadcount = (currentLog.headcount || "").trim();
-    
+
     const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
     const hasMemo = currentMemo.trim() !== "";
     if (hasAnyTag || hasMemo) return false;
@@ -2638,10 +2638,10 @@ ${historyText}
     });
 
     if (!siblingRecord) return false;
-    
+
     const statusStr = formatStatusIfDate(siblingRecord.status) || "";
     const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
-    
+
     if (loadedMemo === currentMemo && loadedHeadcount === currentHeadcount && JSON.stringify(loadedTags) === JSON.stringify(currentTags)) {
       return false;
     }
@@ -3069,7 +3069,7 @@ ${historyText}
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260712-Previous Class
+            v260716-Gemini
           </div>
         </div>
       </div>
@@ -3805,20 +3805,20 @@ ${historyText}
 
             if (records.length > 0) {
               const teacherNames = Array.from(new Set(records.map(r => r.teacher).filter(Boolean))).join(', ');
-              
+
               const memoGroups = {};
               records.forEach(r => {
                 let statusStr = formatStatusIfDate(r.status) || "";
                 let memo = statusStr.replace(/\u200B/g, '').trim();
                 memo = memo.replace(/\r\n/g, '\n').split('\n').map(l => l.trimEnd()).join('\n').trim();
-                
+
                 if (memo === "1") memo = "출석 (메모 없음)";
                 else if (!memo) memo = "내용 없음";
-                
+
                 if (!memoGroups[memo]) memoGroups[memo] = [];
                 if (r.teacher) memoGroups[memo].push(r.teacher);
               });
-              
+
               let mergedMemo = "";
               const uniqueMemos = Object.keys(memoGroups);
               const isAbsent = uniqueMemos.some(memo => memo.includes("결석"));
@@ -3833,13 +3833,13 @@ ${historyText}
                   return `[${tNames}] ${memo}`;
                 }).join('\n');
               }
-              
-              history.push({ 
-                date: dateStr, 
-                dayOfWeek: getDayName(dateStr), 
-                shift: shiftTime, 
-                memo: mergedMemo, 
-                teacher: teacherNames 
+
+              history.push({
+                date: dateStr,
+                dayOfWeek: getDayName(dateStr),
+                shift: shiftTime,
+                memo: mergedMemo,
+                teacher: teacherNames
               });
             }
           });
@@ -3961,10 +3961,10 @@ ${historyText}
                     {aiRecommendModal.retryInfo
                       ? <span className="text-orange-500">{aiRecommendModal.retryInfo}</span>
                       : <>
-                          과거 교육 이력을 분석하는 중...<br />
-                          <span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span><br />
-                          <span className="text-gray-400 text-[13px] font-medium mt-2 inline-block">약 1분 정도 시간이 소요됩니다.</span>
-                        </>
+                        과거 교육 이력을 분석하는 중...<br />
+                        <span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span><br />
+                        <span className="text-gray-400 text-[13px] font-medium mt-2 inline-block">약 1분 정도 시간이 소요됩니다.</span>
+                      </>
                     }
                   </p>
                 </div>
