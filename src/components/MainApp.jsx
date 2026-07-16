@@ -2529,14 +2529,35 @@ ${historyText}
       });
 
       let response = null;
-      const MAX_RETRIES = 5;
-      const fallbackModels = [
-        'gemini-3.5-flash',
-        'gemini-2.5-flash',
+      let dynamicModels = [];
+      try {
+        setAiRecommendModal(prev => prev ? ({ ...prev, retryInfo: '사용 가능한 AI 모델 검색 중...' }) : null);
+        const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${customApiKey}`);
+        if (modelsRes.ok) {
+          const modelsData = await modelsRes.json();
+          dynamicModels = modelsData.models
+            .filter(m => m.supportedGenerationMethods?.includes('generateContent') && m.name.includes('gemini'))
+            .map(m => m.name.replace('models/', ''));
+        }
+        setAiRecommendModal(prev => prev ? ({ ...prev, retryInfo: null }) : null);
+      } catch (e) {
+        console.error("Failed to fetch dynamic models", e);
+      }
+
+      if (dynamicModels.length > 0) {
+        dynamicModels.sort((a, b) => {
+          if (a.includes('flash') && !b.includes('flash')) return -1;
+          if (!a.includes('flash') && b.includes('flash')) return 1;
+          return b.localeCompare(a); // 높은 버전이 먼저 오도록 정렬
+        });
+      }
+
+      const fallbackModels = dynamicModels.length > 0 ? dynamicModels : [
         'gemini-1.5-flash',
         'gemini-1.5-pro',
-        'gemini-flash-latest'
+        'gemini-pro'
       ];
+      const MAX_RETRIES = Math.min(fallbackModels.length, 6);
 
       let lastErrorReason = '서버 혼잡';
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
