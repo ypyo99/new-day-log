@@ -4054,7 +4054,7 @@ ${historyText}
               <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">
                 https://aistudio.google.com/api-keys
               </a>
-              <br />위 링크를 눌러서 무료로 발급받을 수 있습니다.
+              <br />위의 사이트 화면 우측 상단의 'API 키 만들기' 버튼을 눌러서 무료로 발급받을 수 있습니다.
             </p>
             <input
               type="text"
