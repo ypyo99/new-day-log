@@ -4111,7 +4111,7 @@ ${historyText}
               <Settings className="w-6 h-6 text-violet-600" />
               <h3 className="text-gray-900 font-extrabold text-lg leading-tight">Gemini API 키 설정</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-2 font-semibold break-keep leading-relaxed">
+            <p className="text-m text-blue-700 mb-4 font-bold break-keep leading-relaxed">
               오늘의 교육 토픽 추천을 받으려면 본인의 구글 Gemini API KEY를 입력해 주세요.
             </p>
             <p className="text-sm text-gray-500 mb-4 font-semibold break-keep leading-relaxed bg-gray-100 p-3 rounded-lg">
