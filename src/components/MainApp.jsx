@@ -4115,11 +4115,13 @@ ${historyText}
               오늘의 교육 토픽 추천을 받으려면 본인의 구글 Gemini API KEY를 입력해 주세요.
             </p>
             <p className="text-sm text-gray-500 mb-4 font-semibold break-keep leading-relaxed bg-gray-100 p-3 rounded-lg">
-              💡 아직 키가 없으신가요?<br />
+              💡 <span className="text-red-600 font-bold">아직 키가 없으신가요?</span><br /> <br />
               <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">
                 https://aistudio.google.com/api-keys
               </a>
-              <br />위의 사이트 화면 우측 상단의 'API 키 만들기' 버튼을 눌러서 무료로 발급받을 수 있습니다.
+              <br />화면 우측 상단의 'API 키 만들기' 버튼을 눌러서 무료로 발급받을 수 있습니다.
+              <br ></br>
+              <br />API Key 발급방법은 <a href="https://youtube.com/shorts/65PfCSjkh_w?si=57LCS3WqXRRXi1sa" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">https://youtube.com/shorts/65PfCSjkh_w?si=57LCS3WqXRRXi1sa</a> 동영상을 참고하세요.
             </p>
             <input
               type="text"
