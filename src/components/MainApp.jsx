@@ -2506,7 +2506,20 @@ ${historyText}
 추천 이유: [이유를 1줄로 간결하게 작성]
 오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
 
-조건: 이미 배운 내용과 중복 금지, 아직 안 다룬 카테고리 포함, ${totalSessions}회차 수준에 맞는 난이도. 반드시 1번, 2번, 3번 항목 모두 끝까지 출력하세요.`;
+[교육 참고 커리큘럼 (아래 항목들을 우선적으로 참고)]
+- 기초/설정: 스마트폰 구조, 앱 찾기, 와이파이 연결, 소리/디스플레이/밝기 설정, 키패드 입력, 알림창
+- 기본 사용: 연락처, 문자(사진첨부), 알람, 구글 어시스턴트(음성명령, 타이머), 구글 렌즈(번역, 검색), QR코드, 카메라, 갤러리(사진 자르기/꾸미기), 화면캡쳐
+- 소통: 카카오톡(프로필, 채팅방, 사진첨부, 페이스톡, 알림 끄기, 위치 전송, 메시지 삭제)
+- 기기 관리: 저장공간 확인, 디바이스 케어, 보이스피싱(카톡/문자) 주의, 악성코드
+- 지도/교통: 카카오맵(지도보기, 길찾기, 음성검색), 카카오T(택시 호출/취소)
+- 생활/기타 앱: 유튜브(검색, 넓게보기), 모바일팩스, 코파일럿/Gemini(AI), 만보기, 삼성 음성녹음, 배달의 민족(주문), 네이버 쇼핑(구매), 음력달력
+
+조건: 
+- 위 [교육 참고 커리큘럼]의 내용을 최우선으로 참고하여 추천하세요.
+- 이미 배운 내용과 중복 금지, ${totalSessions}회차 수준에 맞는 난이도를 고려하세요.
+- 어르신들이 실생활에서 흥미를 느낄 수 있는 다양하고 유용한 토픽을 적극적으로 추천하세요.
+  (예: 구글 Gemini의 실생활 활용법, 최신 갤럭시 AI 기능, 갤럭시 카메라 백배 활용, 카카오톡 꿀팁, 카카오맵/지하철 노선 검색, 스마트폰 사진으로 슬라이드 영상 만들기, 보이스피싱 예방 등)
+- 반드시 1번, 2번, 3번 항목 모두 끝까지 출력하세요.`;
 
       // ④ Gemini API 호출 (서버 과부하 시 자동 재시도)
       // Pro 모델에서 무료 한도(Limit: 0) 에러가 발생하므로, 무료 할당량이 넉넉한 안정화된 최신 Flash 모델 사용
@@ -3455,6 +3468,27 @@ ${historyText}
                                 />
                               </div>
 
+                              {/* ✨ AI 교육 추천 버튼 */}
+                              {logs[index]?.student && logs[index].student.trim() !== '' && (() => {
+                                const rawStudentForAi = logs[index].student;
+                                const parsedForAi = rawStudentForAi.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+                                const firstRealStudent = parsedForAi.find(n => n.length > 0 && !n.includes('보조강사') && !n.includes('자체학습') && !n.includes('경로당') && !n.includes('복지관'));
+                                if (!firstRealStudent) return null;
+                                return (
+                                  <div className="flex w-full !mt-2 !mb-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAiRecommend(index)}
+                                      disabled={isDataLoading || isInfoMissing}
+                                      className="w-full bg-violet-200 hover:bg-violet-300 text-violet-800 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm border border-violet-300 active:scale-[0.98] gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                                    >
+                                      <span className="text-[18px] sm:text-[20px]">✨</span>
+                                      오늘의 교육 토픽 추천
+                                    </button>
+                                  </div>
+                                );
+                              })()}
+
                               {hasSiblingRecord(index, logs[index]?.student) && !isDataLoading && (
                                 <div className="flex w-full !mt-2 animate-fadeIn">
                                   <button
@@ -3505,27 +3539,6 @@ ${historyText}
                                   );
                                 })}
                               </div>
-
-                              {/* ✨ AI 교육 추천 버튼 */}
-                              {logs[index]?.student && logs[index].student.trim() !== '' && (() => {
-                                const rawStudentForAi = logs[index].student;
-                                const parsedForAi = rawStudentForAi.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-                                const firstRealStudent = parsedForAi.find(n => n.length > 0 && !n.includes('보조강사') && !n.includes('자체학습') && !n.includes('경로당') && !n.includes('복지관'));
-                                if (!firstRealStudent) return null;
-                                return (
-                                  <div className="flex w-full !mt-2 !mb-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAiRecommend(index)}
-                                      disabled={isDataLoading || isInfoMissing}
-                                      className="w-full bg-violet-200 hover:bg-violet-300 text-violet-800 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm border border-violet-300 active:scale-[0.98] gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                                    >
-                                      <span className="text-[18px] sm:text-[20px]">✨</span>
-                                      오늘의 교육 토픽 추천
-                                    </button>
-                                  </div>
-                                );
-                              })()}
 
                               <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
                                 {isShowHeadcount && (() => {
