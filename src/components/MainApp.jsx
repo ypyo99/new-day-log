@@ -2466,7 +2466,13 @@ export default function MainApp({
         return { ...item, sessionNum: item.isAbsent ? null : sessionNum };
       });
 
-      const totalSessions = sessionNum;
+      let totalSessions = sessionNum;
+      const currentMemo = logs[index]?.memo || '';
+      const memoMatches = Array.from(currentMemo.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
+      if (memoMatches && memoMatches.length > 0) {
+        const manualCurrentSession = parseInt(memoMatches[memoMatches.length - 1][1], 10);
+        totalSessions = Math.max(0, manualCurrentSession - 1);
+      }
       const attendedItems = numberedHistory.filter(h => !h.isAbsent);
       const absentCount = numberedHistory.filter(h => h.isAbsent).length;
 
