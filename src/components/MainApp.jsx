@@ -905,6 +905,25 @@ export default function MainApp({
         let loadedLocation = (myRecord.location === undefined || myRecord.location === null) ? "" : myRecord.location;
         let statusStr = formatStatusIfDate(myRecord.status) || "";
 
+        if (!statusStr.replace(/\u200B/g, '').trim() && loadedStudent.trim()) {
+          const cleanMyStudent = loadedStudent.trim();
+          const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
+          const siblingRecord = list.find(r => {
+            if (r.teacher === currentUser) return false;
+            const myStudents = cleanMyStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+            const theirStudents = (r.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+            if (theirStudents !== myStudents) return false;
+            const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
+            if (siblingGroup !== myGroup) return false;
+            const siblingStatus = formatStatusIfDate(r.status) || "";
+            if (siblingStatus.includes("선생님휴가")) return false;
+            return siblingStatus.replace(/\u200B/g, '').trim() !== "";
+          });
+          if (siblingRecord) {
+            statusStr = formatStatusIfDate(siblingRecord.status) || "";
+          }
+        }
+
         const isShowHeadcount = loadedStudent.includes("보조강사") || loadedStudent.includes("경로당") || loadedLocation.includes("경로당");
 
         let loadedTags = [[]];
@@ -2417,48 +2436,6 @@ export default function MainApp({
       }
     }
   };
-  const hasSiblingRecord = (index, studentName) => {
-    const cleanMyStudent = (studentName || "").trim();
-    if (!cleanMyStudent) return false;
-
-    const currentLog = logs[index] || {};
-    const currentTags = currentLog.selectedTags || [[]];
-    const currentMemo = currentLog.memo || "";
-    const currentHeadcount = (currentLog.headcount || "").trim();
-
-    const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
-    const hasMemo = currentMemo.trim() !== "";
-    if (hasAnyTag || hasMemo) return false;
-
-    const shift = shifts[index];
-    const todaysData = allScheduleData[date] || {};
-    const rawList = todaysData[shift] || [];
-    const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
-    const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
-
-    const siblingRecord = list.find(r => {
-      if (r.teacher === currentUser) return false;
-      const myStudents = cleanMyStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
-      const theirStudents = (r.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
-      if (theirStudents !== myStudents) return false;
-      const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
-      if (siblingGroup !== myGroup) return false;
-      const siblingStatus = formatStatusIfDate(r.status) || "";
-      if (siblingStatus.includes("선생님휴가")) return false;
-      return siblingStatus.replace(/\u200B/g, '').trim() !== "";
-    });
-
-    if (!siblingRecord) return false;
-
-    const statusStr = formatStatusIfDate(siblingRecord.status) || "";
-    const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
-
-    if (loadedMemo === currentMemo && loadedHeadcount === currentHeadcount && JSON.stringify(loadedTags) === JSON.stringify(currentTags)) {
-      return false;
-    }
-
-    return true;
-  };
 
   const syncSiblingStatus = (index, newStudentName) => {
     const cleanMyStudent = newStudentName.trim();
@@ -3260,18 +3237,7 @@ export default function MainApp({
                               </div>
 
 
-                              {hasSiblingRecord(index, logs[index]?.student) && !isDataLoading && (
-                                <div className="flex w-full !mt-2 animate-fadeIn">
-                                  <button
-                                    type="button"
-                                    onClick={() => syncSiblingStatus(index, logs[index]?.student)}
-                                    className="w-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 text-blue-700 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm active:scale-[0.98]"
-                                  >
-                                    <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    오늘 수업내역 가져오기
-                                  </button>
-                                </div>
-                              )}
+
 
                               <div className="space-y-1.5 !mt-3">
                                 {Array.from({ length: displayRowsCount }).map((_, sIdx) => {

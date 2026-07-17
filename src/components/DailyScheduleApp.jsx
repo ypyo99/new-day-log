@@ -1024,7 +1024,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                               let statusColorClass = "text-black font-bold";
                               if (displayStatus) {
-                                const hasEnd = displayStatus.includes("종료");
+                                const hasEnd = hasIndependentKeyword(displayStatus, ["종료"]);
                                 const hasAbsenceOrCancel = displayStatus.includes("결석") || checkIsCanceled(displayStatus);
                                 const hasVacation = displayStatus.includes("휴가");
                                 const hasTeacherVacation = displayStatus.includes("선생님휴가");
