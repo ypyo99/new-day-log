@@ -104,8 +104,7 @@ import {
   UsersIcon,
   PresentationIcon,
   LucideCalendar,
-  VintageDivider,
-  Settings
+  VintageDivider
 } from './Icons';
 
 // 주어진 문자열을 쉼표(,)나 슬래시(/) 단위로 쪼갠 뒤,
@@ -182,11 +181,6 @@ export default function MainApp({
   const [repeatMode, setRepeatMode] = useState('all');
   const [repeatShiftIndex, setRepeatShiftIndex] = useState(null);
 
-  // ─── AI 교육 추천 모달 상태 ───
-  const [aiRecommendModal, setAiRecommendModal] = useState(null);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [customApiKey, setCustomApiKey] = useState(() => getSavedItem('custom_gemini_api_key', ""));
-  // { index, studentName, isLoading, result, error }
 
   const handleAssistantConflictProceed = () => {
     setShowAssistantConflictModal(false);
@@ -2392,359 +2386,49 @@ export default function MainApp({
     setErrorMessage(""); setDate(s);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // ✨ Gemini AI 교육 추천 핸들러 (전체 이력 분석)
-  // ─────────────────────────────────────────────────────────────
-  const handleAiRecommend = useCallback(async (index) => {
-    const rawStudent = logs[index]?.student || '';
-    const parsedNames = rawStudent.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-    const studentName = parsedNames.find(n =>
-      n.length > 0 &&
-      !n.includes('보조강사') &&
-      !n.includes('자체학습') &&
-      !n.includes('경로당') &&
-      !n.includes('복지관')
-    ) || parsedNames[0] || '';
 
-    if (!studentName) return;
-
-    if (!customApiKey) {
-      setShowApiKeyModal(true);
-      return;
-    }
-
-    // 모달 열기 + 로딩 시작
-    setAiRecommendModal({ index, studentName, isLoading: true, result: '', error: '' });
-
-    try {
-      // ① 전체 교육 이력 수집 (1회차부터 직전 회차까지, 제한 없음)
-      const EXCLUDE_TAGS = new Set(['1', '결석', '종료', '선생님휴가', '취소']);
-      const allItems = []; // { date, shift, content, isAbsent }
-
-      // 날짜 오름차순 (1회차부터 순서대로)
-      const allDates = Object.keys(allScheduleData).sort((a, b) => a.localeCompare(b));
-
-      for (const d of allDates) {
-        if (d >= date) continue; // 오늘 포함 이후 제외
-        const dayData = allScheduleData[d] || {};
-
-        for (const shiftTime of Object.keys(dayData)) {
-          const shiftList = dayData[shiftTime];
-          const list = Array.isArray(shiftList) ? shiftList : [shiftList];
-
-          for (const rec of list) {
-            if (!rec || !rec.student) continue;
-            const names = rec.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim());
-            if (!names.includes(studentName)) continue;
-
-            const statusStr = (rec.status || '').trim();
-
-            // 결석/취소 여부 판단
-            const isAbsent = hasIndependentKeyword(statusStr, ['결석', '취소', '종료']);
-
-            // 교육 내용 추출: 태그(1, 결석 등)를 콤마 단위로 제거
-            const parts = statusStr.split(',').map(p => p.trim()).filter(p => {
-              if (!p) return false;
-              const subParts = p.split('/').map(s => s.trim());
-              return !subParts.every(s => EXCLUDE_TAGS.has(s) || s === '');
-            });
-            const eduContent = parts.join(', ').trim();
-
-            if (isAbsent) {
-              allItems.push({ date: d, shift: shiftTime, content: '[결석/취소]', isAbsent: true });
-            } else if (eduContent && eduContent.length > 1) {
-              allItems.push({ date: d, shift: shiftTime, content: eduContent, isAbsent: false });
-            }
-          }
-        }
-      }
-
-      // ② 회차 번호 계산 (결석 제외 출석 기준)
-      let sessionNum = 0;
-      const numberedHistory = allItems.map(item => {
-        if (!item.isAbsent) sessionNum++;
-        return { ...item, sessionNum: item.isAbsent ? null : sessionNum };
-      });
-
-      let totalSessions = sessionNum;
-      const currentMemo = logs[index]?.memo || '';
-      const memoMatches = Array.from(currentMemo.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
-      if (memoMatches && memoMatches.length > 0) {
-        const manualCurrentSession = parseInt(memoMatches[memoMatches.length - 1][1], 10);
-        totalSessions = Math.max(0, manualCurrentSession - 1);
-      }
-      const attendedItems = numberedHistory.filter(h => !h.isAbsent);
-      const absentCount = numberedHistory.filter(h => h.isAbsent).length;
-
-      // ③ 프롬프트 구성 (전체 커리큘럼 흐름 기반)
-      const historyText = numberedHistory.length > 0
-        ? numberedHistory.map(h =>
-          h.isAbsent
-            ? `[결석] ${h.date}`
-            : `${h.sessionNum}회차 ${h.date}: ${h.content}`
-        ).join('\n')
-        : '(이전 교육 기록 없음)';
-
-      const prompt = `당신은 노인 스마트폰 교육 전문가입니다.
-
-아래는 "${studentName}" 어르신의 전체 교육 이력입니다 (총 ${totalSessions}회 완료, 결석 ${absentCount}회):
-
-${historyText}
-
----
-
-위 이력을 바탕으로, 오늘(${date}, ${totalSessions + 1}회차)에 가르치면 좋을 주제 3가지를 추천하세요.
-
-[출력 규칙 - 반드시 준수]
-- 인사말, 어르신 이름, 과거 수업 내용 언급 등 불필요한 말은 절대 하지 마세요.
-- 바로 추천 주제 3가지를 출력하세요.
-- 각 항목은 반드시 아래 형식을 지켜서 3번까지 끝까지 작성해야 합니다.
-
-1. 📱 [주제명]
-추천 이유: [이유를 1줄로 간결하게 작성]
-오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
-
-2. 📱 [주제명]
-추천 이유: [이유를 1줄로 간결하게 작성]
-오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
-
-3. 📱 [주제명]
-추천 이유: [이유를 1줄로 간결하게 작성]
-오늘 배울 내용: [앱 이름 및 기능명 포함, 구체적으로 1~2줄 작성]
-
-[교육 참고 커리큘럼 (아래 항목들을 우선적으로 참고)]
-- 기초/설정: 스마트폰 구조, 앱 찾기, 와이파이 연결, 소리/디스플레이/밝기 설정, 키패드 입력, 알림창
-- 기본 사용: 연락처, 문자(사진첨부), 알람, 구글 어시스턴트(음성명령, 타이머), 구글 렌즈(번역, 검색), QR코드, 카메라, 갤러리(사진 자르기/꾸미기), 화면캡쳐
-- AI 기능: 제미나이/챗GPT를 사용해서 대화하기, 끝말잇기 게임하기, 사진만들기, 음악만들기, 카메라켜고 제미나이와 대화하기, 영어를 한글로 번역해 보기
-- 갤럭시 AI 기능 7가지 사용하기
-- 삼성노트 앱 사용: 메모 만들고 저장/수정/삭제하기, 검색하기, 비밀번호로 메모 잠그기, 폴더 만들어 보관하기
-- 갤럭시 카메라 셋팅하고 활용하기
-- 스마트폰 사진으로 슬라이드 영상 만들기
-- 소통: 카카오톡(프로필, 채팅방, 사진첨부, 페이스톡, 알림 끄기, 위치 전송, 메시지 삭제)
-- 기기 관리: 저장공간 확인, 디바이스 케어, 보이스피싱(카톡/문자) 주의, 악성코드
-- 지도/교통: 카카오맵(지도보기, 길찾기, 음성검색), 카카오T(택시 호출/취소)
-- 생활/기타 앱: 유튜브(검색, 넓게보기), 모바일팩스, 코파일럿/Gemini(AI), 만보기, 삼성 음성녹음, 배달의 민족(주문), 네이버 쇼핑(구매), 음력달력
-
-조건: 
-- 위 [교육 참고 커리큘럼]의 내용을 최우선으로 참고하여 추천하세요.
-- 이미 배운 내용과 중복 금지, ${(totalSessions + 1 === 6 || totalSessions + 1 === 7) ? "★극도로 중요★ 이번 회차는 스마트폰 자체 AI나 갤럭시 AI가 아닌, 반드시 앱스토어에서 다운받는 [구글 제미나이(Gemini) 또는 챗GPT 앱 활용 교육] 내용으로만 3가지를 추천하세요." : (totalSessions + 1 >= 8 ? "기존보다 두 단계 더 어려운(심화된) 난이도의 토픽을 추천하세요." : "현재 수준에 맞는 정상적인 난이도의 토픽을 추천하세요.")}
-- 어르신들이 실생활에서 흥미를 느낄 수 있는 다양하고 유용한 토픽을 적극적으로 추천하세요.
-- 반드시 1번, 2번, 3번 항목 모두 끝까지 출력하세요.`;
-
-      // ④ Gemini API 호출 (서버 과부하 시 자동 재시도)
-      // Pro 모델에서 무료 한도(Limit: 0) 에러가 발생하므로, 무료 할당량이 넉넉한 안정화된 최신 Flash 모델 사용
-      const requestBody = JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
-      });
-
-      let response = null;
-      let dynamicModels = [];
-      try {
-        setAiRecommendModal(prev => prev ? ({ ...prev, retryInfo: '사용 가능한 AI 모델 검색 중...' }) : null);
-        const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${customApiKey}`);
-    if (modelsRes.ok) {
-      const modelsData = await modelsRes.json();
-      dynamicModels = modelsData.models
-        .filter(m => m.supportedGenerationMethods?.includes('generateContent') && m.name.includes('gemini'))
-        .map(m => m.name.replace('models/', ''));
-    }
-    setAiRecommendModal(prev => prev ? ({ ...prev, retryInfo: null }) : null);
-  } catch (e) {
-    console.error("Failed to fetch dynamic models", e);
-  }
-
-  if (dynamicModels.length > 0) {
-    dynamicModels.sort((a, b) => {
-      if (a.includes('flash') && !b.includes('flash')) return -1;
-      if (!a.includes('flash') && b.includes('flash')) return 1;
-      return b.localeCompare(a); // 높은 버전이 먼저 오도록 정렬
-    });
-  }
-
-  const fallbackModels = dynamicModels.length > 0 ? dynamicModels : [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-pro'
-  ];
-  const MAX_RETRIES = Math.min(fallbackModels.length, 6);
-
-  let lastErrorReason = '서버 혼잡';
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const currentModel = fallbackModels[(attempt - 1) % fallbackModels.length];
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${customApiKey}`;
-
-    if (attempt > 1) {
-      let waitSec = Math.pow(2, attempt - 1); // 2s → 4s → 8s → 16s
-      if (lastErrorReason.includes('한도') || lastErrorReason.includes('대기') || lastErrorReason.includes('지원 안되는 모델')) {
-        waitSec = 0.5; // 모델 교체 시 불필요한 대기 없이 즉시 시도
-      }
-      setAiRecommendModal(prev => prev ? ({
+  const handleLogChange = (index, field, value) => {
+    if (field === 'student' && (!value || value.trim() === "")) {
+      setLogs(prev => ({
         ...prev,
-        retryInfo: `AI 모델 재시도 중... (${attempt}/${MAX_RETRIES})`
-      }) : null);
-      await new Promise(r => setTimeout(r, waitSec * 1000));
-    }
-    response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: requestBody
-    });
-
-    if (response.ok) break;
-
-    const errData = await response.clone().json().catch(() => ({}));
-    const errMsg = errData?.error?.message || '';
-
-    if (response.status === 429) {
-      const match = errMsg.match(/retry in ([\d.]+)s/);
-      if (errMsg.includes('limit: 20') || errMsg.toLowerCase().includes('day')) {
-        lastErrorReason = '1일 한도 초과';
-      } else if (errMsg.includes('limit: 5') || errMsg.toLowerCase().includes('minute')) {
-        lastErrorReason = '1분 한도 초과';
-      } else if (match) {
-        lastErrorReason = `${Math.ceil(parseFloat(match[1]))}초 대기 필요`;
-      } else {
-        lastErrorReason = '사용 한도 초과';
-      }
-    } else if (response.status === 404) {
-      lastErrorReason = '지원 안되는 모델';
-    } else {
-      lastErrorReason = '서버 혼잡';
-    }
-
-    // 503(과부하), 429(속도 제한), 404(모델 없음) 이면 다음 모델로 재시도
-    if (response.status !== 503 && response.status !== 429 && response.status !== 404) break;
-  }
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    let errMsg = errData?.error?.message || `API 오류 (${response.status})`;
-    if (errMsg.includes('Quota exceeded') || response.status === 429) {
-      const match = errMsg.match(/retry in ([\d.]+)s/);
-      const waitStr = match ? `\n(참고: 약 ${Math.ceil(parseFloat(match[1]))}초 후 한도가 1회 복구됩니다)` : '';
-
-      if (errMsg.includes('limit: 20') || errMsg.toLowerCase().includes('day')) {
-        errMsg = `1일 무료 사용 한도(20회)를 모두 소진했습니다.\n다른 날에 다시 시도하거나 우측 상단의 ⚙️ 설정 아이콘을 눌러 '다른 구글 계정의 API 키'로 교체해 주세요!${waitStr}`;
-      } else if (errMsg.includes('limit: 5') || errMsg.toLowerCase().includes('minute')) {
-        errMsg = `1분당 무료 사용 한도(5회)를 초과했습니다.${match ? `\n약 ${Math.ceil(parseFloat(match[1]))}초 정도 기다리신 후 다시 시도해 주세요.` : '\n약 1분 정도 기다리신 후 다시 시도해 주세요.'}`;
-      } else {
-        errMsg = `요청 한도를 초과했습니다.${match ? `\n약 ${Math.ceil(parseFloat(match[1]))}초 후에 다시 시도해 주세요.` : ''}\n(원인: ${errMsg})`;
-      }
-    } else if (errMsg.includes('not found') || response.status === 404) {
-      errMsg = '지정된 AI 모델을 찾을 수 없습니다. (API 설정 오류)';
-    }
-    throw new Error(errMsg);
-  }
-
-  const data = await response.json();
-  const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-  if (!resultText) throw new Error('AI 응답을 받지 못했습니다. 다시 시도해 주세요.');
-
-  setAiRecommendModal(prev => prev ? ({
-    ...prev,
-    isLoading: false,
-    result: resultText.trim(),
-    historyCount: totalSessions,
-    absentCount
-  }) : null);
-
-} catch (err) {
-  console.error('AI 추천 오류:', err);
-  setAiRecommendModal(prev => prev ? ({
-    ...prev,
-    isLoading: false,
-    error: `'교육 토픽 추천 생성' 중 오류가 발생했습니다.\n${err.message}`
-  }) : null);
-}
-  }, [logs, allScheduleData, date, customApiKey]);
-
-const handleLogChange = (index, field, value) => {
-  if (field === 'student' && (!value || value.trim() === "")) {
-    setLogs(prev => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        student: "",
-        selectedTags: [[]],
-        memo: "",
-        headcount: "",
-        location: ""
-      }
-    }));
-    const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-    window.localStorage.removeItem(backupKey);
-  } else {
-    setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
-  }
-
-  if (validationErrorIndex === index) setValidationErrorIndex(null);
-
-  if (field === 'memo') {
-    const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-    if (value && value.trim() !== "") {
-      try { window.localStorage.setItem(backupKey, value); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
-    } else {
+        [index]: {
+          ...prev[index],
+          student: "",
+          selectedTags: [[]],
+          memo: "",
+          headcount: "",
+          location: ""
+        }
+      }));
+      const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
       window.localStorage.removeItem(backupKey);
+    } else {
+      setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
     }
-  }
-};
-const hasSiblingRecord = (index, studentName) => {
-  const cleanMyStudent = (studentName || "").trim();
-  if (!cleanMyStudent) return false;
 
-  const currentLog = logs[index] || {};
-  const currentTags = currentLog.selectedTags || [[]];
-  const currentMemo = currentLog.memo || "";
-  const currentHeadcount = (currentLog.headcount || "").trim();
+    if (validationErrorIndex === index) setValidationErrorIndex(null);
 
-  const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
-  const hasMemo = currentMemo.trim() !== "";
-  if (hasAnyTag || hasMemo) return false;
+    if (field === 'memo') {
+      const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
+      if (value && value.trim() !== "") {
+        try { window.localStorage.setItem(backupKey, value); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
+      } else {
+        window.localStorage.removeItem(backupKey);
+      }
+    }
+  };
+  const hasSiblingRecord = (index, studentName) => {
+    const cleanMyStudent = (studentName || "").trim();
+    if (!cleanMyStudent) return false;
 
-  const shift = shifts[index];
-  const todaysData = allScheduleData[date] || {};
-  const rawList = todaysData[shift] || [];
-  const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
-  const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
-
-  const siblingRecord = list.find(r => {
-    if (r.teacher === currentUser) return false;
-    const myStudents = cleanMyStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
-    const theirStudents = (r.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
-    if (theirStudents !== myStudents) return false;
-    const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
-    if (siblingGroup !== myGroup) return false;
-    const siblingStatus = formatStatusIfDate(r.status) || "";
-    if (siblingStatus.includes("선생님휴가")) return false;
-    return siblingStatus.replace(/\u200B/g, '').trim() !== "";
-  });
-
-  if (!siblingRecord) return false;
-
-  const statusStr = formatStatusIfDate(siblingRecord.status) || "";
-  const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
-
-  if (loadedMemo === currentMemo && loadedHeadcount === currentHeadcount && JSON.stringify(loadedTags) === JSON.stringify(currentTags)) {
-    return false;
-  }
-
-  return true;
-};
-
-const syncSiblingStatus = (index, newStudentName) => {
-  const cleanMyStudent = newStudentName.trim();
-  if (!cleanMyStudent) return;
-
-  setLogs(prev => {
-    const currentLog = prev[index] || {};
+    const currentLog = logs[index] || {};
     const currentTags = currentLog.selectedTags || [[]];
     const currentMemo = currentLog.memo || "";
+    const currentHeadcount = (currentLog.headcount || "").trim();
+
     const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
     const hasMemo = currentMemo.trim() !== "";
-
-    if (hasAnyTag || hasMemo) return prev;
+    if (hasAnyTag || hasMemo) return false;
 
     const shift = shifts[index];
     const todaysData = allScheduleData[date] || {};
@@ -2764,187 +2448,230 @@ const syncSiblingStatus = (index, newStudentName) => {
       return siblingStatus.replace(/\u200B/g, '').trim() !== "";
     });
 
-    if (siblingRecord) {
-      const statusStr = formatStatusIfDate(siblingRecord.status) || "";
-      const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
+    if (!siblingRecord) return false;
 
+    const statusStr = formatStatusIfDate(siblingRecord.status) || "";
+    const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
+
+    if (loadedMemo === currentMemo && loadedHeadcount === currentHeadcount && JSON.stringify(loadedTags) === JSON.stringify(currentTags)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const syncSiblingStatus = (index, newStudentName) => {
+    const cleanMyStudent = newStudentName.trim();
+    if (!cleanMyStudent) return;
+
+    setLogs(prev => {
+      const currentLog = prev[index] || {};
+      const currentTags = currentLog.selectedTags || [[]];
+      const currentMemo = currentLog.memo || "";
+      const hasAnyTag = currentTags.some(tags => tags && tags.length > 0);
+      const hasMemo = currentMemo.trim() !== "";
+
+      if (hasAnyTag || hasMemo) return prev;
+
+      const shift = shifts[index];
+      const todaysData = allScheduleData[date] || {};
+      const rawList = todaysData[shift] || [];
+      const list = Array.isArray(rawList) ? rawList : [{ teacher: currentUser, ...rawList }];
+      const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
+
+      const siblingRecord = list.find(r => {
+        if (r.teacher === currentUser) return false;
+        const myStudents = cleanMyStudent.split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+        const theirStudents = (r.student || "").split(/[/,]/).map(s => s.trim()).filter(Boolean).sort().join('/');
+        if (theirStudents !== myStudents) return false;
+        const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
+        if (siblingGroup !== myGroup) return false;
+        const siblingStatus = formatStatusIfDate(r.status) || "";
+        if (siblingStatus.includes("선생님휴가")) return false;
+        return siblingStatus.replace(/\u200B/g, '').trim() !== "";
+      });
+
+      if (siblingRecord) {
+        const statusStr = formatStatusIfDate(siblingRecord.status) || "";
+        const { loadedTags, loadedMemo, loadedHeadcount } = parseStatusString(statusStr, cleanMyStudent);
+
+        const newLogs = { ...prev };
+        newLogs[index] = {
+          ...currentLog,
+          selectedTags: loadedTags,
+          memo: loadedMemo
+        };
+        if (loadedHeadcount) {
+          newLogs[index].headcount = loadedHeadcount;
+        }
+
+        if (loadedMemo.trim() !== "") {
+          const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
+          try { window.localStorage.setItem(backupKey, loadedMemo); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
+        }
+
+        return newLogs;
+      }
+      return prev;
+    });
+  };
+
+  const toggleTag = (index, sIdx, tag) => {
+    const now = Date.now();
+    const lastClick = lastTagClickRef.current;
+    if (lastClick.index === index && lastClick.sIdx === sIdx && lastClick.tag === tag && now - lastClick.time < 400) return;
+
+    lastTagClickRef.current = { time: now, index, sIdx, tag };
+
+    setLogs(prev => {
       const newLogs = { ...prev };
-      newLogs[index] = {
-        ...currentLog,
-        selectedTags: loadedTags,
-        memo: loadedMemo
-      };
-      if (loadedHeadcount) {
-        newLogs[index].headcount = loadedHeadcount;
+      const log = { ...newLogs[index] };
+      const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
+      const maxRows = Math.max(1, studentNames.length);
+      let currentTagsArray = [...(log.selectedTags || [])];
+      while (currentTagsArray.length < maxRows) currentTagsArray.push([]);
+
+      const exclusiveTags = ['1', '2', '결석'];
+
+      if (tag === '선생님휴가') {
+        const isAnySelected = currentTagsArray.some(tags => tags.includes('선생님휴가'));
+        if (isAnySelected) {
+          currentTagsArray = currentTagsArray.map(tags => tags.filter(t => t !== '선생님휴가'));
+        } else {
+          currentTagsArray = currentTagsArray.map(tags => {
+            let newTags = [...tags];
+            if (!newTags.includes('선생님휴가')) newTags.push('선생님휴가');
+            return newTags;
+          });
+        }
+      } else {
+        let newTags = [...(currentTagsArray[sIdx] || [])];
+        if (newTags.includes(tag)) {
+          newTags = newTags.filter(t => t !== tag);
+        } else {
+          if (exclusiveTags.includes(tag)) newTags = newTags.filter(t => !exclusiveTags.includes(t));
+          newTags.push(tag);
+        }
+        currentTagsArray[sIdx] = newTags;
       }
 
-      if (loadedMemo.trim() !== "") {
-        const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-        try { window.localStorage.setItem(backupKey, loadedMemo); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
-      }
-
+      log.selectedTags = currentTagsArray;
+      newLogs[index] = log;
       return newLogs;
+    });
+  };
+
+  const handleLogin = (e) => {
+    if (e) e.preventDefault();
+    if (!isLoginReady) return;
+
+    if (currentUser) {
+      const todayStr = getInitialWeekday();
+      setDate(todayStr);
+      setIsLoggedIn(true);
+      setRefreshTrigger(prev => prev + 1);
     }
-    return prev;
-  });
-};
+  };
 
-const toggleTag = (index, sIdx, tag) => {
-  const now = Date.now();
-  const lastClick = lastTagClickRef.current;
-  if (lastClick.index === index && lastClick.sIdx === sIdx && lastClick.tag === tag && now - lastClick.time < 400) return;
+  const handleMainTouchStart = (e) => {
+    mainTouchStartX.current = e.touches[0].clientX;
+    mainTouchStartY.current = e.touches[0].clientY;
+    setPullDistance(0);
+  };
 
-  lastTagClickRef.current = { time: now, index, sIdx, tag };
+  const handleMainTouchMove = (e) => {
+    if (mainTouchStartX.current === null || mainTouchStartY.current === null) return;
+    const touchEndX = e.touches[0].clientX;
+    const touchEndY = e.touches[0].clientY;
+    const deltaX = touchEndX - mainTouchStartX.current;
+    const deltaY = touchEndY - mainTouchStartY.current;
 
-  setLogs(prev => {
-    const newLogs = { ...prev };
-    const log = { ...newLogs[index] };
-    const studentNames = (log.student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0);
-    const maxRows = Math.max(1, studentNames.length);
-    let currentTagsArray = [...(log.selectedTags || [])];
-    while (currentTagsArray.length < maxRows) currentTagsArray.push([]);
+    if (deltaY > 0 && deltaY > Math.abs(deltaX) * 2) setPullDistance(Math.min(deltaY, 400));
+    else setPullDistance(0);
+  };
 
-    const exclusiveTags = ['1', '2', '결석'];
+  const handleMainTouchEnd = (e) => {
+    if (mainTouchStartX.current === null || mainTouchStartY.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - mainTouchStartX.current;
+    const deltaY = touchEndY - mainTouchStartY.current;
 
-    if (tag === '선생님휴가') {
-      const isAnySelected = currentTagsArray.some(tags => tags.includes('선생님휴가'));
-      if (isAnySelected) {
-        currentTagsArray = currentTagsArray.map(tags => tags.filter(t => t !== '선생님휴가'));
-      } else {
-        currentTagsArray = currentTagsArray.map(tags => {
-          let newTags = [...tags];
-          if (!newTags.includes('선생님휴가')) newTags.push('선생님휴가');
-          return newTags;
-        });
-      }
-    } else {
-      let newTags = [...(currentTagsArray[sIdx] || [])];
-      if (newTags.includes(tag)) {
-        newTags = newTags.filter(t => t !== tag);
-      } else {
-        if (exclusiveTags.includes(tag)) newTags = newTags.filter(t => !exclusiveTags.includes(t));
-        newTags.push(tag);
-      }
-      currentTagsArray[sIdx] = newTags;
+    if (deltaY > 300 && deltaY > Math.abs(deltaX) * 2) window.location.reload();
+    else setPullDistance(0);
+    mainTouchStartX.current = null;
+    mainTouchStartY.current = null;
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchStartX.current - touchEndX;
+    const deltaY = touchStartY.current - touchEndY;
+
+    if (isDataLoading) { touchStartX.current = null; touchStartY.current = null; return; }
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 250) {
+      if (deltaX > 0) handleNextDay();
+      else handlePrevDay();
     }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
-    log.selectedTags = currentTagsArray;
-    newLogs[index] = log;
-    return newLogs;
-  });
-};
-
-const handleLogin = (e) => {
-  if (e) e.preventDefault();
-  if (!isLoginReady) return;
-
-  if (currentUser) {
-    const todayStr = getInitialWeekday();
-    setDate(todayStr);
-    setIsLoggedIn(true);
-    setRefreshTrigger(prev => prev + 1);
-  }
-};
-
-const handleMainTouchStart = (e) => {
-  mainTouchStartX.current = e.touches[0].clientX;
-  mainTouchStartY.current = e.touches[0].clientY;
-  setPullDistance(0);
-};
-
-const handleMainTouchMove = (e) => {
-  if (mainTouchStartX.current === null || mainTouchStartY.current === null) return;
-  const touchEndX = e.touches[0].clientX;
-  const touchEndY = e.touches[0].clientY;
-  const deltaX = touchEndX - mainTouchStartX.current;
-  const deltaY = touchEndY - mainTouchStartY.current;
-
-  if (deltaY > 0 && deltaY > Math.abs(deltaX) * 2) setPullDistance(Math.min(deltaY, 400));
-  else setPullDistance(0);
-};
-
-const handleMainTouchEnd = (e) => {
-  if (mainTouchStartX.current === null || mainTouchStartY.current === null) return;
-  const touchEndX = e.changedTouches[0].clientX;
-  const touchEndY = e.changedTouches[0].clientY;
-  const deltaX = touchEndX - mainTouchStartX.current;
-  const deltaY = touchEndY - mainTouchStartY.current;
-
-  if (deltaY > 300 && deltaY > Math.abs(deltaX) * 2) window.location.reload();
-  else setPullDistance(0);
-  mainTouchStartX.current = null;
-  mainTouchStartY.current = null;
-};
-
-const handleTouchStart = (e) => {
-  touchStartX.current = e.touches[0].clientX;
-  touchStartY.current = e.touches[0].clientY;
-};
-
-const handleTouchEnd = (e) => {
-  if (touchStartX.current === null || touchStartY.current === null) return;
-  const touchEndX = e.changedTouches[0].clientX;
-  const touchEndY = e.changedTouches[0].clientY;
-  const deltaX = touchStartX.current - touchEndX;
-  const deltaY = touchStartY.current - touchEndY;
-
-  if (isDataLoading) { touchStartX.current = null; touchStartY.current = null; return; }
-
-  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 250) {
-    if (deltaX > 0) handleNextDay();
-    else handlePrevDay();
-  }
-  touchStartX.current = null;
-  touchStartY.current = null;
-};
-
-if (!isLoggedIn) {
-  return (
-    <div
-      className="fixed inset-0 overflow-y-auto overflow-x-hidden bg-transparent flex flex-col items-center sm:py-10"
-      onTouchStart={handleMainTouchStart}
-      onTouchMove={handleMainTouchMove}
-      onTouchEnd={handleMainTouchEnd}
-    >
+  if (!isLoggedIn) {
+    return (
       <div
-        className="absolute left-0 right-0 flex items-center justify-center pointer-events-none z-50 pt-safe-4"
-        style={{
-          transform: `translateY(${pullDistance > 0 ? (pullDistance * 0.4) : -50}px)`,
-          opacity: pullDistance > 10 ? Math.min(pullDistance / 300, 1) : 0,
-          transition: pullDistance === 0 ? 'all 0.3s ease-out' : 'none'
-        }}
+        className="fixed inset-0 overflow-y-auto overflow-x-hidden bg-transparent flex flex-col items-center sm:py-10"
+        onTouchStart={handleMainTouchStart}
+        onTouchMove={handleMainTouchMove}
+        onTouchEnd={handleMainTouchEnd}
       >
-        <div className="flex items-center justify-center bg-white shadow-lg border border-sky-200 p-3 rounded-full">
-          <RefreshCw className={`w-8 h-8 ${pullDistance > 300 ? 'text-blue-600 animate-spin' : 'text-gray-400'}`} />
-        </div>
-      </div>
-
-      <div
-        className="flex flex-col flex-1 sm:flex-none w-full max-w-md sm:max-w-[600px] md:max-w-[680px] bg-white px-5 pb-8 pt-safe-4 sm:px-8 sm:pb-10 sm:pt-safe-5 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 sm:min-h-[600px] shrink-0 sm:my-auto animate-fadeIn"
-        style={{
-          transform: `translateY(${pullDistance * 0.1}px)`,
-          transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none'
-        }}
-      >
-        <div className="text-center mb-2 sm:mb-3.5 shrink-0 mt-0">
-          <div className="flex justify-center mb-2 sm:mb-4">
-            <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-[42px] sm:h-[52px] object-contain" onError={(e) => e.target.style.display = 'none'} />
+        <div
+          className="absolute left-0 right-0 flex items-center justify-center pointer-events-none z-50 pt-safe-4"
+          style={{
+            transform: `translateY(${pullDistance > 0 ? (pullDistance * 0.4) : -50}px)`,
+            opacity: pullDistance > 10 ? Math.min(pullDistance / 300, 1) : 0,
+            transition: pullDistance === 0 ? 'all 0.3s ease-out' : 'none'
+          }}
+        >
+          <div className="flex items-center justify-center bg-white shadow-lg border border-sky-200 p-3 rounded-full">
+            <RefreshCw className={`w-8 h-8 ${pullDistance > 300 ? 'text-blue-600 animate-spin' : 'text-gray-400'}`} />
           </div>
-          <div className="flex items-center justify-center mb-1 sm:mb-2">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-blue-600">성동노인종합복지관<sub className="text-[0.38em] font-black align-sub ml-0.5 text-gray-400">DB</sub></h1>
-          </div>
-          <h2 className="text-[clamp(14px,4.5vw,18px)] sm:text-2xl md:text-3xl font-bold text-red-600 whitespace-nowrap tracking-tighter flex items-center justify-center gap-2">
-            <svg className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse shrink-0 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#EF4444" stroke="#B91C1C" strokeWidth="1" />
-              <circle cx="19" cy="5" r="1.5" fill="#F87171" />
-              <circle cx="5" cy="19" r="1" fill="#F87171" />
-            </svg>
-            디지털교육 서포터즈 <span className="text-indigo-700">업무일지 시스템</span>
-          </h2>
         </div>
 
-        <div className="flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
-          <style>{`
+        <div
+          className="flex flex-col flex-1 sm:flex-none w-full max-w-md sm:max-w-[600px] md:max-w-[680px] bg-white px-5 pb-8 pt-safe-4 sm:px-8 sm:pb-10 sm:pt-safe-5 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 sm:min-h-[600px] shrink-0 sm:my-auto animate-fadeIn"
+          style={{
+            transform: `translateY(${pullDistance * 0.1}px)`,
+            transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none'
+          }}
+        >
+          <div className="text-center mb-2 sm:mb-3.5 shrink-0 mt-0">
+            <div className="flex justify-center mb-2 sm:mb-4">
+              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-[42px] sm:h-[52px] object-contain" onError={(e) => e.target.style.display = 'none'} />
+            </div>
+            <div className="flex items-center justify-center mb-1 sm:mb-2">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-blue-600">성동노인종합복지관<sub className="text-[0.38em] font-black align-sub ml-0.5 text-gray-400">DB</sub></h1>
+            </div>
+            <h2 className="text-[clamp(14px,4.5vw,18px)] sm:text-2xl md:text-3xl font-bold text-red-600 whitespace-nowrap tracking-tighter flex items-center justify-center gap-2">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse shrink-0 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#EF4444" stroke="#B91C1C" strokeWidth="1" />
+                <circle cx="19" cy="5" r="1.5" fill="#F87171" />
+                <circle cx="5" cy="19" r="1" fill="#F87171" />
+              </svg>
+              디지털교육 서포터즈 <span className="text-indigo-700">업무일지 시스템</span>
+            </h2>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
+            <style>{`
               @keyframes shineText {
                 0% { background-position: 100% 0; }
                 100% { background-position: 0% 0; }
@@ -2968,1244 +2695,1044 @@ if (!isLoggedIn) {
                 display: inline;
               }
             `}</style>
-          {todayNotices.length > 0 && (
-            <div className="animate-fadeIn w-full">
-              <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors touch-pan-y touch-pinch-zoom">
-                <div className="flex flex-col gap-1.5 sm:gap-2 w-full min-w-0">
-                  <div
-                    className="flex items-center gap-2 sm:gap-3 w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]"
-                    onClick={() => onNavigateToNoticeManagement()}
-                  >
-                    <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                      </svg>
+            {todayNotices.length > 0 && (
+              <div className="animate-fadeIn w-full">
+                <div className="bg-red-50 border-2 border-red-300 rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm overflow-hidden text-left hover:bg-red-200 transition-colors touch-pan-y touch-pinch-zoom">
+                  <div className="flex flex-col gap-1.5 sm:gap-2 w-full min-w-0">
+                    <div
+                      className="flex items-center gap-2 sm:gap-3 w-full cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]"
+                      onClick={() => onNavigateToNoticeManagement()}
+                    >
+                      <div className="bg-red-300 p-1 sm:p-1.5 rounded-lg shrink-0">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                      </div>
+                      <div className="flex items-center justify-between flex-1 w-full gap-2">
+                        <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight text-red-800 m-0 shrink-0">
+                          공지사항
+                        </h4>
+                        {!weatherData ? (
+                          <span className="text-[14px] sm:text-[15px] text-red-500 font-medium ml-auto text-right">
+                            날씨 정보 불러오는 중...
+                          </span>
+                        ) : weatherData.error ? (
+                          <span className="text-[14px] sm:text-[15px] text-red-500/80 font-medium ml-auto text-right leading-tight">
+                            날씨 정보 준비 중 ({weatherData.msg})
+                          </span>
+                        ) : (
+                          <div
+                            className="flex items-center gap-1.5 ml-auto cursor-pointer hover:opacity-80 active:scale-95 transition-all bg-white/50 px-2 py-0.5 rounded-lg border border-red-200/50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open('https://weather.naver.com', '_blank');
+                            }}
+                            title="네이버 날씨로 이동"
+                          >
+                            <span className={`text-[15px] sm:text-[16px] font-bold tracking-tight whitespace-nowrap ${weatherData.isRain ? 'text-blue-600' : 'text-gray-600'}`}>
+                              {weatherData.isTomorrow ? '내일 ' : ''}{weatherData.weatherDesc}
+                            </span>
+                            <span className="text-gray-300 mx-0.5 text-[13px]">|</span>
+                            <span className="text-[15px] sm:text-[16px] font-bold text-gray-600 whitespace-nowrap">
+                              🌡️ {weatherData.minTemp}° / <span className="text-red-500">{weatherData.maxTemp}°</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between flex-1 w-full gap-2">
-                      <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight text-red-800 m-0 shrink-0">
-                        공지사항
-                      </h4>
-                      {!weatherData ? (
-                        <span className="text-[14px] sm:text-[15px] text-red-500 font-medium ml-auto text-right">
-                          날씨 정보 불러오는 중...
-                        </span>
-                      ) : weatherData.error ? (
-                        <span className="text-[14px] sm:text-[15px] text-red-500/80 font-medium ml-auto text-right leading-tight">
-                          날씨 정보 준비 중 ({weatherData.msg})
-                        </span>
-                      ) : (
-                        <div
-                          className="flex items-center gap-1.5 ml-auto cursor-pointer hover:opacity-80 active:scale-95 transition-all bg-white/50 px-2 py-0.5 rounded-lg border border-red-200/50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open('https://weather.naver.com', '_blank');
-                          }}
-                          title="네이버 날씨로 이동"
-                        >
-                          <span className={`text-[15px] sm:text-[16px] font-bold tracking-tight whitespace-nowrap ${weatherData.isRain ? 'text-blue-600' : 'text-gray-600'}`}>
-                            {weatherData.isTomorrow ? '내일 ' : ''}{weatherData.weatherDesc}
-                          </span>
-                          <span className="text-gray-300 mx-0.5 text-[13px]">|</span>
-                          <span className="text-[15px] sm:text-[16px] font-bold text-gray-600 whitespace-nowrap">
-                            🌡️ {weatherData.minTemp}° / <span className="text-red-500">{weatherData.maxTemp}°</span>
-                          </span>
-                        </div>
-                      )}
+                    <div
+                      className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[126px] sm:max-h-[144px] overflow-y-auto overscroll-contain touch-pan-y touch-pinch-zoom pr-1"
+                      style={{ scrollbarWidth: 'thin', scrollbarColor: '#fca5a5 transparent' }}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                    >
+                      {todayNotices.map((notice, idx) => {
+                        const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
+                        const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
+                        return (
+                          <p
+                            key={idx}
+                            className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const { data } = await supabaseClient.from('notices').select('*').eq('id', notice.id).single();
+                              onNavigateToNoticeManagement(data || notice);
+                            }}
+                          >
+                            <span className={shineClass}>
+                              {notice.is_top ? '📌 ' : '• '} {notice.title}
+                            </span>
+                          </p>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <div
-                    className="space-y-1 sm:space-y-1.5 w-full min-w-0 mt-1 max-h-[126px] sm:max-h-[144px] overflow-y-auto overscroll-contain touch-pan-y touch-pinch-zoom pr-1"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: '#fca5a5 transparent' }}
-                    onTouchStart={(e) => e.stopPropagation()}
-                    onTouchMove={(e) => e.stopPropagation()}
-                    onTouchEnd={(e) => e.stopPropagation()}
-                  >
-                    {todayNotices.map((notice, idx) => {
-                      const isToday = notice.start_date && notice.start_date.substring(0, 10) === getLocalDateString(new Date());
-                      const shineClass = isToday ? (notice.is_top ? 'shine-text-top' : 'shine-text-normal') : (notice.is_top ? 'text-red-900' : 'text-indigo-700');
-                      return (
-                        <p
-                          key={idx}
-                          className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block cursor-pointer hover:underline hover:opacity-80 active:scale-[0.98] transition-all ${notice.is_top ? 'bg-red-200/40 px-1.5 py-0.5 rounded border border-red-200' : ''}`}
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const { data } = await supabaseClient.from('notices').select('*').eq('id', notice.id).single();
-                            onNavigateToNoticeManagement(data || notice);
-                          }}
-                        >
-                          <span className={shineClass}>
-                            {notice.is_top ? '📌 ' : '• '} {notice.title}
-                          </span>
-                        </p>
-                      );
-                    })}
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          <div className="w-full">
-            <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl md:text-2xl">1. 팀 선택</label>
-            <select className={`w-full h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl ${selectedTeam ? 'bg-blue-100' : 'bg-[#ebebeb]'} text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400`} value={selectedTeam} onChange={(e) => {
-              setSelectedTeam(e.target.value);
-              setCurrentUser("");
-            }}>
-              <option value="">팀을 선택하세요</option>
-              {teamList.map(team => <option key={team} value={team}>{team}</option>)}
-            </select>
-          </div>
-          {selectedTeam && (
-            <div>
-              <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl md:text-2xl flex justify-between items-end">
-                <span>2. 선생님 선택</span>
-                {isFetchingTeachers && <span className="text-base sm:text-lg md:text-xl text-red-600 font-bold flex items-center mb-1 animate-pulse"><Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />로딩 중...</span>}
-              </label>
-              <div className="flex gap-2">
-                <select className={`flex-1 h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl ${currentUser ? 'bg-blue-100' : 'bg-[#ebebeb]'} text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400`} value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
-                  <option value="">선생님을 선택하세요</option>
-                  {teachers.map(name => <option key={name} value={name}>{name.replace(/\n/g, ' ')}</option>)}
-                </select>
-
-                <AnimatedRefreshButton
-                  onClick={() => fetchTeachersFromSheet(selectedTeam)}
-                  isFetching={isFetchingTeachers}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="pt-1 sm:pt-2 flex">
-            {!isLoginReady ? (
-              <div className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold text-white bg-gray-400 border-2 border-gray-400 cursor-not-allowed shadow-md opacity-90 select-none min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-                {isFetchingSchedule ? <><Clock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2 animate-spin" /> 데이터 확인 중...</> : <><EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성하기</>}
-              </div>
-            ) : (
-              <button onClick={handleLogin} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold text-white bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-                <EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성
-              </button>
             )}
+            <div className="w-full">
+              <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl md:text-2xl">1. 팀 선택</label>
+              <select className={`w-full h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl ${selectedTeam ? 'bg-blue-100' : 'bg-[#ebebeb]'} text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400`} value={selectedTeam} onChange={(e) => {
+                setSelectedTeam(e.target.value);
+                setCurrentUser("");
+              }}>
+                <option value="">팀을 선택하세요</option>
+                {teamList.map(team => <option key={team} value={team}>{team}</option>)}
+              </select>
+            </div>
+            {selectedTeam && (
+              <div>
+                <label className="block text-gray-700 font-semibold mb-1 sm:mb-2 text-lg sm:text-xl md:text-2xl flex justify-between items-end">
+                  <span>2. 선생님 선택</span>
+                  {isFetchingTeachers && <span className="text-base sm:text-lg md:text-xl text-red-600 font-bold flex items-center mb-1 animate-pulse"><Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />로딩 중...</span>}
+                </label>
+                <div className="flex gap-2">
+                  <select className={`flex-1 h-[48px] sm:h-[56px] md:h-[64px] px-3 sm:px-4 border border-gray-300 rounded-xl text-xl sm:text-2xl md:text-3xl ${currentUser ? 'bg-blue-100' : 'bg-[#ebebeb]'} text-gray-800 outline-none font-bold shadow-md focus:ring-2 focus:ring-gray-400`} value={currentUser} onChange={(e) => setCurrentUser(e.target.value)} disabled={isFetchingTeachers}>
+                    <option value="">선생님을 선택하세요</option>
+                    {teachers.map(name => <option key={name} value={name}>{name.replace(/\n/g, ' ')}</option>)}
+                  </select>
+
+                  <AnimatedRefreshButton
+                    onClick={() => fetchTeachersFromSheet(selectedTeam)}
+                    isFetching={isFetchingTeachers}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-1 sm:pt-2 flex">
+              {!isLoginReady ? (
+                <div className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold text-white bg-gray-400 border-2 border-gray-400 cursor-not-allowed shadow-md opacity-90 select-none min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                  {isFetchingSchedule ? <><Clock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2 animate-spin" /> 데이터 확인 중...</> : <><EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성하기</>}
+                </div>
+              ) : (
+                <button onClick={handleLogin} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold text-white bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+                  <EditIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-2" /> 일지 작성
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="py-3 sm:py-4 flex justify-center items-center shrink-0 mt-1">
-          <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
-        </div>
-
-        <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-[180px]">
-          <button
-            onClick={() => {
-              if (!selectedTeam || !currentUser) {
-                setErrorMessage("팀과 선생님을 먼저 선택해주세요.");
-                setTimeout(() => setErrorMessage(""), 3000);
-                return;
-              }
-              onNavigateToMyWeeklySchedule();
-            }}
-            className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200'}`}
-          >
-            <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정
-          </button>
-
-          <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToDailySchedule(selectedTeam || '1팀'); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀별 오늘 일정
-          </button>
-
-          <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToTeamSchedule(selectedTeam || '1팀'); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
-          </button>
-          {errorMessage && <div className="text-red-600 font-bold text-center text-sm md:text-base -mt-2 -mb-2">{errorMessage}</div>}
-
-          <a href="https://docs.google.com/spreadsheets/d/1e4g_HIsmAQbLK8n0eMz_RGX3okou75tqKSSAkbWDsBk/edit?gid=936021842#gid=936021842" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg> 수업 희망자 및 기타 참여자 관리
-          </a>
-
-          <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><path d="M11 8a3 3 0 0 0-3 3" /></svg> 대상자 검색
-          </button>
-
-          <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 평생교육실2 사용 현황
-          </button>
-
-          <button onClick={() => { handleLogout(); onNavigateToNangmanStudio(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 낭만스튜디오 사용 현황
-          </button>
-
-          <button onClick={() => { handleLogout(); onNavigateToNoticeManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> 공지사항
-          </button>
-
-          <div className="flex justify-center items-center shrink-0 -my-1 sm:-my-1.5">
+          <div className="py-3 sm:py-4 flex justify-center items-center shrink-0 mt-1">
             <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
           </div>
 
-          <button onClick={() => { handleLogout(); onNavigateToTeacherManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
-          </button>
-
-          <button onClick={() => { handleLogout(); onNavigateToHolidayManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일/휴무일 관리
-          </button>
-
-          <button onClick={() => { handleLogout(); onNavigateToAutoSchedule(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
-            <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 작성
-          </button>
-        </div>
-
-        <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-          v260716-Gemini
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const [cy, cm, cd] = date.split('-');
-const selectedDateObj = new Date(parseInt(cy, 10), parseInt(cm, 10) - 1, parseInt(cd, 10));
-const currentSelectedHoliday = holidaysFullList.find(h => {
-  if (!h || !h.date) return false;
-  const rawDate = h.date.trim();
-  let holidayObj = null;
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(rawDate)) {
-    const [hy, hm, hd] = rawDate.split('-');
-    holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
-  } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(rawDate)) {
-    const [hy, hm, hd] = rawDate.split('/');
-    holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
-  } else if (/^\d{1,2}-\d{1,2}$/.test(rawDate)) {
-    const [hm, hd] = rawDate.split('-');
-    holidayObj = new Date(selectedDateObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
-  } else if (/^\d{1,2}\/\d{1,2}$/.test(rawDate)) {
-    const [hm, hd] = rawDate.split('/');
-    holidayObj = new Date(selectedDateObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
-  }
-  if (!holidayObj) return false;
-  return holidayObj.getTime() === selectedDateObj.getTime();
-});
-
-return (
-  <div className="min-h-[100dvh] bg-transparent font-sans pb-6">
-    <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-md z-20 relative flex justify-between items-center shrink-0 min-h-[70px]">
-      <div className="flex items-center">
-        <div className="flex flex-col">
-          <div className="flex items-center mb-1">
-            <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
-            <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
-          </div>
-          <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
-          <div className="text-base opacity-95 flex items-center mt-1 font-bold">
-            <User className="w-4 h-4 mr-1" /> [{selectedTeam}] {currentUser.replace(/\n/g, ' ')} 선생님
+          <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-[180px]">
             <button
-              onClick={() => setShowApiKeyModal(true)}
-              className="ml-2 p-1.5 -m-1.5 rounded-full hover:bg-white/20 active:scale-90 transition-all touch-manipulation"
-              title="API 키 설정"
+              onClick={() => {
+                if (!selectedTeam || !currentUser) {
+                  setErrorMessage("팀과 선생님을 먼저 선택해주세요.");
+                  setTimeout(() => setErrorMessage(""), 3000);
+                  return;
+                }
+                onNavigateToMyWeeklySchedule();
+              }}
+              className={`flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-black shadow-md transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px] ${(!selectedTeam || !currentUser) ? 'text-gray-400 bg-gray-100 border-2 border-gray-200 cursor-not-allowed' : 'text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200'}`}
             >
-              <Settings className="w-4 h-4" />
+              <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 나의 주간 일정
+            </button>
+
+            <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToDailySchedule(selectedTeam || '1팀'); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <CalendarClockIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 팀별 오늘 일정
+            </button>
+
+            <button onClick={() => { window.sessionStorage.removeItem('sungdong_daily_schedule_date'); onNavigateToTeamSchedule(selectedTeam || '1팀'); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(17px,4.5vw,24px)] md:text-[22px] lg:text-[24px] tracking-tight font-extrabold shadow-md text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 transition-all active:scale-95 touch-manipulation min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1.5 sm:mr-2" /> 전체 일정 보기/엑셀 다운로드
+            </button>
+            {errorMessage && <div className="text-red-600 font-bold text-center text-sm md:text-base -mt-2 -mb-2">{errorMessage}</div>}
+
+            <a href="https://docs.google.com/spreadsheets/d/1e4g_HIsmAQbLK8n0eMz_RGX3okou75tqKSSAkbWDsBk/edit?gid=936021842#gid=936021842" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg> 수업 희망자 및 기타 참여자 관리
+            </a>
+
+            <button onClick={onNavigateToStudentSearch} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><path d="M11 8a3 3 0 0 0-3 3" /></svg> 대상자 검색
+            </button>
+
+            <button onClick={() => { handleLogout(); onNavigateToClassroom(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 평생교육실2 사용 현황
+            </button>
+
+            <button onClick={() => { handleLogout(); onNavigateToNangmanStudio(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <PresentationIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 낭만스튜디오 사용 현황
+            </button>
+
+            <button onClick={() => { handleLogout(); onNavigateToNoticeManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-blue-900 bg-blue-100 border-2 border-blue-300 hover:bg-blue-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> 공지사항
+            </button>
+
+            <div className="flex justify-center items-center shrink-0 -my-1 sm:-my-1.5">
+              <VintageDivider className="w-4/5 h-6 sm:h-8 text-gray-500 opacity-60" />
+            </div>
+
+            <button onClick={() => { handleLogout(); onNavigateToTeacherManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <UsersIcon className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 선생님 명단 관리
+            </button>
+
+            <button onClick={() => { handleLogout(); onNavigateToHolidayManagement(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 공휴일/휴무일 관리
+            </button>
+
+            <button onClick={() => { handleLogout(); onNavigateToAutoSchedule(); }} className="flex-1 flex items-center justify-center w-full rounded-xl text-[clamp(15px,4.5vw,24px)] md:text-[20px] lg:text-[22px] tracking-tighter whitespace-nowrap px-2 font-extrabold text-red-900 bg-red-100 border-2 border-red-300 hover:bg-red-200 shadow-md touch-manipulation transition-all active:scale-95 min-h-[54px] sm:min-h-[58px] md:min-h-[64px]">
+              <LucideCalendar className="w-5 h-5 sm:w-8 sm:h-8 lg:w-7 lg:h-7 mr-1 sm:mr-2 shrink-0" /> 시간표 작성
             </button>
           </div>
+
+          <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
+            v260717
+          </div>
         </div>
       </div>
+    );
+  }
 
-      <button
-        onClick={(e) => {
-          if (isSubmitting) {
-            e.preventDefault();
-            alert("데이터 저장 중입니다. 잠시만 기다려주세요.");
-            return;
-          }
-          handleLogout();
-        }}
-        className={`text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation ${isSubmitting ? 'bg-blue-800 text-gray-400 opacity-60 cursor-not-allowed' : 'bg-blue-800 text-white opacity-90 active:scale-95'}`}
-      >
-        <Home className="w-5 h-5 mb-1" /> 처음으로
-      </button>
-    </header>
+  const [cy, cm, cd] = date.split('-');
+  const selectedDateObj = new Date(parseInt(cy, 10), parseInt(cm, 10) - 1, parseInt(cd, 10));
+  const currentSelectedHoliday = holidaysFullList.find(h => {
+    if (!h || !h.date) return false;
+    const rawDate = h.date.trim();
+    let holidayObj = null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(rawDate)) {
+      const [hy, hm, hd] = rawDate.split('-');
+      holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(rawDate)) {
+      const [hy, hm, hd] = rawDate.split('/');
+      holidayObj = new Date(parseInt(hy, 10), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    } else if (/^\d{1,2}-\d{1,2}$/.test(rawDate)) {
+      const [hm, hd] = rawDate.split('-');
+      holidayObj = new Date(selectedDateObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    } else if (/^\d{1,2}\/\d{1,2}$/.test(rawDate)) {
+      const [hm, hd] = rawDate.split('/');
+      holidayObj = new Date(selectedDateObj.getFullYear(), parseInt(hm, 10) - 1, parseInt(hd, 10));
+    }
+    if (!holidayObj) return false;
+    return holidayObj.getTime() === selectedDateObj.getTime();
+  });
 
-    <main
-      className="w-full max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto flex flex-col px-4 sm:px-6 md:px-8 pt-2 mt-1 pb-32"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      <section className="bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col h-auto animate-fadeIn">
-        <div className="bg-white px-5 pt-3 pb-2 relative rounded-t-2xl">
-          <h2 className="text-xl font-bold text-gray-800 mb-1 border-b pb-2 flex items-center justify-between">
-            <span className="flex items-center"><MainCalendarIcon className="w-5 h-5 mr-2 text-blue-500" /> 근무기록 입력</span>
-
-            <div className="flex items-center">
-              {(isDataLoading) ? (
-                <span className="text-sm sm:text-lg text-red-600 font-bold flex items-center animate-pulse tracking-tight">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />
-                  <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
-                  <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
-                </span>
-              ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && !currentSelectedHoliday && (
-                <button
-                  type="button"
-                  onClick={handleRepeatSchedule}
-                  className="text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation"
-                  title="현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
-                >
-                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
-                </button>
-              ))}
-            </div>
-          </h2>
+  return (
+    <div className="min-h-[100dvh] bg-transparent font-sans pb-6">
+      <header className="bg-blue-600 text-white px-4 pb-4 pt-safe-4 shadow-md z-20 relative flex justify-between items-center shrink-0 min-h-[70px]">
+        <div className="flex items-center">
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-md sm:max-w-xl mx-auto mb-1">
-              <button type="button" onClick={handlePrevDay} disabled={isDataLoading} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-gray-700 shrink-0 transition-all">
-                <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
-              </button>
-
-              <div className={`flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] border-blue-400 bg-[#f0f7ff] rounded-xl text-center shadow-sm overflow-hidden transition-all`}>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={handleDateChange}
-                  disabled={isDataLoading}
-                  onClick={(e) => {
-                    try {
-                      if (!isDataLoading && e.target.showPicker) e.target.showPicker();
-                    } catch (err) { }
-                  }}
-                  min={minDate || undefined}
-                  max={maxDate || undefined}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
-                  title="달력 열기"
-                />
-                <div className={`flex items-center justify-center pointer-events-none relative z-0 ${isDataLoading ? 'opacity-50' : ''} -translate-y-[1px] whitespace-nowrap px-1`}>
-                  <span className={`font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap`}>{parseInt(date.substring(5, 7), 10)}/{parseInt(date.substring(8, 10), 10)}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
-                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                    <line x1="16" x2="16" y1="2" y2="6" />
-                    <line x1="8" x2="8" y1="2" y2="6" />
-                    <line x1="3" x2="21" y1="10" y2="10" />
-                  </svg>
-                  <span className={`font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0`}>({getDayName(date)})</span>
-                </div>
-              </div>
-
-              <button type="button" onClick={handleTodayClick} disabled={isDataLoading} className="text-[13px] sm:text-[15px] px-3 sm:px-4 h-10 sm:h-12 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap shrink-0 transition-all">오늘</button>
-              <button type="button" onClick={handleNextDay} disabled={isDataLoading} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-gray-700 shrink-0 transition-all">
-                <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
-              </button>
+            <div className="flex items-center mb-1">
+              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
+              <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
             </div>
-            {errorMessage && <div className="text-red-600 font-bold text-base text-center pb-2">{errorMessage}</div>}
+            <p className="text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
+            <div className="text-base opacity-95 flex items-center mt-1 font-bold">
+              <User className="w-4 h-4 mr-1" /> [{selectedTeam}] {currentUser.replace(/\n/g, ' ')} 선생님
+            </div>
+          </div>
+        </div>
 
+        <button
+          onClick={(e) => {
+            if (isSubmitting) {
+              e.preventDefault();
+              alert("데이터 저장 중입니다. 잠시만 기다려주세요.");
+              return;
+            }
+            handleLogout();
+          }}
+          className={`text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation ${isSubmitting ? 'bg-blue-800 text-gray-400 opacity-60 cursor-not-allowed' : 'bg-blue-800 text-white opacity-90 active:scale-95'}`}
+        >
+          <Home className="w-5 h-5 mb-1" /> 처음으로
+        </button>
+      </header>
 
-            {isMissingHeadcount && !isDataLoading && (
-              <div className="mt-2 animate-fadeIn">
-                <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3 sm:p-4 text-red-800 shadow-sm flex items-center justify-center">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <p className="font-extrabold text-[15px] sm:text-[18px] text-red-700">
-                    교육 참석인원을 입력하세요.
-                  </p>
-                </div>
+      <main
+        className="w-full max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto flex flex-col px-4 sm:px-6 md:px-8 pt-2 mt-1 pb-32"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <section className="bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col h-auto animate-fadeIn">
+          <div className="bg-white px-5 pt-3 pb-2 relative rounded-t-2xl">
+            <h2 className="text-xl font-bold text-gray-800 mb-1 border-b pb-2 flex items-center justify-between">
+              <span className="flex items-center"><MainCalendarIcon className="w-5 h-5 mr-2 text-blue-500" /> 근무기록 입력</span>
+
+              <div className="flex items-center">
+                {(isDataLoading) ? (
+                  <span className="text-sm sm:text-lg text-red-600 font-bold flex items-center animate-pulse tracking-tight">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
+                    <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
+                  </span>
+                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && !currentSelectedHoliday && (
+                  <button
+                    type="button"
+                    onClick={handleRepeatSchedule}
+                    className="text-[15px] sm:text-[16px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold flex items-center whitespace-nowrap transition-all bg-orange-600 hover:bg-orange-700 text-white shadow-sm active:scale-95 touch-manipulation"
+                    title="현재의 학생이름과 장소를 이후의 동일 요일들에 복제합니다."
+                  >
+                    <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" /> 일정 복제
+                  </button>
+                ))}
               </div>
-            )}
+            </h2>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-md sm:max-w-xl mx-auto mb-1">
+                <button type="button" onClick={handlePrevDay} disabled={isDataLoading} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-gray-700 shrink-0 transition-all">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
+                </button>
 
-            {specialAlerts.length > 0 && (
-              <div className="mt-2 animate-fadeIn">
-                <div className="bg-orange-100 border-2 border-orange-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 text-gray-800 shadow-sm overflow-hidden">
-                  <div className="flex items-start gap-1.5 sm:gap-3 w-full">
-                    <div className="bg-orange-300 p-1 sm:p-1.5 rounded-lg shrink-0">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                    </div>
-                    <div className="flex flex-col gap-0.5 sm:gap-1 w-full min-w-0">
-                      <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight flex items-center gap-1 sm:gap-2">
-                        📅 주요 일정 안내
-                      </h4>
-                      <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
-                        {specialAlerts.map((alert, idx) => {
-                          // 3일 이내인 일정인지 확인합니다
-                          const isClose = alert.diffDays <= 3;
-                          return (
-                            <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${isClose ? '' : 'text-blue-700'}`}>
-                              <span className={isClose ? 'shine-text-top' : ''}>
-                                • {alert.msg}
-                              </span>
-                            </p>
-                          );
-                        })}
-                      </div>
-                    </div>
+                <div className={`flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] border-blue-400 bg-[#f0f7ff] rounded-xl text-center shadow-sm overflow-hidden transition-all`}>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={handleDateChange}
+                    disabled={isDataLoading}
+                    onClick={(e) => {
+                      try {
+                        if (!isDataLoading && e.target.showPicker) e.target.showPicker();
+                      } catch (err) { }
+                    }}
+                    min={minDate || undefined}
+                    max={maxDate || undefined}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
+                    title="달력 열기"
+                  />
+                  <div className={`flex items-center justify-center pointer-events-none relative z-0 ${isDataLoading ? 'opacity-50' : ''} -translate-y-[1px] whitespace-nowrap px-1`}>
+                    <span className={`font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap`}>{parseInt(date.substring(5, 7), 10)}/{parseInt(date.substring(8, 10), 10)}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                      <line x1="16" x2="16" y1="2" y2="6" />
+                      <line x1="8" x2="8" y1="2" y2="6" />
+                      <line x1="3" x2="21" y1="10" y2="10" />
+                    </svg>
+                    <span className={`font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0`}>({getDayName(date)})</span>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {!isDataLoading && isCurrentUser20DaysFalse && (
-              <div className="mt-2 animate-fadeIn">
-                <div className="bg-orange-100 border-2 border-orange-300 rounded-xl p-4 text-orange-800 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-orange-300 p-1.5 rounded-lg shrink-0">
-                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="font-bold text-[15px] sm:text-[17px] leading-snug break-keep text-orange-900">
-                      대체근무인 경우, 대상자 이름과 장소를 입력하고 화면 하단의 <span className="text-blue-700 font-extrabold">'데이터베이스에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
+                <button type="button" onClick={handleTodayClick} disabled={isDataLoading} className="text-[13px] sm:text-[15px] px-3 sm:px-4 h-10 sm:h-12 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap shrink-0 transition-all">오늘</button>
+                <button type="button" onClick={handleNextDay} disabled={isDataLoading} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-gray-700 shrink-0 transition-all">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
+                </button>
+              </div>
+              {errorMessage && <div className="text-red-600 font-bold text-base text-center pb-2">{errorMessage}</div>}
+
+
+              {isMissingHeadcount && !isDataLoading && (
+                <div className="mt-2 animate-fadeIn">
+                  <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3 sm:p-4 text-red-800 shadow-sm flex items-center justify-center">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="font-extrabold text-[15px] sm:text-[18px] text-red-700">
+                      교육 참석인원을 입력하세요.
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
 
-        <div className="px-5 pb-5 pt-3">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {(() => {
-              if (currentSelectedHoliday) {
-                return (
-                  <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 sm:p-8 text-center shadow-lg my-4 animate-fadeIn">
-                    <div className="flex justify-center mb-4">
-                      <div className="bg-red-100 p-3 rounded-full">
-                        <span className="text-4xl sm:text-5xl">
-                          {(() => {
-                            const text = `${currentSelectedHoliday.name || ''} ${currentSelectedHoliday.content1 || ''} ${currentSelectedHoliday.content2 || ''}`;
-                            if (/설날|추석|명절|한가위|설 연휴/.test(text)) return '🌕';
-                            if (/광복절|삼일절|3\.1절|개천절|제헌절|한글날/.test(text)) return <img src="/korea_flag.png" alt="태극기" className="h-[1em] w-auto inline-block align-middle drop-shadow-sm rounded-[2px]" />;
-                            if (/어린이날/.test(text)) return '🎈';
-                            if (/부처님|석가탄신일|초파일/.test(text)) return '🪷';
-                            if (/성탄절|크리스마스/.test(text)) return '🎄';
-                            if (/선거|투표/.test(text)) return '🗳️';
-                            if (/현충일/.test(text)) return '🕯️';
-                            if (/근로자의|노동절/.test(text)) return '💪';
-                            if (/간담회|회의/.test(text)) return '☕';
-                            if (/교육|워크숍/.test(text)) return '💡';
-                            if (/대체공휴일|임시공휴일|휴일|휴무/.test(text)) return '🏖️';
-                            return '💡';
-                          })()}
-                        </span>
+              {specialAlerts.length > 0 && (
+                <div className="mt-2 animate-fadeIn">
+                  <div className="bg-orange-100 border-2 border-orange-300 rounded-xl px-2 sm:px-4 py-3 sm:py-4 text-gray-800 shadow-sm overflow-hidden">
+                    <div className="flex items-start gap-1.5 sm:gap-3 w-full">
+                      <div className="bg-orange-300 p-1 sm:p-1.5 rounded-lg shrink-0">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div className="flex flex-col gap-0.5 sm:gap-1 w-full min-w-0">
+                        <h4 className="font-bold text-[16px] min-[360px]:text-[17px] sm:text-[20px] leading-tight flex items-center gap-1 sm:gap-2">
+                          📅 주요 일정 안내
+                        </h4>
+                        <div className="space-y-1 sm:space-y-1.5 mt-0.5 sm:mt-1">
+                          {specialAlerts.map((alert, idx) => {
+                            // 3일 이내인 일정인지 확인합니다
+                            const isClose = alert.diffDays <= 3;
+                            return (
+                              <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${isClose ? '' : 'text-blue-700'}`}>
+                                <span className={isClose ? 'shine-text-top' : ''}>
+                                  • {alert.msg}
+                                </span>
+                              </p>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                    <h3 className="text-2xl sm:text-3xl font-black text-red-700 mb-3 tracking-tight">
-                      {currentSelectedHoliday.name}
-                    </h3>
-                    {currentSelectedHoliday.content1 && (
-                      <p className="text-lg sm:text-xl font-bold text-red-600 mb-2 whitespace-pre-wrap">
-                        {currentSelectedHoliday.content1}
-                      </p>
-                    )}
-                    {currentSelectedHoliday.content2 && (
-                      <p className="text-[15px] sm:text-lg font-medium text-red-500 bg-white/50 inline-block px-4 py-2 rounded-xl border border-red-100 mt-2 whitespace-pre-wrap break-keep leading-snug">
-                        {currentSelectedHoliday.content2}
-                      </p>
-                    )}
                   </div>
-                );
-              }
+                </div>
+              )}
 
-              return (
-                <>
-                  <div className="space-y-7">
-                    {shifts.map((shift, index) => {
-                      const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || (selectedTeam !== '취업팀' && (!logs[index].location || !logs[index].location.trim()))) : true;
-                      const locLen = logs[index] && logs[index].location ? logs[index].location.length : 0;
+              {!isDataLoading && isCurrentUser20DaysFalse && (
+                <div className="mt-2 animate-fadeIn">
+                  <div className="bg-orange-100 border-2 border-orange-300 rounded-xl p-4 text-orange-800 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-orange-300 p-1.5 rounded-lg shrink-0">
+                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="font-bold text-[15px] sm:text-[17px] leading-snug break-keep text-orange-900">
+                        대체근무인 경우, 대상자 이름과 장소를 입력하고 화면 하단의 <span className="text-blue-700 font-extrabold">'데이터베이스에 저장하기'</span> 버튼을 누르면 수업을 추가할 수 있습니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-                      const locTextSize = locLen >= 9 ? "text-[15px] sm:text-[15px] md:text-[16px] landscape:text-[17px] md:landscape:text-[18px]" : locLen >= 8 ? "text-[16px] sm:text-[16px] md:text-[18px] landscape:text-[18px] md:landscape:text-[20px]" : locLen >= 7 ? "text-[17px] sm:text-[17px] md:text-[20px] landscape:text-[20px] md:landscape:text-[22px]" : locLen >= 6 ? "text-[18px] sm:text-[19px] md:text-[22px] landscape:text-[22px] md:landscape:text-[24px]" : "text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px]";
-
-                      const counts = studentCounts[index];
-                      const studentNames = logs[index] ? (logs[index].student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0) : [];
-                      const displayRowsCount = Math.max(1, studentNames.length);
-                      const isMultipleStudents = studentNames.length >= 2;
-
-                      const combinedText = logs[index] ? ((logs[index].student || "") + " " + (logs[index].location || "")) : "";
-                      const isKyungrodang = combinedText.includes("경로당");
-                      const isShowHeadcount = logs[index] ? ((logs[index].student || "").includes("보조강사") || isKyungrodang) : false;
-                      const isSpecialDay = logs[index] ? ((logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회")) : false;
-                      const cardColorClass = isSpecialDay ? 'bg-red-200 border-red-400' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
-
-                      const isFutureOrToday = date >= getLocalDateString(new Date());
-                      const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
-
-                      const allSelectedTags = (logs[index]?.selectedTags || []).flat().filter(Boolean);
-                      const hasAbsenceTag = allSelectedTags.includes("결석");
-                      const hasRedTag = allSelectedTags.includes("종료") || allSelectedTags.includes("취소");
-                      const hasGrayTag = allSelectedTags.includes("선생님휴가");
-                      let memoTextColorClass = "text-gray-900";
-                      if (hasAbsenceTag) {
-                        memoTextColorClass = "text-red-600";
-                      } else if (hasRedTag) {
-                        memoTextColorClass = "text-gray-500";
-                      } else if (hasGrayTag) {
-                        memoTextColorClass = "text-gray-500";
-                      }
-
-                      return (
-                        <div key={index} id={`log-card-${index}`} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
-                          <div className={`flex justify-between items-center w-full mb-2 sm:mb-3 transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
-                            <div className="flex items-center text-blue-700 font-bold text-lg sm:text-xl flex-wrap gap-y-1">
-                              <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" />
-                              <span className="shrink-0">
-                                {(() => {
-                                  const d = new Date(date);
-                                  const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-                                  if (selectedTeam === '취업팀' && day === '금') {
-                                    const mapping = { "13:00~14:00": "9:30~10:30", "14:00~15:00": "10:30~11:30", "15:00~16:00": "11:30~12:30" };
-                                    return mapping[shift] || shift;
-                                  }
-                                  return shift;
-                                })()}
-                              </span>
-
-                              {counts && counts.length > 0 && !logs[index].student?.includes("간담회") ? (
-                                <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
-                                  {counts.map((c, cIdx) => {
-                                    let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
-                                    if (c.count >= 15) sessionColorClass = "bg-orange-600 text-white border-orange-700 font-black shadow-inner";
-                                    else if (c.count >= 10) sessionColorClass = "bg-purple-900 text-white border-purple-950 font-black shadow-inner";
-                                    else if (c.count >= 7) sessionColorClass = "bg-purple-500 text-white border-purple-600 font-extrabold";
-
-                                    return (
-                                      <div key={cIdx} className="flex items-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => setSelectedStudentDates(c)}
-                                          className={`${sessionColorClass} border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:brightness-95 active:scale-95`}
-                                        >
-                                          {c.count}회차
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setSelectedStudentHistory(c)}
-                                          className="ml-1 bg-green-100 text-green-800 border-green-500 border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:bg-green-200 active:scale-95 font-bold"
-                                        >
-                                          이전교육
-                                        </button>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
-                            </div>
-
-                            {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (
-                              <button
-                                type="button"
-                                onClick={() => handleRepeatScheduleForShift(index)}
-                                className="ml-auto bg-orange-500 hover:bg-orange-600 text-white border border-orange-600 px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-95 font-bold"
-                              >
-                                복제
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
-                              <input
-                                type="text"
-                                placeholder="대상자 이름"
-                                value={logs[index].student}
-                                onChange={(e) => {
-                                  const newVal = e.target.value;
-                                  const prevStudent = logs[index]?.student || "";
-                                  const prevLocation = logs[index]?.location || "";
-                                  handleLogChange(index, 'student', newVal);
-                                  // 학생이름과 장소가 모두 블랭크인 상태에서 학생이름을 새로 입력할 때 장소를 '복지관'으로 자동 입력
-                                  if (!prevStudent.trim() && !prevLocation.trim() && newVal.trim()) {
-                                    handleLogChange(index, 'location', '복지관');
-                                  }
-                                  // 다른 선생님의 기록에서 출결/메모 동기화
-                                  if (newVal.trim() !== "") {
-                                    syncSiblingStatus(index, newVal);
-                                  }
-                                }}
-                                onBlur={handleInputBlur}
-                                disabled={isDataLoading}
-                                className={`flex-[1.5] min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border-2 rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student || (logs[index].student || '').includes('보조강사') ? 'caret-black' : 'caret-white'} ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : (logs[index].student || '').includes('보조강사') ? 'bg-[#FFFF00] text-black placeholder-gray-500 border-orange-400' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
-
-                              />
-                              <input
-                                type="text"
-                                placeholder="장소"
-                                value={logs[index].location}
-                                onChange={(e) => handleLogChange(index, 'location', e.target.value)}
-                                onBlur={handleInputBlur}
-                                onClick={() => {
-                                  const currentLoc = logs[index]?.location || "";
-                                  if (currentLoc === '복지관') {
-                                    handleLogChange(index, 'location', '낭만스튜디오');
-                                  } else if (currentLoc === '낭만스튜디오') {
-                                    handleLogChange(index, 'location', '복지관');
-                                  }
-                                }}
-                                disabled={isDataLoading}
-                                className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'caret-black' : 'caret-white'} ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
-                              />
-                            </div>
-
-                            {/* ✨ AI 교육 추천 버튼 */}
-                            {logs[index]?.student && logs[index].student.trim() !== '' && (() => {
-                              const rawStudentForAi = logs[index].student;
-                              const parsedForAi = rawStudentForAi.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-                              const firstRealStudent = parsedForAi.find(n => n.length > 0 && !n.includes('보조강사') && !n.includes('자체학습') && !n.includes('경로당') && !n.includes('복지관'));
-                              if (!firstRealStudent) return null;
-                              return (
-                                <div className="flex w-full !mt-2 !mb-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAiRecommend(index)}
-                                    disabled={isDataLoading || isInfoMissing}
-                                    className="w-full bg-violet-200 hover:bg-violet-300 text-violet-800 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm border border-violet-300 active:scale-[0.98] gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                                  >
-                                    <span className="text-[18px] sm:text-[20px]">✨</span>
-                                    오늘의 교육 토픽 추천
-                                  </button>
-                                </div>
-                              );
+          <div className="px-5 pb-5 pt-3">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {(() => {
+                if (currentSelectedHoliday) {
+                  return (
+                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 sm:p-8 text-center shadow-lg my-4 animate-fadeIn">
+                      <div className="flex justify-center mb-4">
+                        <div className="bg-red-100 p-3 rounded-full">
+                          <span className="text-4xl sm:text-5xl">
+                            {(() => {
+                              const text = `${currentSelectedHoliday.name || ''} ${currentSelectedHoliday.content1 || ''} ${currentSelectedHoliday.content2 || ''}`;
+                              if (/설날|추석|명절|한가위|설 연휴/.test(text)) return '🌕';
+                              if (/광복절|삼일절|3\.1절|개천절|제헌절|한글날/.test(text)) return <img src="/korea_flag.png" alt="태극기" className="h-[1em] w-auto inline-block align-middle drop-shadow-sm rounded-[2px]" />;
+                              if (/어린이날/.test(text)) return '🎈';
+                              if (/부처님|석가탄신일|초파일/.test(text)) return '🪷';
+                              if (/성탄절|크리스마스/.test(text)) return '🎄';
+                              if (/선거|투표/.test(text)) return '🗳️';
+                              if (/현충일/.test(text)) return '🕯️';
+                              if (/근로자의|노동절/.test(text)) return '💪';
+                              if (/간담회|회의/.test(text)) return '☕';
+                              if (/교육|워크숍/.test(text)) return '💡';
+                              if (/대체공휴일|임시공휴일|휴일|휴무/.test(text)) return '🏖️';
+                              return '💡';
                             })()}
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-black text-red-700 mb-3 tracking-tight">
+                        {currentSelectedHoliday.name}
+                      </h3>
+                      {currentSelectedHoliday.content1 && (
+                        <p className="text-lg sm:text-xl font-bold text-red-600 mb-2 whitespace-pre-wrap">
+                          {currentSelectedHoliday.content1}
+                        </p>
+                      )}
+                      {currentSelectedHoliday.content2 && (
+                        <p className="text-[15px] sm:text-lg font-medium text-red-500 bg-white/50 inline-block px-4 py-2 rounded-xl border border-red-100 mt-2 whitespace-pre-wrap break-keep leading-snug">
+                          {currentSelectedHoliday.content2}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
 
-                            {hasSiblingRecord(index, logs[index]?.student) && !isDataLoading && (
-                              <div className="flex w-full !mt-2 animate-fadeIn">
+                return (
+                  <>
+                    <div className="space-y-7">
+                      {shifts.map((shift, index) => {
+                        const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || (selectedTeam !== '취업팀' && (!logs[index].location || !logs[index].location.trim()))) : true;
+                        const locLen = logs[index] && logs[index].location ? logs[index].location.length : 0;
+
+                        const locTextSize = locLen >= 9 ? "text-[15px] sm:text-[15px] md:text-[16px] landscape:text-[17px] md:landscape:text-[18px]" : locLen >= 8 ? "text-[16px] sm:text-[16px] md:text-[18px] landscape:text-[18px] md:landscape:text-[20px]" : locLen >= 7 ? "text-[17px] sm:text-[17px] md:text-[20px] landscape:text-[20px] md:landscape:text-[22px]" : locLen >= 6 ? "text-[18px] sm:text-[19px] md:text-[22px] landscape:text-[22px] md:landscape:text-[24px]" : "text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px]";
+
+                        const counts = studentCounts[index];
+                        const studentNames = logs[index] ? (logs[index].student || "").split(/[/,]/).map(s => s.trim()).filter(s => s.length > 0) : [];
+                        const displayRowsCount = Math.max(1, studentNames.length);
+                        const isMultipleStudents = studentNames.length >= 2;
+
+                        const combinedText = logs[index] ? ((logs[index].student || "") + " " + (logs[index].location || "")) : "";
+                        const isKyungrodang = combinedText.includes("경로당");
+                        const isShowHeadcount = logs[index] ? ((logs[index].student || "").includes("보조강사") || isKyungrodang) : false;
+                        const isSpecialDay = logs[index] ? ((logs[index].student || "").includes("공휴일") || (logs[index].location || "").includes("공휴일") || (logs[index].student || "").includes("간담회") || (logs[index].location || "").includes("간담회")) : false;
+                        const cardColorClass = isSpecialDay ? 'bg-red-200 border-red-400' : isKyungrodang ? 'bg-orange-100 border-orange-400' : isMultipleStudents ? 'bg-green-100 border-green-400' : 'bg-blue-50/30 border-blue-300';
+
+                        const isFutureOrToday = date >= getLocalDateString(new Date());
+                        const hasAttendance = logs[index].selectedTags && logs[index].selectedTags.some(tArray => tArray && tArray.length > 0);
+
+                        const allSelectedTags = (logs[index]?.selectedTags || []).flat().filter(Boolean);
+                        const hasAbsenceTag = allSelectedTags.includes("결석");
+                        const hasRedTag = allSelectedTags.includes("종료") || allSelectedTags.includes("취소");
+                        const hasGrayTag = allSelectedTags.includes("선생님휴가");
+                        let memoTextColorClass = "text-gray-900";
+                        if (hasAbsenceTag) {
+                          memoTextColorClass = "text-red-600";
+                        } else if (hasRedTag) {
+                          memoTextColorClass = "text-gray-500";
+                        } else if (hasGrayTag) {
+                          memoTextColorClass = "text-gray-500";
+                        }
+
+                        return (
+                          <div key={index} id={`log-card-${index}`} className={`p-4 sm:p-5 md:p-6 border rounded-xl shadow-md ${cardColorClass}`}>
+                            <div className={`flex justify-between items-center w-full mb-2 sm:mb-3 transition-opacity ${(isDataLoading) ? 'opacity-50' : ''}`}>
+                              <div className="flex items-center text-blue-700 font-bold text-lg sm:text-xl flex-wrap gap-y-1">
+                                <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 shrink-0" />
+                                <span className="shrink-0">
+                                  {(() => {
+                                    const d = new Date(date);
+                                    const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+                                    if (selectedTeam === '취업팀' && day === '금') {
+                                      const mapping = { "13:00~14:00": "9:30~10:30", "14:00~15:00": "10:30~11:30", "15:00~16:00": "11:30~12:30" };
+                                      return mapping[shift] || shift;
+                                    }
+                                    return shift;
+                                  })()}
+                                </span>
+
+                                {counts && counts.length > 0 && !logs[index].student?.includes("간담회") ? (
+                                  <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
+                                    {counts.map((c, cIdx) => {
+                                      let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
+                                      if (c.count >= 15) sessionColorClass = "bg-orange-600 text-white border-orange-700 font-black shadow-inner";
+                                      else if (c.count >= 10) sessionColorClass = "bg-purple-900 text-white border-purple-950 font-black shadow-inner";
+                                      else if (c.count >= 7) sessionColorClass = "bg-purple-500 text-white border-purple-600 font-extrabold";
+
+                                      return (
+                                        <div key={cIdx} className="flex items-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedStudentDates(c)}
+                                            className={`${sessionColorClass} border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:brightness-95 active:scale-95`}
+                                          >
+                                            {c.count}회차
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedStudentHistory(c)}
+                                            className="ml-1 bg-green-100 text-green-800 border-green-500 border px-1.5 sm:px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:bg-green-200 active:scale-95 font-bold"
+                                          >
+                                            이전교육
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : null}
+                              </div>
+
+                              {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (
                                 <button
                                   type="button"
-                                  onClick={() => syncSiblingStatus(index, logs[index]?.student)}
-                                  className="w-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 text-blue-700 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm active:scale-[0.98]"
+                                  onClick={() => handleRepeatScheduleForShift(index)}
+                                  className="ml-auto bg-orange-500 hover:bg-orange-600 text-white border border-orange-600 px-2 py-0.5 rounded shadow-sm text-sm sm:text-base md:text-lg tracking-tighter whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-95 font-bold"
                                 >
-                                  <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                  오늘 수업내역 가져오기
+                                  복제
                                 </button>
-                              </div>
-                            )}
-
-                            <div className="space-y-1.5 !mt-3">
-                              {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
-                                return (
-                                  <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-1.5 pt-1.5 border-t border-dashed border-blue-200' : ''}`}>
-                                    <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
-                                      {RENDER_TAGS.map(tag => {
-                                        const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
-
-                                        const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
-                                        const currentStudentName = studentNames[sIdx] || "";
-                                        const hasRealName = currentStudentName.length > 0 && !currentStudentName.includes("경로당") && !currentStudentName.includes("복지관");
-                                        const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? (!hasRealName && tag === '1') : ['1', '결석', '종료'].includes(tag));
-
-                                        return (
-                                          <button
-                                            key={tag}
-                                            type="button"
-                                            onClick={() => toggleTag(index, sIdx, tag)}
-                                            disabled={isDataLoading || isInfoMissing || isBlurTarget}
-                                            className={
-                                              "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
-                                              fontSizeClass +
-                                              " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
-                                              (isBlurTarget
-                                                ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
-                                                : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
-                                            }
-                                          >
-                                            {tag === '1' ? '출석' : tag}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              )}
                             </div>
 
-                            <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
-                              {isShowHeadcount && (() => {
-                                const isHeadcountEmpty = !(logs[index]?.headcount || "").trim();
-                                const hasMemo = (logs[index]?.memo || "").trim() !== "";
-                                const hasExcusedAttendance = studentNames.some((_, sIdx) => {
-                                  const tags = (logs[index]?.selectedTags && logs[index].selectedTags[sIdx]) ? logs[index].selectedTags[sIdx] : [];
-                                  return tags.includes("결석") || (tags.includes("선생님휴가") && !tags.includes("1")) || tags.includes("종료");
-                                });
-                                const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty && !hasExcusedAttendance);
-
-                                return (
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength="2"
-                                    placeholder="인원"
-                                    value={logs[index]?.headcount || ""}
-                                    onChange={(e) => {
-                                      const val = e.target.value.replace(/[^0-9]/g, '');
-                                      handleLogChange(index, 'headcount', val);
-                                    }}
-                                    onBlur={handleInputBlur}
-                                    disabled={isDataLoading || isInfoMissing}
-                                    className={`w-12 md:w-14 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 caret-black ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
-                                  />
-                                );
-                              })()}
-                              <div className="relative flex-1 min-w-0 flex flex-col">
-                                <div
-                                  className={`absolute inset-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 font-bold ${memoTextColorClass} shadow-sm transition-all text-[18px] md:text-[22px] leading-tight whitespace-pre-wrap overflow-y-auto break-words z-0 pointer-events-none ${(isDataLoading || isInfoMissing) ? 'opacity-50' : ''}`}
-                                  aria-hidden="true"
-                                >
-                                  {!logs[index]?.memo ? (
-                                    <span className={(hasGrayTag || hasRedTag) ? "text-gray-500" : "text-gray-500"}>메모</span>
-                                  ) : (
-                                    logs[index].memo.split(/(\d+회차)/g).map((part, i) =>
-                                      /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
-                                    )
-                                  )}
-                                  {logs[index]?.memo?.endsWith('\n') && <br />}
-                                </div>
-                                <textarea
-                                  rows="3"
-                                  value={logs[index]?.memo || ""}
-                                  onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
-                                  onBlur={handleInputBlur}
-                                  onScroll={(e) => {
-                                    if (e.target.previousSibling) {
-                                      e.target.previousSibling.scrollTop = e.target.scrollTop;
+                            <div className="space-y-4">
+                              <div className="flex gap-1.5 sm:gap-3 lg:gap-4 items-stretch">
+                                <input
+                                  type="text"
+                                  placeholder="대상자 이름"
+                                  value={logs[index].student}
+                                  onChange={(e) => {
+                                    const newVal = e.target.value;
+                                    const prevStudent = logs[index]?.student || "";
+                                    const prevLocation = logs[index]?.location || "";
+                                    handleLogChange(index, 'student', newVal);
+                                    // 학생이름과 장소가 모두 블랭크인 상태에서 학생이름을 새로 입력할 때 장소를 '복지관'으로 자동 입력
+                                    if (!prevStudent.trim() && !prevLocation.trim() && newVal.trim()) {
+                                      handleLogChange(index, 'location', '복지관');
+                                    }
+                                    // 다른 선생님의 기록에서 출결/메모 동기화
+                                    if (newVal.trim() !== "") {
+                                      syncSiblingStatus(index, newVal);
                                     }
                                   }}
-                                  disabled={isDataLoading || isInfoMissing}
-                                  className={`block flex-1 w-full py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-transparent rounded-xl bg-transparent outline-none font-bold text-transparent placeholder-transparent shadow-none disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none caret-black z-10 relative m-0`}
-                                  spellCheck="false"
+                                  onBlur={handleInputBlur}
+                                  disabled={isDataLoading}
+                                  className={`flex-[1.5] min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border-2 rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] min-[360px]:text-[20px] sm:text-xl md:text-2xl landscape:text-[22px] md:landscape:text-[26px] leading-tight ${!logs[index].student || (logs[index].student || '').includes('보조강사') ? 'caret-black' : 'caret-white'} ${!logs[index].student ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : (logs[index].student || '').includes('보조강사') ? 'bg-[#FFFF00] text-black placeholder-gray-500 border-orange-400' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+
                                 />
+                                <input
+                                  type="text"
+                                  placeholder="장소"
+                                  value={logs[index].location}
+                                  onChange={(e) => handleLogChange(index, 'location', e.target.value)}
+                                  onBlur={handleInputBlur}
+                                  onClick={() => {
+                                    const currentLoc = logs[index]?.location || "";
+                                    if (currentLoc === '복지관') {
+                                      handleLogChange(index, 'location', '낭만스튜디오');
+                                    } else if (currentLoc === '낭만스튜디오') {
+                                      handleLogChange(index, 'location', '복지관');
+                                    }
+                                  }}
+                                  disabled={isDataLoading}
+                                  className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'caret-black' : 'caret-white'} ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
+                                />
+                              </div>
+
+
+                              {hasSiblingRecord(index, logs[index]?.student) && !isDataLoading && (
+                                <div className="flex w-full !mt-2 animate-fadeIn">
+                                  <button
+                                    type="button"
+                                    onClick={() => syncSiblingStatus(index, logs[index]?.student)}
+                                    className="w-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 text-blue-700 py-2 sm:py-2.5 rounded-xl font-extrabold text-[15px] sm:text-[17px] md:text-[19px] transition-all flex items-center justify-center shadow-sm active:scale-[0.98]"
+                                  >
+                                    <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    오늘 수업내역 가져오기
+                                  </button>
+                                </div>
+                              )}
+
+                              <div className="space-y-1.5 !mt-3">
+                                {Array.from({ length: displayRowsCount }).map((_, sIdx) => {
+                                  return (
+                                    <div key={sIdx} className={`flex flex-col w-full ${sIdx > 0 ? 'mt-1.5 pt-1.5 border-t border-dashed border-blue-200' : ''}`}>
+                                      <div className={`flex w-full justify-between gap-0.5 min-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 md:gap-3 ${sIdx === displayRowsCount - 1 ? 'pb-0' : 'pb-1'}`}>
+                                        {RENDER_TAGS.map(tag => {
+                                          const fontSizeClass = 'text-[13px] min-[340px]:text-[14px] min-[360px]:text-[15px] min-[380px]:text-[17px] sm:text-[18px] md:text-[20px] lg:text-[21px]';
+
+                                          const isKyungrodangIncluded = combinedText.includes("경로당") || combinedText.includes("도선복지관");
+                                          const currentStudentName = studentNames[sIdx] || "";
+                                          const hasRealName = currentStudentName.length > 0 && !currentStudentName.includes("경로당") && !currentStudentName.includes("복지관");
+                                          const isBlurTarget = isShowHeadcount && (isKyungrodangIncluded ? (!hasRealName && tag === '1') : ['1', '결석', '종료'].includes(tag));
+
+                                          return (
+                                            <button
+                                              key={tag}
+                                              type="button"
+                                              onClick={() => toggleTag(index, sIdx, tag)}
+                                              disabled={isDataLoading || isInfoMissing || isBlurTarget}
+                                              className={
+                                                "flex-1 flex flex-col items-center justify-center px-0 sm:px-2 py-0.5 sm:py-1 md:py-1.5 rounded-xl " +
+                                                fontSizeClass +
+                                                " leading-[1.15] tracking-tighter sm:tracking-normal transition-all touch-manipulation break-keep whitespace-nowrap " +
+                                                (isBlurTarget
+                                                  ? "bg-gray-100 text-gray-500 border-[1.5px] border-gray-300 blur-[1px] opacity-90 cursor-not-allowed"
+                                                  : "disabled:opacity-50 disabled:cursor-not-allowed " + getTagClass(index, sIdx, tag))
+                                              }
+                                            >
+                                              {tag === '1' ? '출석' : tag}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <div className="flex gap-1.5 w-full !mt-[10px] items-stretch">
+                                {isShowHeadcount && (() => {
+                                  const isHeadcountEmpty = !(logs[index]?.headcount || "").trim();
+                                  const hasMemo = (logs[index]?.memo || "").trim() !== "";
+                                  const hasExcusedAttendance = studentNames.some((_, sIdx) => {
+                                    const tags = (logs[index]?.selectedTags && logs[index].selectedTags[sIdx]) ? logs[index].selectedTags[sIdx] : [];
+                                    return tags.includes("결석") || (tags.includes("선생님휴가") && !tags.includes("1")) || tags.includes("종료");
+                                  });
+                                  const isSparkling = (validationErrorIndex === index) || (hasMemo && isHeadcountEmpty && !hasExcusedAttendance);
+
+                                  return (
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      maxLength="2"
+                                      placeholder="인원"
+                                      value={logs[index]?.headcount || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        handleLogChange(index, 'headcount', val);
+                                      }}
+                                      onBlur={handleInputBlur}
+                                      disabled={isDataLoading || isInfoMissing}
+                                      className={`w-12 md:w-14 px-0.5 text-center border border-sky-400 rounded-xl outline-none font-bold text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight shrink-0 caret-black ${isSparkling ? 'animate-sparkle border-red-500 shadow-md' : 'bg-sky-200 shadow-sm'}`}
+                                    />
+                                  );
+                                })()}
+                                <div className="relative flex-1 min-w-0 flex flex-col">
+                                  <div
+                                    className={`absolute inset-0 py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-gray-400 rounded-xl bg-pink-50 font-bold ${memoTextColorClass} shadow-sm transition-all text-[18px] md:text-[22px] leading-tight whitespace-pre-wrap overflow-y-auto break-words z-0 pointer-events-none ${(isDataLoading || isInfoMissing) ? 'opacity-50' : ''}`}
+                                    aria-hidden="true"
+                                  >
+                                    {!logs[index]?.memo ? (
+                                      <span className={(hasGrayTag || hasRedTag) ? "text-gray-500" : "text-gray-500"}>메모</span>
+                                    ) : (
+                                      logs[index].memo.split(/(\d+회차)/g).map((part, i) =>
+                                        /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
+                                      )
+                                    )}
+                                    {logs[index]?.memo?.endsWith('\n') && <br />}
+                                  </div>
+                                  <textarea
+                                    rows="3"
+                                    value={logs[index]?.memo || ""}
+                                    onChange={(e) => handleLogChange(index, 'memo', e.target.value)}
+                                    onBlur={handleInputBlur}
+                                    onScroll={(e) => {
+                                      if (e.target.previousSibling) {
+                                        e.target.previousSibling.scrollTop = e.target.scrollTop;
+                                      }
+                                    }}
+                                    disabled={isDataLoading || isInfoMissing}
+                                    className={`block flex-1 w-full py-2 sm:py-2.5 md:py-3 px-3 md:px-4 border border-transparent rounded-xl bg-transparent outline-none font-bold text-transparent placeholder-transparent shadow-none disabled:cursor-not-allowed transition-all text-[18px] md:text-[22px] leading-tight resize-none caret-black z-10 relative m-0`}
+                                    spellCheck="false"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isDataLoading || !hasChanges}
+                      onMouseDown={(e) => e.preventDefault()}
+                      className={`w-full py-4 md:py-5 mt-4 md:mt-6 mb-8 sm:mb-2 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-transform duration-150 active:scale-[0.98] flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}
+                    >
+                      {isSubmitting ? <><Clock className="w-6 h-6 mr-2 animate-spin" />저장 중...</> : <><SaveIcon className="w-6 h-6 mr-2" />데이터베이스에 저장</>}
+                    </button>
+                  </>
+                );
+              })()}
+            </form>
+          </div>
+        </section>
+      </main>
+
+      {showValidationError && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full overflow-hidden">
+            <div className="bg-red-500 py-4 px-6 text-center flex items-center justify-center gap-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              <h3 className="text-xl font-bold text-white tracking-wide">입력 확인</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-800 font-bold text-[17px] sm:text-[19px] mb-6 text-center leading-relaxed whitespace-pre-line">
+                {validationErrorMsg}
+              </p>
+              <button
+                onClick={() => {
+                  setShowValidationError(false);
+                  if (validationErrorIndex !== null) {
+                    setTimeout(() => {
+                      const el = document.getElementById(`log-card-${validationErrorIndex}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }, 100);
+                  }
+                }}
+                className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-[18px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSavePopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+            <div className="bg-blue-600 py-4 px-6 text-center">
+              <h3 className="text-2xl font-bold text-white tracking-wide">
+                {isSaveComplete ? "데이터 저장 완료" : "데이터베이스에 저장 중..."}
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="flex flex-col gap-4 mb-6 max-h-[50vh] overflow-y-auto pr-2">
+                {saveProgress.map((prog, idx) => {
+                  if (prog.isRepeat) {
+                    return (
+                      <div key={idx} className="flex justify-between items-center w-full pb-4 border-b border-dashed border-gray-200 last:border-0 last:pb-0">
+                        <div className="flex flex-col gap-1.5 flex-1 pr-2">
+                          <span className="text-blue-800 font-extrabold text-[19px] tracking-tight">
+                            <span className="text-gray-500 mr-1.5 font-bold text-[19px]">{prog.dateDisplay}</span>
+                            {prog.student}
+                          </span>
+                          <span className="text-indigo-600 font-bold text-lg leading-relaxed">
+                            {prog.timeDisplay}
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isDataLoading || !hasChanges}
-                    onMouseDown={(e) => e.preventDefault()}
-                    className={`w-full py-4 md:py-5 mt-4 md:mt-6 mb-8 sm:mb-2 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-transform duration-150 active:scale-[0.98] flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}
-                  >
-                    {isSubmitting ? <><Clock className="w-6 h-6 mr-2 animate-spin" />저장 중...</> : <><SaveIcon className="w-6 h-6 mr-2" />데이터베이스에 저장</>}
-                  </button>
-                </>
-              );
-            })()}
-          </form>
-        </div>
-      </section>
-    </main>
+                        <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
+                          {prog.status}
+                        </span>
+                      </div>
+                    );
+                  }
 
-    {showValidationError && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full overflow-hidden">
-          <div className="bg-red-500 py-4 px-6 text-center flex items-center justify-center gap-2">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-            <h3 className="text-xl font-bold text-white tracking-wide">입력 확인</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-800 font-bold text-[17px] sm:text-[19px] mb-6 text-center leading-relaxed whitespace-pre-line">
-              {validationErrorMsg}
-            </p>
-            <button
-              onClick={() => {
-                setShowValidationError(false);
-                if (validationErrorIndex !== null) {
-                  setTimeout(() => {
-                    const el = document.getElementById(`log-card-${validationErrorIndex}`);
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                  }, 100);
-                }
-              }}
-              className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-[18px] shadow-sm active:scale-95 touch-manipulation transition-colors"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+                  const att = prog.attendance || "";
+                  let attColor = "text-gray-700";
 
-    {showSavePopup && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-        <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
-          <div className="bg-blue-600 py-4 px-6 text-center">
-            <h3 className="text-2xl font-bold text-white tracking-wide">
-              {isSaveComplete ? "데이터 저장 완료" : "데이터베이스에 저장 중..."}
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="flex flex-col gap-4 mb-6 max-h-[50vh] overflow-y-auto pr-2">
-              {saveProgress.map((prog, idx) => {
-                if (prog.isRepeat) {
+                  // 출결 텍스트 색상을 설정할 때도, "쿠팡 취소" 등의 문구에 반응하지 않고 
+                  // 콤마나 슬래시로 명확히 분리된 상태일 때만 빨간색 등으로 표시되게 합니다.
+                  const isAbsentOrEnd = hasIndependentKeyword(att, ["결석", "종료", "취소"]);
+                  const isVacation = hasIndependentKeyword(att, ["선생님휴가"]);
+
+                  if (isAbsentOrEnd) {
+                    attColor = "text-red-600 font-bold";
+                  } else if (isVacation) {
+                    attColor = "text-gray-400 font-bold";
+                  }
+
                   return (
                     <div key={idx} className="flex justify-between items-center w-full pb-4 border-b border-dashed border-gray-200 last:border-0 last:pb-0">
                       <div className="flex flex-col gap-1.5 flex-1 pr-2">
                         <span className="text-blue-800 font-extrabold text-[19px] tracking-tight">
-                          <span className="text-gray-500 mr-1.5 font-bold text-[19px]">{prog.dateDisplay}</span>
                           {prog.student}
                         </span>
-                        <span className="text-indigo-600 font-bold text-lg leading-relaxed">
-                          {prog.timeDisplay}
+                        <span className={`text-lg font-bold break-all leading-relaxed ${attColor}`}>
+                          {prog.attendance}
                         </span>
+
                       </div>
                       <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
                         {prog.status}
                       </span>
                     </div>
                   );
-                }
+                })}
+              </div>
+              <button
+                onClick={() => setShowSavePopup(false)}
+                disabled={!isSaveComplete}
+                className={`w-full py-3 rounded-xl font-bold text-xl shadow-md transition-colors touch-manipulation ${isSaveComplete ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+              >
+                {isSaveComplete ? "확인" : "잠시만 기다려주세요..."}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-                const att = prog.attendance || "";
-                let attColor = "text-gray-700";
+      {showAssistantConflictModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[55] px-4">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+            <div className="bg-blue-500 py-4 px-6 text-center">
+              <h3 className="text-xl font-bold text-white tracking-wide">보조강사 일정 덮어쓰기 주의</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed">
+                현재 일정을 복제할 미래 날짜에<br />
+                <span className="bg-[#FFFF00] text-black px-1.5 py-0.5 rounded mx-1 whitespace-nowrap">보조강사</span><br />
+                일정이 있습니다. 복제하시겠습니까?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAssistantConflictProceed}
+                  className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                >
+                  예
+                </button>
+                <button
+                  onClick={() => setShowAssistantConflictModal(false)}
+                  className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                >
+                  아니오
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-                // 출결 텍스트 색상을 설정할 때도, "쿠팡 취소" 등의 문구에 반응하지 않고 
-                // 콤마나 슬래시로 명확히 분리된 상태일 때만 빨간색 등으로 표시되게 합니다.
-                const isAbsentOrEnd = hasIndependentKeyword(att, ["결석", "종료", "취소"]);
-                const isVacation = hasIndependentKeyword(att, ["선생님휴가"]);
-
-                if (isAbsentOrEnd) {
-                  attColor = "text-red-600 font-bold";
-                } else if (isVacation) {
-                  attColor = "text-gray-400 font-bold";
-                }
-
-                return (
-                  <div key={idx} className="flex justify-between items-center w-full pb-4 border-b border-dashed border-gray-200 last:border-0 last:pb-0">
-                    <div className="flex flex-col gap-1.5 flex-1 pr-2">
-                      <span className="text-blue-800 font-extrabold text-[19px] tracking-tight">
-                        {prog.student}
-                      </span>
-                      <span className={`text-lg font-bold break-all leading-relaxed ${attColor}`}>
-                        {prog.attendance}
-                      </span>
-
-                    </div>
-                    <span className={`text-base w-[100px] text-center font-bold py-1.5 rounded-md whitespace-nowrap shrink-0 border shadow-sm ${prog.status === '저장 완료' ? 'bg-green-600 border-green-700 text-white' : prog.status === '저장 실패' ? 'bg-red-50 border-red-200 text-red-700' : prog.status === '변경 없음' ? 'bg-gray-50 border-gray-200 text-gray-500' : 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse'}`}>
-                      {prog.status}
-                    </span>
+      {showRepeatConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+            <div className="bg-indigo-600 py-4 px-6 text-center">
+              <h3 className="text-xl font-bold text-white tracking-wide">확인해 주세요!</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-3 text-center leading-relaxed">
+                아래 <span className="text-indigo-600 text-[18px] sm:text-[20px]">{repeatTargetDates.length}</span>일 동안의 스케줄에<br />
+                {repeatMode === 'shift' && <span className="text-blue-600">해당 시간대({shifts[repeatShiftIndex]})의<br /></span>}
+                [학생이름]과 [장소]를<br />정말 복제할까요?
+              </p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 max-h-[25vh] overflow-y-auto">
+                {repeatTargetDates.map(obj => (
+                  <div key={obj.date} className="text-[16px] sm:text-[18px] font-bold text-blue-600 text-center py-2 border-b last:border-0 border-gray-200">
+                    <div className="text-indigo-800">- {obj.date} ({getDayName(obj.date)})</div>
+                    <div className="text-sm text-gray-500 font-normal mt-1">{obj.times.join(', ')}</div>
                   </div>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => setShowSavePopup(false)}
-              disabled={!isSaveComplete}
-              className={`w-full py-3 rounded-xl font-bold text-xl shadow-md transition-colors touch-manipulation ${isSaveComplete ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-            >
-              {isSaveComplete ? "확인" : "잠시만 기다려주세요..."}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showAssistantConflictModal && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[55] px-4">
-        <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
-          <div className="bg-blue-500 py-4 px-6 text-center">
-            <h3 className="text-xl font-bold text-white tracking-wide">보조강사 일정 덮어쓰기 주의</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed">
-              현재 일정을 복제할 미래 날짜에<br />
-              <span className="bg-[#FFFF00] text-black px-1.5 py-0.5 rounded mx-1 whitespace-nowrap">보조강사</span><br />
-              일정이 있습니다. 복제하시겠습니까?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleAssistantConflictProceed}
-                className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
-              >
-                예
-              </button>
-              <button
-                onClick={() => setShowAssistantConflictModal(false)}
-                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
-              >
-                아니오
-              </button>
+                ))}
+              </div>
+              <p className="text-red-600 text-[18px] sm:text-[20px] font-bold mb-6 text-center leading-tight">
+                ※ 주의: 기존의 출결기록과 메모는<br /> 모두 지워집니다.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRepeatConfirm(false)}
+                  className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={repeatMode === 'shift' ? executeRepeatScheduleForShiftFromModal : executeRepeatSchedule}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                >
+                  일정 복제 시작
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {showRepeatConfirm && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-        <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
-          <div className="bg-indigo-600 py-4 px-6 text-center">
-            <h3 className="text-xl font-bold text-white tracking-wide">확인해 주세요!</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-3 text-center leading-relaxed">
-              아래 <span className="text-indigo-600 text-[18px] sm:text-[20px]">{repeatTargetDates.length}</span>일 동안의 스케줄에<br />
-              {repeatMode === 'shift' && <span className="text-blue-600">해당 시간대({shifts[repeatShiftIndex]})의<br /></span>}
-              [학생이름]과 [장소]를<br />정말 복제할까요?
-            </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 max-h-[25vh] overflow-y-auto">
-              {repeatTargetDates.map(obj => (
-                <div key={obj.date} className="text-[16px] sm:text-[18px] font-bold text-blue-600 text-center py-2 border-b last:border-0 border-gray-200">
-                  <div className="text-indigo-800">- {obj.date} ({getDayName(obj.date)})</div>
-                  <div className="text-sm text-gray-500 font-normal mt-1">{obj.times.join(', ')}</div>
-                </div>
-              ))}
-            </div>
-            <p className="text-red-600 text-[18px] sm:text-[20px] font-bold mb-6 text-center leading-tight">
-              ※ 주의: 기존의 출결기록과 메모는<br /> 모두 지워집니다.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowRepeatConfirm(false)}
-                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={repeatMode === 'shift' ? executeRepeatScheduleForShiftFromModal : executeRepeatSchedule}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
-              >
-                일정 복제 시작
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
+      {selectedStudentHistory && (() => {
+        const history = [];
+        const realToday = new Date();
+        const realTodayStr = `${realToday.getFullYear()}-${String(realToday.getMonth() + 1).padStart(2, '0')}-${String(realToday.getDate()).padStart(2, '0')}`;
 
-    {selectedStudentHistory && (() => {
-      const history = [];
-      const realToday = new Date();
-      const realTodayStr = `${realToday.getFullYear()}-${String(realToday.getMonth() + 1).padStart(2, '0')}-${String(realToday.getDate()).padStart(2, '0')}`;
+        Object.keys(allScheduleData).forEach(dateStr => {
+          if (dateStr > realTodayStr) return;
 
-      Object.keys(allScheduleData).forEach(dateStr => {
-        if (dateStr > realTodayStr) return;
+          const dayData = allScheduleData[dateStr] || {};
+          Object.keys(dayData).forEach(shiftTime => {
+            const shiftData = dayData[shiftTime] || [];
+            const list = Array.isArray(shiftData) ? shiftData : [{ teacher: currentUser, ...shiftData }];
 
-        const dayData = allScheduleData[dateStr] || {};
-        Object.keys(dayData).forEach(shiftTime => {
-          const shiftData = dayData[shiftTime] || [];
-          const list = Array.isArray(shiftData) ? shiftData : [{ teacher: currentUser, ...shiftData }];
-
-          const records = list.filter(r => {
-            if (!r.student) return false;
-            const parsedNames = r.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-            return parsedNames.includes(selectedStudentHistory.name);
-          });
-
-          if (records.length > 0) {
-            const teacherNames = Array.from(new Set(records.map(r => r.teacher).filter(Boolean))).join(', ');
-
-            const memoGroups = {};
-            records.forEach(r => {
-              let statusStr = formatStatusIfDate(r.status) || "";
-              let memo = statusStr.replace(/\u200B/g, '').trim();
-              memo = memo.replace(/\r\n/g, '\n').split('\n').map(l => l.trimEnd()).join('\n').trim();
-
-              if (memo === "1") memo = "출석 (메모 없음)";
-              else if (!memo) memo = "내용 없음";
-
-              if (!memoGroups[memo]) memoGroups[memo] = [];
-              if (r.teacher) memoGroups[memo].push(r.teacher);
+            const records = list.filter(r => {
+              if (!r.student) return false;
+              const parsedNames = r.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+              return parsedNames.includes(selectedStudentHistory.name);
             });
 
-            let mergedMemo = "";
-            const uniqueMemos = Object.keys(memoGroups);
-            const isAbsent = uniqueMemos.some(memo => memo.includes("결석"));
+            if (records.length > 0) {
+              const teacherNames = Array.from(new Set(records.map(r => r.teacher).filter(Boolean))).join(', ');
 
-            if (isAbsent) {
-              mergedMemo = uniqueMemos.find(memo => memo.includes("결석"));
-            } else if (uniqueMemos.length === 1) {
-              mergedMemo = uniqueMemos[0];
-            } else {
-              mergedMemo = uniqueMemos.map(memo => {
-                const tNames = Array.from(new Set(memoGroups[memo])).join(', ');
-                return `[${tNames}] ${memo}`;
-              }).join('\n');
+              const memoGroups = {};
+              records.forEach(r => {
+                let statusStr = formatStatusIfDate(r.status) || "";
+                let memo = statusStr.replace(/\u200B/g, '').trim();
+                memo = memo.replace(/\r\n/g, '\n').split('\n').map(l => l.trimEnd()).join('\n').trim();
+
+                if (memo === "1") memo = "출석 (메모 없음)";
+                else if (!memo) memo = "내용 없음";
+
+                if (!memoGroups[memo]) memoGroups[memo] = [];
+                if (r.teacher) memoGroups[memo].push(r.teacher);
+              });
+
+              let mergedMemo = "";
+              const uniqueMemos = Object.keys(memoGroups);
+              const isAbsent = uniqueMemos.some(memo => memo.includes("결석"));
+
+              if (isAbsent) {
+                mergedMemo = uniqueMemos.find(memo => memo.includes("결석"));
+              } else if (uniqueMemos.length === 1) {
+                mergedMemo = uniqueMemos[0];
+              } else {
+                mergedMemo = uniqueMemos.map(memo => {
+                  const tNames = Array.from(new Set(memoGroups[memo])).join(', ');
+                  return `[${tNames}] ${memo}`;
+                }).join('\n');
+              }
+
+              history.push({
+                date: dateStr,
+                dayOfWeek: getDayName(dateStr),
+                shift: shiftTime,
+                memo: mergedMemo,
+                teacher: teacherNames
+              });
             }
-
-            history.push({
-              date: dateStr,
-              dayOfWeek: getDayName(dateStr),
-              shift: shiftTime,
-              memo: mergedMemo,
-              teacher: teacherNames
-            });
-          }
+          });
         });
-      });
 
-      history.sort((a, b) => {
-        if (b.date !== a.date) return b.date.localeCompare(a.date);
-        const getT = (s) => {
-          const match = s.match(/(\d+):(\d+)/);
-          return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
-        };
-        return getT(a.shift) - getT(b.shift);
-      });
+        history.sort((a, b) => {
+          if (b.date !== a.date) return b.date.localeCompare(a.date);
+          const getT = (s) => {
+            const match = s.match(/(\d+):(\d+)/);
+            return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
+          };
+          return getT(a.shift) - getT(b.shift);
+        });
 
-      return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentHistory(null)}>
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentHistory(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+              <div className="bg-green-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
+                <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentHistory.name}님의 이전 교육 기록</h3>
+                <button onClick={() => setSelectedStudentHistory(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-3 sm:p-4 overflow-y-auto space-y-3">
+                {history.map((h, idx) => {
+                  let cleanMemo = h.memo;
+
+                  const isAbsent = cleanMemo.includes("결석");
+                  const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
+
+                  return (
+                    <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
+                      <div className="text-sm font-bold text-gray-500 mb-1">
+                        {h.date} ({h.dayOfWeek}) <span className="text-gray-400 ml-1">{h.shift}</span>
+                        {h.teacher && <span className="text-indigo-600 ml-2 font-extrabold tracking-tight">[{h.teacher}]</span>}
+                      </div>
+                      <div className={`text-base sm:text-lg font-bold ${textColorClass} break-words whitespace-pre-wrap`}>{cleanMemo}</div>
+                    </div>
+                  );
+                })}
+                {history.length === 0 && (
+                  <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">이전 교육 기록이 없습니다.</div>
+                )}
+              </div>
+              <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0">
+                <button onClick={() => setSelectedStudentHistory(null)} className="px-4 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors active:scale-95 shadow-sm">닫기</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {selectedStudentDates && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentDates(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
-            <div className="bg-green-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentHistory.name}님의 이전 교육 기록</h3>
-              <button onClick={() => setSelectedStudentHistory(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
+            <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
+              <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
+              <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
                 <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
-            <div className="p-3 sm:p-4 overflow-y-auto space-y-3">
-              {history.map((h, idx) => {
-                let cleanMemo = h.memo;
-
-                const isAbsent = cleanMemo.includes("결석");
-                const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
-
-                return (
-                  <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
-                    <div className="text-sm font-bold text-gray-500 mb-1">
-                      {h.date} ({h.dayOfWeek}) <span className="text-gray-400 ml-1">{h.shift}</span>
-                      {h.teacher && <span className="text-indigo-600 ml-2 font-extrabold tracking-tight">[{h.teacher}]</span>}
+            <div className="p-3 sm:p-4 overflow-y-auto">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                {selectedStudentDates.dates.map((d, idx) => {
+                  const today = new Date();
+                  const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
+                  return (
+                    <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
+                      {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
-                    <div className={`text-base sm:text-lg font-bold ${textColorClass} break-words whitespace-pre-wrap`}>{cleanMemo}</div>
-                  </div>
-                );
-              })}
-              {history.length === 0 && (
-                <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">이전 교육 기록이 없습니다.</div>
+                  );
+                })}
+              </div>
+              {selectedStudentDates.dates.length === 0 && (
+                <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
               )}
             </div>
-            <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0">
-              <button onClick={() => setSelectedStudentHistory(null)} className="px-4 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors active:scale-95 shadow-sm">닫기</button>
-            </div>
           </div>
         </div>
-      );
-    })()}
+      )}
 
-    {selectedStudentDates && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentDates(null)}>
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
-          <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
-            <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
-            <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-          </div>
-          <div className="p-3 sm:p-4 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {selectedStudentDates.dates.map((d, idx) => {
-                const today = new Date();
-                const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
-                return (
-                  <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
-                    {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
-                  </div>
-                );
-              })}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
+            <div className="bg-blue-600 py-4 px-6 text-center">
+              <h3 className="text-xl font-bold text-white tracking-wide">저장 확인</h3>
             </div>
-            {selectedStudentDates.dates.length === 0 && (
-              <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
-    {/* ✨ AI 교육 추천 모달 */}
-    {aiRecommendModal && (
-      <div
-        className="fixed inset-0 z-[75] flex items-center justify-center animate-fadeIn"
-        style={{ background: 'rgba(0,0,0,0.65)' }}
-        onClick={() => { if (!aiRecommendModal.isLoading) setAiRecommendModal(null); }}
-      >
-        {/* 모달 컨테이너 — 내용물에 맞춰 크기가 조절되며 최대 90vh */}
-        <div
-          className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full mx-3 sm:max-w-lg sm:mx-4"
-          style={{ maxHeight: '90vh' }}
-          onClick={e => e.stopPropagation()}
-        >
-          {/* 헤더 — shrink-0으로 항상 고정 */}
-          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">✨</span>
-              <div>
-                <h3 className="text-white font-extrabold text-[17px] leading-tight">오늘의 교육 토픽 추천</h3>
-                <p className="text-violet-200 text-[14px] font-semibold mt-0.5">{aiRecommendModal.studentName}님 · {date}</p>
+            <div className="p-6">
+              <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed break-keep">
+                변경된 근무일지가 저장되지 않았습니다.<br />저장하시겠습니까?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleLogoutConfirmYes}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
+                >
+                  예
+                </button>
+                <button
+                  onClick={handleLogoutConfirmNo}
+                  className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
+                >
+                  아니오
+                </button>
               </div>
             </div>
-            <button onClick={() => setAiRecommendModal(null)} className="text-white/80 hover:text-white active:scale-90 p-1.5 -mr-1 transition-all touch-manipulation">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-          </div>
-
-          {/* 콘텐츠 — flex-basis가 auto여야 내용물 크기만큼 모달이 커짐. minHeight:0은 부모 max-h에 걸렸을 때 스크롤 가능하게 함 */}
-          <div className="overflow-y-auto p-4" style={{ minHeight: 0 }}>
-            {aiRecommendModal.isLoading && (
-              <div className="flex flex-col items-center justify-center h-full gap-4 py-10">
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin"></div>
-                  <span className="absolute inset-0 flex items-center justify-center text-xl">✨</span>
-                </div>
-                <p className="text-gray-600 font-bold text-[16px] text-center">
-                  {aiRecommendModal.retryInfo
-                    ? <span className="text-orange-500">{aiRecommendModal.retryInfo}</span>
-                    : <>
-                      과거 교육 이력을 분석하는 중...<br />
-                      <span className="text-violet-500 text-[14px]">Gemini AI가 추천을 생성하고 있습니다</span><br />
-                      <span className="text-gray-500 text-[13px] font-medium mt-2 inline-block">약 1분 정도 시간이 소요됩니다.</span>
-                    </>
-                  }
-                </p>
-              </div>
-            )}
-            {aiRecommendModal.error && !aiRecommendModal.isLoading && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <div className="text-red-600 font-bold text-[15px] leading-relaxed">
-                  {aiRecommendModal.error.split('\n').map((line, idx, arr) => {
-                    const isLimitText = line.includes('1일 무료 사용 한도(20회)');
-                    return (
-                      <span key={idx} className={isLimitText ? "block mb-1 mt-1" : ""}>
-                        {isLimitText ? (
-                          <span className="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md inline-block">{line}</span>
-                        ) : (
-                          line
-                        )}
-                        {idx < arr.length - 1 && !isLimitText && <br />}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {aiRecommendModal.result && !aiRecommendModal.isLoading && (
-              <div className="space-y-3">
-                <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-                  <div className="text-gray-800 font-bold text-[15px] leading-[1.75]">
-                    {aiRecommendModal.result.split('\n').map((line, idx) => {
-                      const trimmed = line.trim();
-                      if (!trimmed) return null;
-                      if (trimmed.match(/^\d+\.\s*📱/)) {
-                        return (
-                          <div key={idx} className={idx === 0 ? "mb-1.5" : "mt-6 mb-1.5"}>
-                            <span className="bg-sky-100 border border-sky-200 text-sky-900 px-2.5 py-1 rounded-md font-extrabold text-[16px] inline-block shadow-sm">
-                              {trimmed}
-                            </span>
-                          </div>
-                        );
-                      }
-                      return <p key={idx} className="ml-1 mb-1 break-keep">{trimmed}</p>;
-                    })}
-                  </div>
-                </div>
-                {aiRecommendModal.historyCount !== undefined && (
-                  <p className="text-gray-400 text-[12px] font-semibold text-right pb-1">
-                    총 {aiRecommendModal.historyCount}회 수업 완료{aiRecommendModal.absentCount > 0 && ` · 결석 ${aiRecommendModal.absentCount}회`} 분석 완료
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 하단 버튼 — 닫기만 */}
-          {!aiRecommendModal.isLoading && (
-            <div className="p-3 border-t bg-gray-50 shrink-0">
-              <button
-                onClick={() => setAiRecommendModal(null)}
-                className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[16px] active:scale-95 touch-manipulation transition-colors"
-              >
-                닫기
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    )}
-
-    {showApiKeyModal && (
-      <div className="fixed inset-0 z-[80] flex items-center justify-center animate-fadeIn" style={{ background: 'rgba(0,0,0,0.65)' }} onClick={() => setShowApiKeyModal(false)}>
-        <div className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full mx-3 sm:max-w-md p-6" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center gap-2 mb-4">
-            <Settings className="w-6 h-6 text-violet-600" />
-            <h3 className="text-gray-900 font-extrabold text-lg leading-tight">Gemini API 키 설정</h3>
-          </div>
-          <p className="text-m text-blue-700 mb-4 font-bold break-keep leading-relaxed">
-            오늘의 교육 토픽 추천을 받으려면 아래에 본인의 구글 Gemini API KEY를 입력해 주세요.
-          </p>
-          <input
-            type="text"
-            placeholder="AQzaSy..."
-            defaultValue={customApiKey}
-            autoFocus
-            className="w-full bg-blue-100 border border-blue-300 rounded-xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-violet-500 font-mono mb-6"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                const val = e.target.value.trim();
-                setSavedItem('custom_gemini_api_key', val);
-                setCustomApiKey(val);
-                setShowApiKeyModal(false);
-              }
-            }}
-            ref={(el) => {
-              if (el && !el.dataset.listenerAdded) {
-                el.dataset.listenerAdded = true;
-                el.onSave = () => {
-                  const val = el.value.trim();
-                  setSavedItem('custom_gemini_api_key', val);
-                  setCustomApiKey(val);
-                  setShowApiKeyModal(false);
-                };
-              }
-            }}
-            id="api-key-input"
-          />
-          <p className="text-sm text-gray-500 mb-4 font-semibold break-keep leading-relaxed bg-gray-100 p-3 rounded-lg">
-            💡 <span className="text-red-600 font-bold">아직 키가 없으신가요?</span><br /> <br />
-            <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">
-              https://aistudio.google.com/api-keys
-            </a>
-            <br />화면 우측 상단의 'API 키 만들기' 버튼을 눌러서 무료로 발급받을 수 있습니다.
-            <br ></br>
-            <br />API Key 발급방법은 <a href="https://youtube.com/shorts/65PfCSjkh_w?si=57LCS3WqXRRXi1sa" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">https://youtube.com/shorts/65PfCSjkh_w?si=57LCS3WqXRRXi1sa</a> 동영상을 참고하세요.
-          </p>
-          <div className="flex gap-2 w-full">
-            <button
-              onClick={() => setShowApiKeyModal(false)}
-              className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl active:scale-95 transition-all"
-            >
-              취소
-            </button>
-            <button
-              onClick={() => document.getElementById('api-key-input')?.onSave?.()}
-              className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl active:scale-95 transition-all"
-            >
-              저장
-            </button>
           </div>
         </div>
-      </div>
-    )}
-
-    {showLogoutConfirm && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] px-4">
-        <div className="bg-white rounded-2xl shadow-2xl flex flex-col max-w-sm w-full animate-fadeIn overflow-hidden">
-          <div className="bg-blue-600 py-4 px-6 text-center">
-            <h3 className="text-xl font-bold text-white tracking-wide">저장 확인</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-800 font-bold text-[18px] sm:text-[20px] mb-6 text-center leading-relaxed break-keep">
-              변경된 근무일지가 저장되지 않았습니다.<br />저장하시겠습니까?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleLogoutConfirmYes}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[18px] sm:text-[20px] shadow-md active:scale-95 touch-manipulation transition-colors"
-              >
-                예
-              </button>
-              <button
-                onClick={handleLogoutConfirmNo}
-                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-[18px] sm:text-[20px] shadow-sm active:scale-95 touch-manipulation transition-colors"
-              >
-                아니오
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
 }
