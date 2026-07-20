@@ -200,6 +200,67 @@ export default function MainApp({
 
   const [selectedStudentDates, setSelectedStudentDates] = useState(null);
   const [selectedStudentHistory, setSelectedStudentHistory] = useState(null);
+  const [studentHistoryLogs, setStudentHistoryLogs] = useState([]);
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+
+  useEffect(() => {
+    if (!selectedStudentHistory || !selectedStudentHistory.name) {
+      setStudentHistoryLogs([]);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchHistory = async () => {
+      setIsFetchingHistory(true);
+      try {
+        const studentName = selectedStudentHistory.name;
+        let allRecords = [];
+        let start = 0;
+        const limit = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: chunk, error: chunkErr } = await supabaseClient
+            .from('daily_logs')
+            .select('log_date, student, status, teacher, shift, team')
+            .ilike('student', `%${studentName}%`)
+            .range(start, start + limit - 1)
+            .order('log_date', { ascending: false });
+
+          if (chunkErr) throw chunkErr;
+
+          if (chunk && chunk.length > 0) {
+            allRecords = allRecords.concat(chunk);
+            if (chunk.length < limit) hasMore = false;
+            else start += limit;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        if (!isMounted) return;
+
+        // 정확한 학생 이름 필터링 (쉼표나 슬래시 분할 및 괄호 제거 고려)
+        const matchedLogs = allRecords.filter(row => {
+          if (!row.student) return false;
+          const parsedNames = row.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+          return parsedNames.includes(studentName);
+        });
+
+        setStudentHistoryLogs(matchedLogs);
+      } catch (err) {
+        console.error("이전 교육 기록 패치 실패:", err);
+      } finally {
+        if (isMounted) setIsFetchingHistory(false);
+      }
+    };
+
+    fetchHistory();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedStudentHistory]);
+
   const [shifts, setShifts] = useState(["9:30~10:30", "10:30~11:30", "11:30~12:30"]);
 
   const [weatherData, setWeatherData] = useState(null);
@@ -3539,19 +3600,26 @@ export default function MainApp({
         const realToday = new Date();
         const realTodayStr = `${realToday.getFullYear()}-${String(realToday.getMonth() + 1).padStart(2, '0')}-${String(realToday.getDate()).padStart(2, '0')}`;
 
-        Object.keys(allScheduleData).forEach(dateStr => {
+        // dateStr -> shiftTime -> records 형태로 그룹핑
+        const groupedByDateAndShift = {};
+        studentHistoryLogs.forEach(row => {
+          const dateStr = row.log_date;
           if (dateStr > realTodayStr) return;
 
-          const dayData = allScheduleData[dateStr] || {};
-          Object.keys(dayData).forEach(shiftTime => {
-            const shiftData = dayData[shiftTime] || [];
-            const list = Array.isArray(shiftData) ? shiftData : [{ teacher: currentUser, ...shiftData }];
+          const shiftTime = row.shift || "";
+          if (!groupedByDateAndShift[dateStr]) {
+            groupedByDateAndShift[dateStr] = {};
+          }
+          if (!groupedByDateAndShift[dateStr][shiftTime]) {
+            groupedByDateAndShift[dateStr][shiftTime] = [];
+          }
+          groupedByDateAndShift[dateStr][shiftTime].push(row);
+        });
 
-            const records = list.filter(r => {
-              if (!r.student) return false;
-              const parsedNames = r.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
-              return parsedNames.includes(selectedStudentHistory.name);
-            });
+        Object.keys(groupedByDateAndShift).forEach(dateStr => {
+          const dayData = groupedByDateAndShift[dateStr];
+          Object.keys(dayData).forEach(shiftTime => {
+            const records = dayData[shiftTime] || [];
 
             if (records.length > 0) {
               const teacherNames = Array.from(new Set(records.map(r => r.teacher).filter(Boolean))).join(', ');
@@ -3614,24 +3682,36 @@ export default function MainApp({
                 </button>
               </div>
               <div className="p-3 sm:p-4 overflow-y-auto space-y-3">
-                {history.map((h, idx) => {
-                  let cleanMemo = h.memo;
+                {isFetchingHistory ? (
+                  <div className="text-center text-gray-500 py-8 font-bold text-[16px] sm:text-[18px] flex flex-col items-center justify-center gap-2">
+                    <svg className="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>기록을 불러오는 중입니다...</span>
+                  </div>
+                ) : (
+                  <>
+                    {history.map((h, idx) => {
+                      let cleanMemo = h.memo;
 
-                  const isAbsent = cleanMemo.includes("결석");
-                  const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
+                      const isAbsent = cleanMemo.includes("결석");
+                      const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
 
-                  return (
-                    <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
-                      <div className="text-sm font-bold text-gray-500 mb-1">
-                        {h.date} ({h.dayOfWeek}) <span className="text-gray-400 ml-1">{h.shift}</span>
-                        {h.teacher && <span className="text-indigo-600 ml-2 font-extrabold tracking-tight">[{h.teacher}]</span>}
-                      </div>
-                      <div className={`text-base sm:text-lg font-bold ${textColorClass} break-words whitespace-pre-wrap`}>{cleanMemo}</div>
-                    </div>
-                  );
-                })}
-                {history.length === 0 && (
-                  <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">이전 교육 기록이 없습니다.</div>
+                      return (
+                        <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
+                          <div className="text-sm font-bold text-gray-500 mb-1">
+                            {h.date} ({h.dayOfWeek}) <span className="text-gray-400 ml-1">{h.shift}</span>
+                            {h.teacher && <span className="text-indigo-600 ml-2 font-extrabold tracking-tight">[{h.teacher}]</span>}
+                          </div>
+                          <div className={`text-base sm:text-lg font-bold ${textColorClass} break-words whitespace-pre-wrap`}>{cleanMemo}</div>
+                        </div>
+                      );
+                    })}
+                    {history.length === 0 && (
+                      <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">이전 교육 기록이 없습니다.</div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0">
