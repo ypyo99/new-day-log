@@ -95,8 +95,29 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
         }));
         setData(mappedRecords);
         const tSet = new Set();
-        getTeamTeacherNames(currentTeam).forEach(t => tSet.add(t));
-        records.forEach(r => { if (r.teacher) tSet.add(r.teacher); });
+        const [year, monthStr] = month.split('-');
+        const selFirstDay = `${month}-01`;
+        const selLastDayVal = new Date(parseInt(year), parseInt(monthStr), 0).getDate();
+        const selLastDay = `${month}-${String(selLastDayVal).padStart(2, '0')}`;
+
+        getGlobalTeachersList()
+          .filter(t => t.team === currentTeam)
+          .forEach(t => {
+            if (t.hire_date && selLastDay < t.hire_date) return;
+            if (t.resign_date && selFirstDay > t.resign_date) return;
+            tSet.add(t.name);
+          });
+
+        records.forEach(r => {
+          if (!r.teacher) return;
+          const tRec = getGlobalTeachersList().find(t => t.team === currentTeam && t.name === r.teacher);
+          if (tRec) {
+            if (tRec.hire_date && selLastDay < tRec.hire_date) return;
+            if (tRec.resign_date && selFirstDay > tRec.resign_date) return;
+          }
+          tSet.add(r.teacher);
+        });
+
         setUniqueTeachers(Array.from(tSet).sort((a, b) => {
           return getTeacherSortWeight(currentTeam, a) - getTeacherSortWeight(currentTeam, b);
         }));
@@ -807,10 +828,18 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
   const teacherShiftsMap = {};
 
+  const [selYear, selMonthStr] = selectedMonth.split('-');
+  const selFirstDay = `${selectedMonth}-01`;
+  const selLastDayVal = new Date(parseInt(selYear), parseInt(selMonthStr), 0).getDate();
+  const selLastDay = `${selectedMonth}-${String(selLastDayVal).padStart(2, '0')}`;
+
   getGlobalTeachersList()
     .filter(t => t.team === currentTeam && (teacherFilter === "전체" || t.name === teacherFilter))
     .forEach(rec => {
       if (rec.is_active === false && !inactiveTeachersWithRecordsUI.has(rec.name)) return;
+      if (rec.hire_date && selLastDay < rec.hire_date) return;
+      if (rec.resign_date && selFirstDay > rec.resign_date) return;
+
       const g = getTeacherGroup(currentTeam, rec.name);
       const shifts = [rec.shift1, rec.shift2, rec.shift3].map(s => (s || "").trim()).filter(Boolean);
       if (shifts.length === 0) {
@@ -836,6 +865,12 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
   filteredData.forEach(item => {
     if (currentTeam === "취업팀" && !isOfficialTeamTeacher("취업팀", item.teacher)) {
       return;
+    }
+
+    const tRec = getGlobalTeachersList().find(t => t.team === currentTeam && t.name === item.teacher);
+    if (tRec) {
+      if (tRec.hire_date && selLastDay < tRec.hire_date) return;
+      if (tRec.resign_date && selFirstDay > tRec.resign_date) return;
     }
 
     const key = `${item.teacher}::${item.shift}`;

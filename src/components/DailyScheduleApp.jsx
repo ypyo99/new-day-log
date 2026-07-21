@@ -13,7 +13,8 @@ import {
   getShiftWeight,
   getDirectImageUrl,
   getTeacherShifts,
-  getTeamTeacherNames
+  getTeamTeacherNames,
+  findTeacherRecord
 } from '../utils/helpers';
 import { Home, LucideCalendar, Clock, BookOpen, Sparkles } from './Icons';
 
@@ -461,7 +462,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       }
 
       const parsedData = [];
-      const teamTeachers = getTeamTeacherNames(teamName);
+      const teamTeachers = getTeamTeacherNames(teamName).filter(teacher => {
+        const tRec = findTeacherRecord(teamName, teacher);
+        if (!tRec) return true;
+        if (tRec.hire_date && dateStr < tRec.hire_date) return false;
+        if (tRec.resign_date && dateStr > tRec.resign_date) return false;
+        return true;
+      });
 
       teamTeachers.forEach(teacher => {
         const officialShifts = getTeacherShifts(teamName, teacher) || [];
@@ -481,6 +488,12 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       });
 
       records.forEach(r => {
+        const tRec = findTeacherRecord(teamName, r.teacher);
+        if (tRec) {
+          if (tRec.hire_date && dateStr < tRec.hire_date) return;
+          if (tRec.resign_date && dateStr > tRec.resign_date) return;
+        }
+
         const group = getTeacherGroup(teamName, r.teacher);
         const mappedTime = mapShiftToOfficial(teamName, r.teacher, r.shift);
 

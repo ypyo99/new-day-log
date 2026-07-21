@@ -107,7 +107,9 @@ export const formatTeacherRow = (t) => ({
   shift1: t.shift1 || '',
   shift2: t.shift2 || '',
   shift3: t.shift3 || '',
-  is_active: t.is_active !== false
+  is_active: t.is_active !== false,
+  hire_date: t.hire_date || null,
+  resign_date: t.resign_date || null
 });
 
 export const setGlobalTeachersList = (list) => {

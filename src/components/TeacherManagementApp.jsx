@@ -19,7 +19,9 @@ export default function TeacherManagementApp({ onNavigateBack }) {
     shift1: '9:30~10:30',
     shift2: '10:30~11:30',
     shift3: '11:30~12:30',
-    is_active: true
+    is_active: true,
+    hire_date: '2026-02-01',
+    resign_date: '2026-11-30'
   });
 
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -111,7 +113,9 @@ export default function TeacherManagementApp({ onNavigateBack }) {
       shift1: formData.shift1,
       shift2: formData.shift2,
       shift3: formData.shift3,
-      is_active: formData.is_active
+      is_active: formData.is_active,
+      hire_date: formData.hire_date || null,
+      resign_date: formData.resign_date || null
     };
 
     setIsLoading(true);
@@ -149,7 +153,9 @@ export default function TeacherManagementApp({ onNavigateBack }) {
       shift1: teacher.shift1 || '',
       shift2: teacher.shift2 || '',
       shift3: teacher.shift3 || '',
-      is_active: teacher.is_active !== false
+      is_active: teacher.is_active !== false,
+      hire_date: teacher.hire_date || '',
+      resign_date: teacher.resign_date || ''
     });
     setCurrentId(teacher.id);
     setIsEditing(true);
@@ -244,7 +250,7 @@ export default function TeacherManagementApp({ onNavigateBack }) {
                 </h2>
                 <div className="flex gap-2">
                   {isEditing && (
-                    <button type="button" onClick={() => { setIsEditing(false); setCurrentId(null); setFormData({ team: '1팀', group: '1조', seq_num: '', name: '', shift1: '9:30~10:30', shift2: '10:30~11:30', shift3: '11:30~12:30' }); }} className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors">
+                    <button type="button" onClick={() => { setIsEditing(false); setCurrentId(null); setFormData({ team: '1팀', group: '1조', seq_num: '', name: '', shift1: '9:30~10:30', shift2: '10:30~11:30', shift3: '11:30~12:30', is_active: true, hire_date: '2026-02-01', resign_date: '2026-11-30' }); }} className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors">
                       취소
                     </button>
                   )}
@@ -287,6 +293,16 @@ export default function TeacherManagementApp({ onNavigateBack }) {
                 <input type="checkbox" id="is_active" name="is_active" checked={formData.is_active} onChange={handleInputChange} className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" />
                 <label htmlFor="is_active" className="text-sm font-bold text-gray-700 select-none cursor-pointer">현재 재직 중 (체크 해제 시 메인 화면의 선생님 목록에서 숨김 처리됩니다)</label>
               </div>
+              <div className="grid grid-cols-2 gap-4 mt-2 px-1">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">입사일</label>
+                  <input type="date" name="hire_date" value={formData.hire_date || ''} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base text-black font-semibold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">퇴사일</label>
+                  <input type="date" name="resign_date" value={formData.resign_date || ''} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-1.5 sm:p-2 bg-gray-50 focus:ring-2 focus:ring-indigo-400 outline-none text-xs sm:text-base text-black font-semibold" />
+                </div>
+              </div>
             </form>
           </div>
         ) : (
@@ -307,6 +323,8 @@ export default function TeacherManagementApp({ onNavigateBack }) {
                   <th className="py-2.5 px-1 border-r border-gray-200 w-10 whitespace-nowrap">조</th>
                   <th className="py-2.5 px-1 border-r border-gray-200 w-12 whitespace-nowrap">번호</th>
                   <th className="py-2.5 px-2 border-r border-gray-200">이름</th>
+                  <th className="py-2.5 px-2 border-r border-gray-200 w-24 whitespace-nowrap">입사일</th>
+                  <th className="py-2.5 px-2 border-r border-gray-200 w-24 whitespace-nowrap">퇴사일</th>
                   {isAdmin && <th className="py-2.5 px-2 border-r border-gray-200">관리</th>}
                   <th className="py-2.5 px-2 border-r border-gray-200">시간대 1</th>
                   <th className="py-2.5 px-2 border-r border-gray-200">시간대 2</th>
@@ -333,6 +351,8 @@ export default function TeacherManagementApp({ onNavigateBack }) {
                         )}
                       </span>
                     </td>
+                    <td className="py-2 px-2 border-r border-gray-100 text-xs sm:text-sm text-gray-600">{t.hire_date || '-'}</td>
+                    <td className="py-2 px-2 border-r border-gray-100 text-xs sm:text-sm text-gray-600">{t.resign_date || '-'}</td>
                     {isAdmin && (
                       <td className="py-2 px-2 border-r border-gray-100 space-x-1 whitespace-nowrap">
                         <button onClick={() => handleEdit(t)} className="px-2 py-1 bg-blue-200 text-blue-800 text-xs font-bold rounded hover:bg-blue-300 mb-1 sm:mb-0">수정</button>
@@ -346,7 +366,7 @@ export default function TeacherManagementApp({ onNavigateBack }) {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={isAdmin ? 8 : 7} className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
+                    <td colSpan={isAdmin ? 10 : 9} className="py-6 text-gray-500 font-medium">등록된 선생님이 없습니다.</td>
                   </tr>
                 )}
               </tbody>
