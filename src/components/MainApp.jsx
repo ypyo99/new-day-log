@@ -1510,6 +1510,7 @@ export default function MainApp({
       const targetNameForHeadcount = studentNames.find(name => name.includes("보조강사") || name.includes("경로당"));
       const hasAssistant = studentNames.some(name => name.includes("보조강사"));
       const isBalGul = studentNames.some(name => name.includes("대상자발굴"));
+      const hasSelfStudy = studentNames.some(name => name.includes("자체학습"));
 
       const hc = (log.headcount || "").trim();
       const checkedCount = studentNames.filter((_, sIdx) => {
@@ -1538,7 +1539,7 @@ export default function MainApp({
         }
       }
 
-      if (!isFutureDate && studentNames.length >= 2 && !hasAssistant && !isBalGul && !isTeamMeeting) {
+      if (!isFutureDate && studentNames.length >= 2 && !hasAssistant && !isBalGul && !hasSelfStudy && !isTeamMeeting) {
         if (checkedCount > 0 && checkedCount < studentNames.length) {
           const displayNames = studentNames.join('/');
           setValidationErrorMsg(`${displayNames} 님의 출결 상태를 모두 체크해 주세요! (한 명만 체크할 수 없습니다.)`);
@@ -1549,7 +1550,7 @@ export default function MainApp({
         }
       }
 
-      if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && memo !== "" && !memo.replace(/\s+/g, '').includes("복지관으로이동") && !isTeamMeeting) {
+      if (!isFutureDate && studentNames.length > 0 && !hasAssistant && !isBalGul && !hasSelfStudy && memo !== "" && !memo.replace(/\s+/g, '').includes("복지관으로이동") && !isTeamMeeting) {
         if (!hasCheckedAttendance) {
           const displayNames = studentNames.join('/');
           const isKyungrodangEntry = displayNames.includes("경로당");
