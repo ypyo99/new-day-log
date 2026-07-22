@@ -102,7 +102,7 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
       if (!studentStr || studentStr === "-" || studentStr.includes("자체학습") || studentStr.includes("대상자발굴")) return;
 
       const statusStr = (row.status || "").trim();
-      if (statusStr.includes("복지관으로 이동")) return; // '선생님휴가' 제외 로직 제거
+      if (statusStr.includes("복지관으로 이동")) return;
 
       const studentNames = studentStr.split(/[/,]/).map(s => s.trim()).filter(Boolean);
       const statusParts = statusStr.includes('/') ? statusStr.split('/') : [statusStr];
@@ -210,102 +210,102 @@ function SummarySection({ data, date, team, onTouchStart, onTouchEnd }) {
 
   if (contents.length === 0 && (!attendanceStats || attendanceStats.total === 0)) {
     return (
-      <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-10 text-center animate-fadeIn">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-50 rounded-full mb-6">
-          <BookOpen className="w-10 h-10 text-gray-200" />
+      <div className="mt-6 sm:mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-10 text-center animate-fadeIn">
+        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-full mb-4 sm:mb-6">
+          <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-gray-200" />
         </div>
-        <h3 className="text-xl font-bold text-gray-400 mb-2">오늘 기록된 상세 교육 내용이 없습니다.</h3>
-        <p className="text-gray-400 text-base">서포터즈들의 활동 기록이 입력되면 AI 기반 요약이 자동으로 생성됩니다.</p>
+        <h3 className="text-lg sm:text-xl font-bold text-gray-400 mb-2">오늘 기록된 상세 교육 내용이 없습니다.</h3>
+        <p className="text-gray-400 text-sm sm:text-base">서포터즈들의 활동 기록이 입력되면 AI 기반 요약이 자동으로 생성됩니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 animate-fadeIn mb-0" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="mt-6 sm:mt-8 animate-fadeIn mb-0" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
-              <Sparkles className="w-7 h-7 text-white" />
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-white/20 p-2 sm:p-2.5 rounded-xl backdrop-blur-sm shrink-0">
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-black text-xl leading-tight">오늘의 교육 요약 & 인사이트</h3>
-              <p className="text-blue-100 text-sm font-medium opacity-90">{team} 활동 보고</p>
+              <h3 className="text-white font-black text-lg sm:text-xl leading-tight">오늘의 교육 요약 & 인사이트</h3>
+              <p className="text-blue-100 text-xs sm:text-sm font-medium opacity-90">{team} 활동 보고</p>
             </div>
           </div>
-          <div className="hidden sm:block bg-blue-500/30 px-3 py-1 rounded-full border border-white/20 text-white text-xs font-bold uppercase tracking-wider">
+          <div className="self-start sm:self-auto bg-blue-500/30 px-3 py-1 rounded-full border border-white/20 text-white text-xs font-bold uppercase tracking-wider">
             AI Analytics
           </div>
         </div>
 
-        <div className="p-6 md:p-8">
+        <div className="p-4 sm:p-6 md:p-8">
           {attendanceStats && (
-            <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-blue-600 text-xs font-black mb-1 uppercase tracking-wider">전체 학생</span>
-                <span className="text-2xl font-black text-blue-900">{attendanceStats.total}명</span>
+            <div className="mb-6 sm:mb-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+              <div className="bg-blue-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100 flex flex-col items-center justify-center shadow-sm text-center">
+                <span className="text-blue-600 text-[11px] sm:text-xs font-black mb-0.5 sm:mb-1 uppercase tracking-wider">전체 학생</span>
+                <span className="text-xl sm:text-2xl font-black text-blue-900">{attendanceStats.total}명</span>
               </div>
-              <div className="bg-green-50 rounded-2xl p-4 border border-green-100 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-green-600 text-xs font-black mb-1 uppercase tracking-wider">출석 완료</span>
-                <span className="text-2xl font-black text-green-900">{attendanceStats.attended}명</span>
+              <div className="bg-green-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-green-100 flex flex-col items-center justify-center shadow-sm text-center">
+                <span className="text-green-600 text-[11px] sm:text-xs font-black mb-0.5 sm:mb-1 uppercase tracking-wider">출석 완료</span>
+                <span className="text-xl sm:text-2xl font-black text-green-900">{attendanceStats.attended}명</span>
               </div>
-              <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-red-600 text-xs font-black mb-1 uppercase tracking-wider">결석/종료/휴가</span>
-                <span className="text-2xl font-black text-red-900">{attendanceStats.absent}/{attendanceStats.canceled}/{attendanceStats.vacation}명</span>
+              <div className="bg-red-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-red-100 flex flex-col items-center justify-center shadow-sm text-center">
+                <span className="text-red-600 text-[11px] sm:text-xs font-black mb-0.5 sm:mb-1 uppercase tracking-wider">결석/종료/휴가</span>
+                <span className="text-base sm:text-2xl font-black text-red-900">{attendanceStats.absent}/{attendanceStats.canceled}/{attendanceStats.vacation}명</span>
               </div>
-              <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-purple-600 text-xs font-black mb-1 uppercase tracking-wider">출석률</span>
-                <span className="text-2xl font-black text-purple-900">{attendanceStats.rate}%</span>
+              <div className="bg-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-purple-100 flex flex-col items-center justify-center shadow-sm text-center">
+                <span className="text-purple-600 text-[11px] sm:text-xs font-black mb-0.5 sm:mb-1 uppercase tracking-wider">출석률</span>
+                <span className="text-xl sm:text-2xl font-black text-purple-900">{attendanceStats.rate}%</span>
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-0">
-            <div className="space-y-5">
-              <h4 className="font-black text-gray-800 flex items-center gap-2 text-lg">
-                <div className="w-2 h-7 bg-blue-500 rounded-full"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-0">
+            <div className="space-y-4 sm:space-y-5">
+              <h4 className="font-black text-gray-800 flex items-center gap-2 text-base sm:text-lg">
+                <div className="w-1.5 sm:w-2 h-6 sm:h-7 bg-blue-500 rounded-full"></div>
                 핵심 교육 테마
               </h4>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2 sm:gap-2.5">
                 {categorized.map((t, i) => (
-                  <div key={i} className={`px-4 py-2.5 rounded-2xl border-2 font-bold text-sm flex items-center gap-2.5 shadow-sm transition-all hover:scale-105 ${t.color}`}>
-                    <span className="text-lg">{t.icon}</span>
+                  <div key={i} className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border-2 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all hover:scale-105 ${t.color}`}>
+                    <span className="text-base sm:text-lg">{t.icon}</span>
                     {t.name}
-                    <span className="bg-white/60 px-2 py-0.5 rounded-lg text-xs border border-current/10">{t.items.length}건</span>
+                    <span className="bg-white/60 px-1.5 sm:px-2 py-0.5 rounded-lg text-[11px] sm:text-xs border border-current/10">{t.items.length}건</span>
                   </div>
                 ))}
                 {uncategorized.length > 0 && (
-                  <div className="px-4 py-2.5 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-700 font-bold text-sm flex items-center gap-2.5 shadow-sm">
-                    <span className="text-lg">📝</span> 기타 실습
-                    <span className="bg-white/60 px-2 py-0.5 rounded-lg text-xs border border-gray-200">{uncategorized.length}건</span>
+                  <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-700 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm">
+                    <span className="text-base sm:text-lg">📝</span> 기타 실습
+                    <span className="bg-white/60 px-1.5 sm:px-2 py-0.5 rounded-lg text-[11px] sm:text-xs border border-gray-200">{uncategorized.length}건</span>
                   </div>
                 )}
                 {categorized.length === 0 && uncategorized.length === 0 && (
-                  <div className="px-4 py-2.5 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-bold text-sm flex items-center shadow-sm w-full justify-center">
+                  <div className="px-4 py-2.5 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-bold text-xs sm:text-sm flex items-center shadow-sm w-full justify-center">
                     기록된 상세 교육 내용(메모)이 없습니다.
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="space-y-5">
-              <h4 className="font-black text-gray-800 flex items-center gap-2 text-lg">
-                <div className="w-2 h-7 bg-indigo-500 rounded-full"></div>
+            <div className="space-y-4 sm:space-y-5">
+              <h4 className="font-black text-gray-800 flex items-center gap-2 text-base sm:text-lg">
+                <div className="w-1.5 sm:w-2 h-6 sm:h-7 bg-indigo-500 rounded-full"></div>
                 오늘의 인사이트
               </h4>
               {dynamicInsights.length > 0 ? (
-                <div className="bg-indigo-50/50 rounded-2xl p-5 border-2 border-indigo-100 shadow-inner">
-                  <ul className="space-y-4">
+                <div className="bg-indigo-50/50 rounded-2xl p-4 sm:p-5 border-2 border-indigo-100 shadow-inner">
+                  <ul className="space-y-3 sm:space-y-4">
                     {dynamicInsights.map((insight, i) => (
-                      <li key={i} className="flex gap-3 text-[15px] md:text-[16px] text-gray-700 leading-relaxed">
-                        <span className="text-indigo-500 mt-1.5 font-black shrink-0">●</span>
+                      <li key={i} className="flex gap-2.5 sm:gap-3 text-sm sm:text-base text-gray-700 leading-relaxed">
+                        <span className="text-indigo-500 mt-1 font-black shrink-0">●</span>
                         <p className="font-medium" dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<span class="text-indigo-800 font-extrabold">$1</span>') }}></p>
                       </li>
                     ))}
                   </ul>
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 text-gray-500 text-center font-medium">
+                <div className="bg-gray-50 rounded-2xl p-4 sm:p-5 border border-gray-200 text-gray-500 text-center font-medium text-sm sm:text-base">
                   인사이트를 분석할 충분한 데이터가 없습니다.
                 </div>
               )}
@@ -870,27 +870,27 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
   return (
     <div className="min-h-[100dvh] flex flex-col bg-transparent font-sans text-gray-800 overflow-y-auto">
       <div className="shrink-0 bg-[#2b5ce6] text-white shadow-md z-40 relative">
-        <div className="max-w-5xl mx-auto px-4 pb-4 pt-safe-4 flex justify-between items-start">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3.5 pt-safe-4 flex justify-between items-center">
           <div>
-            <div className="flex items-center mb-1">
-              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-7 bg-white px-2 py-1 rounded-md object-contain mr-2" onError={(e) => e.target.style.display = 'none'} />
-              <h1 className="font-black text-xl leading-tight">성동노인종합복지관</h1>
+            <div className="flex items-center mb-0.5 sm:mb-1">
+              <img src="/Logo_of_Seoul.jpg" alt="서울시 로고" className="h-5 sm:h-7 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md object-contain mr-1.5 sm:mr-2" onError={(e) => e.target.style.display = 'none'} />
+              <h1 className="font-black text-lg sm:text-xl md:text-2xl leading-tight">성동노인종합복지관</h1>
             </div>
-            <p className="text-lg font-bold text-yellow-300 mb-1">디지털교육 서포터즈</p>
+            <p className="text-xs sm:text-base md:text-lg font-bold text-yellow-300">디지털교육 서포터즈</p>
           </div>
-          <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95">
-            <Home className="w-5 h-5 mb-1" /> 처음으로
+          <button onClick={onNavigateBack} className="text-xs flex flex-col items-center font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95 shrink-0">
+            <Home className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" /> 처음으로
           </button>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col pb-0">
-        <div className="max-w-5xl w-full mx-auto flex-1 flex flex-col p-3 md:p-6 pb-0 mt-2">
+        <div className="max-w-5xl w-full mx-auto flex-1 flex flex-col p-2 sm:p-4 md:p-6 pb-0 mt-1 sm:mt-2">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
-            <div className="shrink-0 z-30 bg-white px-4 md:px-6 pt-4 md:pt-6 pb-4 shadow-[0_4px_10px_-2px_rgba(0,0,0,0.1)] relative">
-              <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-0 border-b border-gray-100 pb-0.5 w-full">
-                <h2 className="text-[16px] min-[360px]:text-[18px] landscape:text-[22px] md:text-xl font-bold flex items-center gap-1 md:gap-2 text-gray-800 whitespace-nowrap min-w-0 tracking-tighter sm:tracking-normal">
-                  <LucideCalendar className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
+            <div className="shrink-0 z-30 bg-white px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6 pb-3 sm:pb-4 shadow-[0_4px_10px_-2px_rgba(0,0,0,0.1)] relative">
+              <div className="flex flex-row items-center justify-between gap-2 mb-2 border-b border-gray-100 pb-2 sm:pb-3 w-full">
+                <h2 className="text-sm min-[360px]:text-base sm:text-lg md:text-xl font-bold flex items-center gap-1 sm:gap-2 text-gray-800 whitespace-nowrap tracking-tight shrink-0">
+                  <LucideCalendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 shrink-0" />
                   오늘의 수업 일정
                 </h2>
 
@@ -899,30 +899,30 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                     <button key={team} onClick={() => {
                       setSelectedTeam(team);
                       if (onTeamChange) onTeamChange(team);
-                    }} className={`px-1 min-[360px]:px-2 md:px-4 py-1 md:py-1.5 border-r border-gray-300 text-[11px] min-[360px]:text-[13px] landscape:text-[18px] md:text-lg font-semibold tracking-tighter transition last:border-r-0 ${selectedTeam === team ? 'bg-[#2b5ce6] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                    }} className={`px-1.5 min-[360px]:px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 border-r border-gray-300 text-xs sm:text-sm md:text-base font-bold text-center tracking-tight transition last:border-r-0 ${selectedTeam === team ? 'bg-[#2b5ce6] text-white shadow-inner' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
                       {team}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="text-center min-h-[18px] mt-0 mb-0.5 flex items-center justify-center">
+              <div className="text-center min-h-[18px] my-1 flex items-center justify-center">
                 {isLoading ? (
-                  <div className="flex items-center justify-center text-[#DC2626] font-bold text-sm md:text-base animate-pulse tracking-tight">
-                    <Clock className="w-5 h-5 md:w-6 md:h-6 mr-1.5 animate-spin" />
+                  <div className="flex items-center justify-center text-[#DC2626] font-bold text-xs sm:text-sm md:text-base animate-pulse tracking-tight">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1.5 animate-spin" />
                     최신 데이터 확인 중...
                   </div>
                 ) : notice ? (
-                  <span className="text-red-500 text-sm md:text-base font-bold">{notice}</span>
+                  <span className="text-red-500 text-xs sm:text-sm md:text-base font-bold">{notice}</span>
                 ) : null}
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-md mx-auto">
-                <button onClick={() => handleDateChange(-1)} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
-                  <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full max-w-md mx-auto">
+                <button onClick={() => handleDateChange(-1)} title="이전 날짜" className="w-9 sm:w-11 h-9 sm:h-11 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" /></svg>
                 </button>
 
-                <div className="flex-1 h-10 sm:h-12 relative flex items-center justify-center border-[1.5px] border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm overflow-hidden transition-all">
+                <div className="flex-1 h-9 sm:h-11 relative flex items-center justify-center border-[1.5px] border-blue-400 rounded-xl bg-[#f0f7ff] text-center shadow-sm overflow-hidden transition-all">
                   <input
                     type="date"
                     value={datePickerValue}
@@ -935,27 +935,27 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     title="달력 열기"
                   />
-                  <div className={`flex items-center justify-center pointer-events-none relative z-0 -translate-y-[1px] whitespace-nowrap px-1`}>
-                    <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] landscape:text-[22px] sm:text-[20px] tracking-tighter whitespace-nowrap">{currentDisplayDate.getMonth() + 1}/{currentDisplayDate.getDate()}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 sm:mx-1.5 w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                  <div className="flex items-center justify-center pointer-events-none relative z-0 whitespace-nowrap px-1">
+                    <span className="font-extrabold text-[#1e3a8a] text-sm sm:text-base md:text-lg tracking-tight whitespace-nowrap">{currentDisplayDate.getMonth() + 1}/{currentDisplayDate.getDate()}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mx-1 w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0">
                       <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
                       <line x1="16" x2="16" y1="2" y2="6" />
                       <line x1="8" x2="8" y1="2" y2="6" />
                       <line x1="3" x2="21" y1="10" y2="10" />
                     </svg>
-                    <span className="font-extrabold text-[#1e3a8a] text-[15px] min-[360px]:text-[17px] landscape:text-[22px] sm:text-[20px] tracking-tighter whitespace-nowrap shrink-0">({day})</span>
+                    <span className="font-extrabold text-[#1e3a8a] text-sm sm:text-base md:text-lg tracking-tight whitespace-nowrap shrink-0">({day})</span>
                   </div>
                 </div>
 
-                <button onClick={handleToday} className="text-[13px] sm:text-[15px] px-3 sm:px-4 h-10 sm:h-12 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 touch-manipulation whitespace-nowrap shrink-0 transition-all">오늘</button>
-                <button onClick={() => handleDateChange(1)} className="w-10 sm:w-12 h-10 sm:h-12 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
-                  <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
+                <button onClick={handleToday} className="text-xs sm:text-sm px-2.5 sm:px-4 h-9 sm:h-11 border border-blue-600 rounded-xl font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 active:scale-95 touch-manipulation whitespace-nowrap shrink-0 transition-all">오늘</button>
+                <button onClick={() => handleDateChange(1)} title="다음 날짜" className="w-9 sm:w-11 h-9 sm:h-11 flex items-center justify-center border-[1.5px] border-gray-300 rounded-xl bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100 active:scale-95 touch-manipulation text-gray-700 shrink-0 transition-all">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>
                 </button>
               </div>
             </div>
 
             <div
-              className="flex-1 flex flex-col overflow-hidden px-4 md:px-6 pb-4 md:pb-6 pt-3 bg-gray-50/30"
+              className="flex-1 flex flex-col overflow-hidden px-2 sm:px-4 md:px-6 pb-2 sm:pb-4 md:pb-6 pt-2 sm:pt-3 bg-gray-50/30"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
@@ -983,22 +983,22 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                   else if (/대체공휴일|임시공휴일|휴일|휴무/.test(text)) icon = '🏖️';
 
                   return (
-                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 sm:p-8 text-center shadow-lg my-4 mx-auto max-w-2xl w-full animate-fadeIn">
-                      <div className="flex justify-center mb-4">
-                        <div className="bg-red-100 p-3 rounded-full">
-                          <span className="text-4xl sm:text-5xl">{icon}</span>
+                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 sm:p-8 text-center shadow-lg my-3 sm:my-4 mx-auto max-w-2xl w-full animate-fadeIn">
+                      <div className="flex justify-center mb-3 sm:mb-4">
+                        <div className="bg-red-100 p-2.5 sm:p-3 rounded-full">
+                          <span className="text-3xl sm:text-5xl">{icon}</span>
                         </div>
                       </div>
-                      <h3 className="text-2xl sm:text-3xl font-black text-red-700 mb-3 tracking-tight">
+                      <h3 className="text-xl sm:text-3xl font-black text-red-700 mb-2 sm:mb-3 tracking-tight">
                         {currentHoliday.name}
                       </h3>
                       {currentHoliday.content1 && (
-                        <p className="text-lg sm:text-xl font-bold text-red-600 mb-2 whitespace-pre-wrap">
+                        <p className="text-base sm:text-xl font-bold text-red-600 mb-1.5 sm:mb-2 whitespace-pre-wrap">
                           {currentHoliday.content1}
                         </p>
                       )}
                       {currentHoliday.content2 && (
-                        <p className="text-[15px] sm:text-lg font-medium text-red-500 bg-white/50 inline-block px-4 py-2 rounded-xl border border-red-100 mt-2 whitespace-pre-wrap break-keep leading-snug">
+                        <p className="text-xs sm:text-lg font-medium text-red-500 bg-white/50 inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-red-100 mt-1 sm:mt-2 whitespace-pre-wrap break-keep leading-snug">
                           {currentHoliday.content2}
                         </p>
                       )}
@@ -1008,26 +1008,26 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
                 return (
                   <div className="bg-white rounded-xl shadow-sm border border-gray-400 w-full flex-1 flex flex-col overflow-hidden">
-                    <div className="overflow-auto relative rounded-xl flex-1">
+                    <div className="overflow-x-auto overflow-y-auto relative rounded-xl flex-1 touch-pan-x touch-pan-y">
                       <table className="w-full table-fixed text-center border-collapse">
                         <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-blue-500">
-                          <tr className="bg-blue-600 text-white text-sm landscape:text-[17px] md:text-base leading-normal">
-                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[10%] md:w-[10%] break-keep bg-blue-600">조</th>
-                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[20%] md:w-[18%] break-keep sticky left-0 z-30 bg-blue-600 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">선생님</th>
-                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-4 font-semibold w-[17%] md:w-[18%] break-keep bg-blue-600">시간</th>
-                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[37%] md:w-[38%] break-keep bg-blue-600 text-white">학생(장소)</th>
-                            <th className="border border-blue-500 py-1.5 px-1 md:py-2 md:px-2 font-semibold w-[16%] md:w-[16%] break-keep bg-blue-600 text-white">회차</th>
+                          <tr className="bg-blue-600 text-white text-[11px] min-[360px]:text-xs sm:text-sm md:text-base leading-normal">
+                            <th className="border border-blue-500 py-1 px-0.5 sm:py-2 sm:px-2 font-bold w-[7%] sm:w-[9%] md:w-[10%] break-keep bg-blue-600">조</th>
+                            <th className="border border-blue-500 py-1 px-0.5 sm:py-2 sm:px-2 font-bold w-[18%] sm:w-[18%] md:w-[20%] break-keep sticky left-0 z-30 bg-blue-600 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">선생님</th>
+                            <th className="border border-blue-500 py-1 px-0.5 sm:py-2 sm:px-2 font-bold w-[17%] sm:w-[17%] md:w-[18%] break-keep bg-blue-600">시간</th>
+                            <th className="border border-blue-500 py-1 px-0.5 sm:py-2 sm:px-2 font-bold w-[44%] sm:w-[42%] md:w-[38%] break-keep bg-blue-600 text-white">학생(장소)</th>
+                            <th className="border border-blue-500 py-1 px-0.5 sm:py-2 sm:px-2 font-bold w-[14%] sm:w-[14%] md:w-[14%] break-keep bg-blue-600 text-white">회차</th>
                           </tr>
                         </thead>
-                        <tbody className="text-gray-700 text-xs md:text-sm">
+                        <tbody className="text-gray-700 text-[11px] min-[360px]:text-xs sm:text-sm">
                           {scheduleData.length === 0 ? (
-                            <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white">일정 데이터가 없습니다.</td></tr>
+                            <tr><td colSpan="5" className="border border-gray-300 py-6 text-center bg-white text-xs sm:text-base font-medium text-gray-500">일정 데이터가 없습니다.</td></tr>
                           ) : (
                             scheduleData.map((row, index) => {
                               const isNewTeacher = index > 0 && row.render.teacher;
                               const topBorderStyle = isNewTeacher ? { borderTop: '2px solid #9ca3af' } : {};
 
-                              const tdClass = "border border-gray-400 py-1 px-1 md:py-1.5 md:px-3 align-middle break-keep";
+                              const tdClass = "border border-gray-300 sm:border-gray-400 py-1 px-0.5 sm:px-2 md:px-3 align-middle break-keep text-[11px] min-[360px]:text-xs sm:text-sm";
 
                               const isFirstShiftForTeacher = !!row.render.teacher;
                               let displayStudent = row.student || "";
@@ -1095,19 +1095,19 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                               const isMultipleStudents = studentNames.length >= 2;
                               const stuLen = displayStudent.length;
 
-                              let dynamicStuSizeClass = hasKiosk ? "text-[15px] md:text-[16px] landscape:text-[19px]" : "text-[16px] md:text-[18px] landscape:text-[20px]";
+                              let dynamicStuSizeClass = hasKiosk ? "text-xs sm:text-sm md:text-base" : "text-sm sm:text-base md:text-lg";
                               if (stuLen >= 9) {
-                                dynamicStuSizeClass = "text-[12px] min-[360px]:text-[13px] md:text-[15px] landscape:text-[17px] tracking-tighter";
+                                dynamicStuSizeClass = "text-[11px] sm:text-xs md:text-sm tracking-tighter";
                               } else if (stuLen >= 6) {
-                                dynamicStuSizeClass = "text-[14px] min-[360px]:text-[15px] md:text-[16px] landscape:text-[18px] tracking-tight";
+                                dynamicStuSizeClass = "text-xs sm:text-sm md:text-base tracking-tight";
                               }
 
                               return (
-                                <tr key={index} className="border-b border-gray-400 hover:bg-blue-50 transition bg-white">
-                                  {row.render.group && <td className={`${tdClass} font-medium text-gray-800 text-[1.2em] landscape:text-[1.5em]`} rowSpan={row.rowspan.group} style={topBorderStyle}>{typeof row.group === 'string' ? row.group.replace('조', '').trim() : row.group}</td>}
+                                <tr key={index} className="border-b border-gray-300 sm:border-gray-400 hover:bg-blue-50 transition bg-white">
+                                  {row.render.group && <td className={`${tdClass} font-bold text-gray-800 text-xs sm:text-sm md:text-base`} rowSpan={row.rowspan.group} style={topBorderStyle}>{typeof row.group === 'string' ? row.group.replace('조', '').trim() : row.group}</td>}
 
                                   {row.render.teacher && (
-                                    <td className={`${tdClass} bg-blue-100 font-bold text-gray-900 text-[16px] landscape:text-[20px] md:text-[18px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`} rowSpan={row.rowspan.teacher} style={topBorderStyle}>
+                                    <td className={`${tdClass} bg-blue-100 font-bold text-gray-900 text-xs sm:text-sm md:text-base sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`} rowSpan={row.rowspan.teacher} style={topBorderStyle}>
                                       {typeof row.teacher === 'string' ? (
                                         row.teacher.includes('/') ? (
                                           row.teacher.split('/').map((namePart, idx, arr) => {
@@ -1128,7 +1128,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                   )}
 
                                   {row.render.time && (
-                                    <td className={`${tdClass} text-gray-700 text-[14px] landscape:text-[18px] md:text-[17px] tracking-tighter`} rowSpan={row.rowspan.time} style={topBorderStyle}>
+                                    <td className={`${tdClass} text-gray-700 text-xs sm:text-sm md:text-base tracking-tight`} rowSpan={row.rowspan.time} style={topBorderStyle}>
                                       {typeof row.time === 'string' && row.time.includes('~') ? (
                                         <>
                                           {(() => {
@@ -1158,16 +1158,16 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                   )}
 
                                   <td className={`${tdClass} ${studentCellBg}`} style={topBorderStyle}>
-                                    <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.1] w-full flex flex-col items-center justify-center`}>
+                                    <div className={`font-bold text-blue-600 ${dynamicStuSizeClass} leading-[1.2] w-full flex flex-col items-center justify-center`}>
                                       {(!displayStudent || displayStudent.trim() === '-') ? null : (
                                         <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center"}>{displayStudent.replace(/\n/g, ' ')}</span>
                                       )}
                                       {showLocationText && displayStudent && displayStudent.trim() !== '-' && !locTextForDisplay?.startsWith('http') && !locTextForDisplay?.startsWith('data:') && (
-                                        <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center mt-0.5 font-medium text-gray-500 text-[1.0em]"}>({locTextForDisplay})</span>
+                                        <span className={(isHolidayOverride ? "whitespace-pre-wrap break-words" : "whitespace-nowrap") + " text-center mt-0.5 font-medium text-gray-500 text-[0.9em]"}>({locTextForDisplay})</span>
                                       )}
                                     </div>
                                     {(displayStatus && displayStatus.trim() !== '-' && displayStatus.trim() !== '\u200B' && displayStatus.trim() !== '') && (
-                                      <div className={`text-[14px] landscape:text-[18px] md:text-[16px] ${statusColorClass} mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
+                                      <div className={`text-xs sm:text-sm md:text-base ${statusColorClass} mt-0.5 sm:mt-1 whitespace-pre-wrap break-words break-keep leading-tight text-center`}>
                                         {displayStatus.split(/(\d+회차)/g).map((part, i) =>
                                           /^\d+회차$/.test(part) ? <span key={i} className="text-[#3366ff]">{part}</span> : part
                                         )}
@@ -1175,12 +1175,12 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                     )}
 
                                     {(selectedTeam?.trim() === '취업팀' || selectedTeam?.toLowerCase().includes('취업')) && row.location && (row.location.toLowerCase().startsWith('http') || row.location.toLowerCase().startsWith('data:') || row.location.toLowerCase().includes('drive.google.com') || row.location.toLowerCase().startsWith('=image')) && (
-                                      <div className="mt-2 w-full flex flex-col items-center">
+                                      <div className="mt-1.5 sm:mt-2 w-full flex flex-col items-center">
                                         <div className="relative overflow-hidden rounded-lg border border-blue-400 shadow-sm bg-pink-50 p-1">
                                           <img
                                             src={getDirectImageUrl(row.location)}
                                             alt="Sign"
-                                            className={`${isMultipleStudents ? 'h-28 sm:h-32' : 'h-14 sm:h-16'} w-auto object-contain mix-blend-multiply`}
+                                            className={`${isMultipleStudents ? 'h-20 sm:h-28 md:h-32' : 'h-10 sm:h-14 md:h-16'} w-auto object-contain mix-blend-multiply`}
                                             onError={(e) => {
                                               const parent = e.target.closest('div');
                                               if (parent) parent.style.display = 'none';
@@ -1191,7 +1191,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                     )}
                                   </td>
 
-                                  <td className={`${tdClass} font-bold text-center text-[13px] landscape:text-[16px] md:text-[15px] transition-colors`} style={topBorderStyle}>
+                                  <td className={`${tdClass} font-bold text-center text-xs sm:text-sm transition-colors`} style={topBorderStyle}>
                                     {row.sessionCounts && !row.student?.includes("간담회") ? (
                                       <div className="flex flex-col w-full justify-center items-center gap-1">
                                         {row.sessionCounts.map((sc, scIdx) => {
@@ -1210,7 +1210,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                           }
 
                                           return (
-                                            <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1.5 py-0.5 rounded w-full whitespace-nowrap ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
+                                            <div key={scIdx} onClick={() => setSelectedStudentDates(sc)} className={`px-1 sm:px-1.5 py-0.5 rounded w-full whitespace-nowrap text-xs sm:text-sm ${sessionCellBg} ${sessionTextCol} shadow-sm cursor-pointer hover:brightness-95 active:scale-95 transition-all`}>
                                               {sc.count}회차
                                             </div>
                                           );
@@ -1257,28 +1257,28 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       </div>
 
       {selectedStudentDates && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-2 sm:px-4" onClick={() => setSelectedStudentDates(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-3 sm:p-4" onClick={() => setSelectedStudentDates(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
             <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
-              <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform">
-                <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <h3 className="font-bold text-base sm:text-lg md:text-xl">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-xs sm:text-sm md:text-base">({selectedStudentDates.count}회)</span></h3>
+              <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform p-1">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
-            <div className="p-3 sm:p-4 overflow-y-auto">
-              <div className="grid grid-cols-4 gap-2 sm:gap-3">
+            <div className="p-3 sm:p-5 overflow-y-auto">
+              <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                 {selectedStudentDates.dates.map((d, idx) => {
                   const today = new Date();
                   const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
                   return (
-                    <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
+                    <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950 font-black' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900 font-bold'} rounded-lg py-2 sm:py-2.5 px-1 text-center text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap tracking-tight`}>
                       {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
                 })}
               </div>
               {selectedStudentDates.dates.length === 0 && (
-                <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
+                <div className="text-center text-gray-500 py-4 font-bold text-sm sm:text-base">출석 기록이 없습니다.</div>
               )}
             </div>
           </div>
