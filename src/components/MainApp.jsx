@@ -3638,6 +3638,8 @@ export default function MainApp({
                 if (r.teacher) memoGroups[memo].push(r.teacher);
               });
 
+
+              const uniqueMemos = Object.keys(memoGroups);
               let mergedMemo = "";
               const isAbsent = (() => {
                 let hasInd = false;
