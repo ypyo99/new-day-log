@@ -1407,11 +1407,31 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                             // 텍스트 클래스 계산
                             let studentTextClass = "text-gray-800";
                             let locationTextClass = "text-black";
-                            let statusTextClass = item.status?.includes('결석') || item.status?.includes('종료') || item.status?.includes('취소') ? 'text-gray-300'
-                              : item.status?.includes('선생님휴가') ? 'text-gray-300'
-                                : item.status?.includes('휴가') ? 'text-gray-400'
-                                  : item.status ? 'text-black'
-                                    : 'text-gray-400';
+                            let statusTextClass = 'text-gray-400';
+                            if (item.status) {
+                              let hasIndAbsence = false;
+                              item.status.split(/(결석)/g).forEach((subPart, j, arr) => {
+                                if (subPart === '결석') {
+                                  const prevChar = arr[j - 1]?.slice(-1) || '';
+                                  const nextChar = arr[j + 1]?.[0] || '';
+                                  if (!/[가-힣a-zA-Z0-9]/.test(prevChar) && !/[가-힣a-zA-Z0-9]/.test(nextChar)) hasIndAbsence = true;
+                                }
+                              });
+                              const hasCancel = (() => {
+                                const t = item.status.split(/[,/]+/).map(x => x.trim());
+                                return t[0] === '취소' || t[0] === '종료' || (t.length > 1 && (t[1] === '취소' || t[1] === '종료'));
+                              })();
+
+                              if (item.status.includes('선생님휴가')) {
+                                statusTextClass = 'text-gray-300';
+                              } else if (hasIndAbsence || hasCancel) {
+                                statusTextClass = 'text-gray-300';
+                              } else if (item.status.includes('휴가')) {
+                                statusTextClass = 'text-gray-400';
+                              } else {
+                                statusTextClass = 'text-black';
+                              }
+                            }
 
                             if (isHoliday) {
                               if (item.render.teacher) {

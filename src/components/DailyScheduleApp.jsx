@@ -1038,7 +1038,6 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                               let statusColorClass = "text-black font-bold";
                               if (displayStatus) {
                                 const hasEnd = hasIndependentKeyword(displayStatus, ["종료"]);
-                                const hasAbsenceOrCancel = displayStatus.includes("결석") || checkIsCanceled(displayStatus);
                                 const hasVacation = displayStatus.includes("휴가");
                                 const hasTeacherVacation = displayStatus.includes("선생님휴가");
 
@@ -1058,9 +1057,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                   statusColorClass = "text-gray-500 font-bold";
                                 } else if (hasIndependentAbsence) {
                                   statusColorClass = "text-red-600 font-bold";
-                                } else if (hasEnd) {
-                                  statusColorClass = "text-gray-500 font-bold";
-                                } else if (hasAbsenceOrCancel) {
+                                } else if (hasEnd || checkIsCanceled(displayStatus)) {
                                   statusColorClass = "text-gray-500 font-bold";
                                 } else if (hasVacation) {
                                   statusColorClass = "text-gray-800 font-bold";

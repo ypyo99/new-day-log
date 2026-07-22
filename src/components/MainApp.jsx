@@ -3639,11 +3639,32 @@ export default function MainApp({
               });
 
               let mergedMemo = "";
-              const uniqueMemos = Object.keys(memoGroups);
-              const isAbsent = uniqueMemos.some(memo => memo.includes("결석"));
+              const isAbsent = (() => {
+                let hasInd = false;
+                uniqueMemos.forEach(memo => {
+                  memo.split(/(결석)/g).forEach((subPart, j, arr) => {
+                    if (subPart === '결석') {
+                      const prevChar = arr[j - 1]?.slice(-1) || '';
+                      const nextChar = arr[j + 1]?.[0] || '';
+                      if (!/[가-힣a-zA-Z0-9]/.test(prevChar) && !/[가-힣a-zA-Z0-9]/.test(nextChar)) hasInd = true;
+                    }
+                  });
+                });
+                return hasInd;
+              })();
 
               if (isAbsent) {
-                mergedMemo = uniqueMemos.find(memo => memo.includes("결석"));
+                mergedMemo = uniqueMemos.find(memo => {
+                  let found = false;
+                  memo.split(/(결석)/g).forEach((subPart, j, arr) => {
+                    if (subPart === '결석') {
+                      const prevChar = arr[j - 1]?.slice(-1) || '';
+                      const nextChar = arr[j + 1]?.[0] || '';
+                      if (!/[가-힣a-zA-Z0-9]/.test(prevChar) && !/[가-힣a-zA-Z0-9]/.test(nextChar)) found = true;
+                    }
+                  });
+                  return found;
+                });
               } else if (uniqueMemos.length === 1) {
                 mergedMemo = uniqueMemos[0];
               } else {
@@ -3696,7 +3717,14 @@ export default function MainApp({
                     {history.map((h, idx) => {
                       let cleanMemo = h.memo;
 
-                      const isAbsent = cleanMemo.includes("결석");
+                      let isAbsent = false;
+                      cleanMemo.split(/(결석)/g).forEach((subPart, j, arr) => {
+                        if (subPart === '결석') {
+                          const prevChar = arr[j - 1]?.slice(-1) || '';
+                          const nextChar = arr[j + 1]?.[0] || '';
+                          if (!/[가-힣a-zA-Z0-9]/.test(prevChar) && !/[가-힣a-zA-Z0-9]/.test(nextChar)) isAbsent = true;
+                        }
+                      });
                       const textColorClass = isAbsent ? "text-red-600" : "text-gray-800";
 
                       return (
