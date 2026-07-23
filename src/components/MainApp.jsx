@@ -283,7 +283,7 @@ export default function MainApp({
             if (data && data.version) {
               const serverVersion = Number(data.version);
               const clientVersion = Number(import.meta.env.VITE_APP_VERSION);
-              
+
               // 현재 실행 중인 프로그램 버전이 배포된 버전보다 낮으면 새로고침
               if (clientVersion && serverVersion > clientVersion) {
                 console.log('새로운 업데이트가 감지되어 새로고침합니다.', { clientVersion, serverVersion });
@@ -1174,7 +1174,7 @@ export default function MainApp({
             const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
             const isAttended = hasAttendance && !hasEndOrCancel;
             const isAbsentOrCanceled = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
-            
+
             if (!dayStatusMap[name]) dayStatusMap[name] = {};
             const dParts = hRow.log_date.split('-');
             const dateObjTime = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10)).getTime();
@@ -3004,7 +3004,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260717-teachers-table
+            v260723-class-count
           </div>
         </div>
       </div>
