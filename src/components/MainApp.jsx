@@ -281,6 +281,16 @@ export default function MainApp({
           if (contentType && contentType.includes('application/json')) {
             const data = await res.json();
             if (data && data.version) {
+              const serverVersion = Number(data.version);
+              const clientVersion = Number(import.meta.env.VITE_APP_VERSION);
+              
+              // 현재 실행 중인 프로그램 버전이 배포된 버전보다 낮으면 새로고침
+              if (clientVersion && serverVersion > clientVersion) {
+                console.log('새로운 업데이트가 감지되어 새로고침합니다.', { clientVersion, serverVersion });
+                window.location.reload(true);
+                return;
+              }
+
               setAppVersion((prevVersion) => {
                 // 처음 접속해서 버전이 없을 때는 기억만 해둡니다.
                 if (!prevVersion) {
