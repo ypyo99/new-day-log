@@ -546,6 +546,18 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         }
       }
 
+      const getT = (s) => {
+        if (!s) return 9999;
+        const m = s.match(/(\d+):(\d+)/);
+        return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+      };
+      allTeamRecords.sort((a, b) => {
+        const dateA = new Date(a.log_date).getTime();
+        const dateB = new Date(b.log_date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return getT(a.shift) - getT(b.shift);
+      });
+
       const studentDatesMap = {};
       const studentOffsetsMap = {};
 
@@ -627,12 +639,21 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             let alreadyHas = false;
             if (isValidDay) {
               alreadyHas = studentDatesMap[name].some(d => {
-                if (isTarget && isTargetTeacher(d.teacher)) {
-                  return d.date.getTime() === dateObj.getTime();
-                } else if (teamName === '취업팀') {
-                  return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                if (isTarget) {
+                  const isSameTargetBucket = isTargetTeacher(d.teacher);
+                  let isSameClassBucket = false;
+                  if (teamName === '취업팀') {
+                    isSameClassBucket = (d.shift === hShift && d.group === hGroup);
+                  } else {
+                    isSameClassBucket = (d.group === hGroup);
+                  }
+                  return d.date.getTime() === dateObj.getTime() && (isSameTargetBucket || isSameClassBucket);
                 } else {
-                  return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                  if (teamName === '취업팀') {
+                    return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                  } else {
+                    return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                  }
                 }
               });
             }
@@ -771,12 +792,21 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             
             if (isValidDayToday) {
               const alreadyHas = currentDatesMap[name].some(d => {
-                if (isTarget && isTargetTeacher(d.teacher)) {
-                  return d.date.getTime() === todayDateObj.getTime();
-                } else if (teamName === '취업팀') {
-                  return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
+                if (isTarget) {
+                  const isSameTargetBucket = isTargetTeacher(d.teacher);
+                  let isSameClassBucket = false;
+                  if (teamName === '취업팀') {
+                    isSameClassBucket = (d.shift === row.time && d.group === row.group);
+                  } else {
+                    isSameClassBucket = (d.group === row.group);
+                  }
+                  return d.date.getTime() === todayDateObj.getTime() && (isSameTargetBucket || isSameClassBucket);
                 } else {
-                  return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+                  if (teamName === '취업팀') {
+                    return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
+                  } else {
+                    return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+                  }
                 }
               });
               if (!alreadyHas) {

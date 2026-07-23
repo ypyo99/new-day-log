@@ -213,6 +213,17 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
             histHasMore = false;
           }
         }
+        const getT = (s) => {
+          if (!s) return 9999;
+          const m = s.match(/(\d+):(\d+)/);
+          return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+        };
+        allHistRecords.sort((a, b) => {
+          const dateA = new Date(a.log_date).getTime();
+          const dateB = new Date(b.log_date).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          return getT(a.shift) - getT(b.shift);
+        });
         setAllTeamRecords(allHistRecords);
 
         const { data: holidayData, error: holidayError } = await supabaseClient
@@ -314,12 +325,21 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            let isNew = false;
            if (isValidDay) {
                const alreadyHas = studentHistoryMap[name].some(d => {
-                   if (isTarget && isTargetTeacher(d.teacher)) {
-                       return d.date === dateObj;
-                   } else if (team === '취업팀') {
-                       return d.date === dateObj && d.shift === hShift && d.group === hGroup;
+                   if (isTarget) {
+                       const isSameTargetBucket = isTargetTeacher(d.teacher);
+                       let isSameClassBucket = false;
+                       if (team === '취업팀') {
+                           isSameClassBucket = (d.shift === hShift && d.group === hGroup);
+                       } else {
+                           isSameClassBucket = (d.group === hGroup);
+                       }
+                       return d.date === dateObj && (isSameTargetBucket || isSameClassBucket);
                    } else {
-                       return d.date === dateObj && d.group === hGroup;
+                       if (team === '취업팀') {
+                           return d.date === dateObj && d.shift === hShift && d.group === hGroup;
+                       } else {
+                           return d.date === dateObj && d.group === hGroup;
+                       }
                    }
                });
                if (!alreadyHas) isNew = true;

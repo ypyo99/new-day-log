@@ -1100,6 +1100,7 @@ export default function MainApp({
 
     const calcCounts = async () => {
       try {
+        const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
         const names = [];
         shifts.forEach((_, index) => {
           const log = logs[index];
@@ -1130,7 +1131,17 @@ export default function MainApp({
 
         if (histError) throw histError;
         if (histData) {
-          allTeamRecords = histData;
+          const getT = (s) => {
+            if (!s) return 9999;
+            const m = s.match(/(\d+):(\d+)/);
+            return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+          };
+          allTeamRecords = histData.sort((a, b) => {
+            const dateA = new Date(a.log_date).getTime();
+            const dateB = new Date(b.log_date).getTime();
+            if (dateA !== dateB) return dateA - dateB;
+            return getT(a.shift) - getT(b.shift);
+          });
         }
 
         if (!isMounted) return;
@@ -1193,8 +1204,6 @@ export default function MainApp({
             const dParts = hRow.log_date.split('-');
             const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
             const dayStatus = dayStatusMap[name] && dayStatusMap[name][dateObj.getTime()];
-
-            const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
             const isTarget = isTargetTeacher(hRow.teacher);
 
             let isValidDay = false;
@@ -1208,7 +1217,6 @@ export default function MainApp({
               const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
               if (hRow.log_date === date) {
                 if (hRow.teacher === currentUser) return;
-                if (shifts.includes(hRow.shift)) return;
               }
 
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
@@ -1218,12 +1226,21 @@ export default function MainApp({
               let isNew = false;
               if (isValidDay) {
                 const alreadyHas = studentDatesMap[name].some(d => {
-                  if (isTarget && isTargetTeacher(d.teacher)) {
-                    return d.date.getTime() === dateObj.getTime();
-                  } else if (selectedTeam === '취업팀') {
-                    return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                  if (isTarget) {
+                    const isSameTargetBucket = isTargetTeacher(d.teacher);
+                    let isSameClassBucket = false;
+                    if (selectedTeam === '취업팀') {
+                      isSameClassBucket = (d.shift === hShift && d.group === hGroup);
+                    } else {
+                      isSameClassBucket = (d.group === hGroup);
+                    }
+                    return d.date.getTime() === dateObj.getTime() && (isSameTargetBucket || isSameClassBucket);
                   } else {
-                    return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                    if (selectedTeam === '취업팀') {
+                      return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                    } else {
+                      return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                    }
                   }
                 });
                 if (!alreadyHas) isNew = true;
@@ -1331,16 +1348,30 @@ export default function MainApp({
             if (!isAbsent || hasExplicitCount) {
               let isNew = false;
               const alreadyHas = currentDatesMap[name].some(d => {
-                if (selectedTeam === '취업팀') {
-                  return d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup;
+                const currentTeacher = log ? log.teacher : currentUser;
+                const isTarget = isTargetTeacher(currentTeacher);
+                if (isTarget) {
+                  const isSameTargetBucket = isTargetTeacher(d.teacher);
+                  let isSameClassBucket = false;
+                  if (selectedTeam === '취업팀') {
+                    isSameClassBucket = (d.shift === shift && d.group === currentUserGroup);
+                  } else {
+                    isSameClassBucket = (d.group === currentUserGroup);
+                  }
+                  return d.date.getTime() === todayDateObj.getTime() && (isSameTargetBucket || isSameClassBucket);
                 } else {
-                  return d.date.getTime() === todayDateObj.getTime() && d.group === currentUserGroup;
+                  if (selectedTeam === '취업팀') {
+                    return d.date.getTime() === todayDateObj.getTime() && d.shift === shift && d.group === currentUserGroup;
+                  } else {
+                    return d.date.getTime() === todayDateObj.getTime() && d.group === currentUserGroup;
+                  }
                 }
               });
               if (!alreadyHas) isNew = true;
 
               if (isNew) {
-                currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup });
+                const currentTeacher = log ? log.teacher : currentUser;
+                currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup, teacher: currentTeacher });
               }
             }
 
