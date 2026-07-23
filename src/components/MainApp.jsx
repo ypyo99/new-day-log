@@ -1138,6 +1138,34 @@ export default function MainApp({
         const currentUserGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
         const studentDatesMap = {};
         const studentOffsetsMap = {};
+
+        const dayStatusMap = {};
+        allTeamRecords.forEach(hRow => {
+          if (!hRow.student) return;
+          const parsedNames = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+          parsedNames.forEach((name, nameIdx) => {
+            let personalStatus = hRow.status || "";
+            if (personalStatus.includes('/')) {
+              const segments = personalStatus.split('/');
+              if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
+            }
+            const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
+            const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
+            const isAttended = hasAttendance && !hasEndOrCancel;
+            const isAbsentOrCanceled = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
+            
+            if (!dayStatusMap[name]) dayStatusMap[name] = {};
+            const dParts = hRow.log_date.split('-');
+            const dateObjTime = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10)).getTime();
+
+            if (isAttended) {
+              dayStatusMap[name][dateObjTime] = 'attended';
+            } else if (isAbsentOrCanceled && dayStatusMap[name][dateObjTime] !== 'attended') {
+              dayStatusMap[name][dateObjTime] = 'absent';
+            }
+          });
+        });
+
         allTeamRecords.forEach(hRow => {
           if (!hRow.student) return;
           const parsedNames = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
@@ -1162,7 +1190,21 @@ export default function MainApp({
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
             const hasExplicitCount = memoMatches.length > 0;
 
-            if (!isAbsentOrCanceled || hasExplicitCount) {
+            const dParts = hRow.log_date.split('-');
+            const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
+            const dayStatus = dayStatusMap[name] && dayStatusMap[name][dateObj.getTime()];
+
+            const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
+            const isTarget = isTargetTeacher(hRow.teacher);
+
+            let isValidDay = false;
+            if (isTarget) {
+              isValidDay = (dayStatus === 'attended');
+            } else {
+              isValidDay = !isAbsentOrCanceled;
+            }
+
+            if (hasExplicitCount || isValidDay) {
               const hGroup = getTeacherGroup(selectedTeam, hRow.teacher, dbTeachers);
               if (hRow.log_date === date) {
                 if (hRow.teacher === currentUser) return;
@@ -1171,28 +1213,30 @@ export default function MainApp({
 
               if (!studentDatesMap[name]) studentDatesMap[name] = [];
               if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
-              const dParts = hRow.log_date.split('-');
-              const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
               const hShift = hRow.shift || "";
 
               let isNew = false;
-              const alreadyHas = studentDatesMap[name].some(d => {
-                if (selectedTeam === '취업팀') {
-                  return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
-                } else {
-                  return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
-                }
-              });
-              if (!alreadyHas) isNew = true;
+              if (isValidDay) {
+                const alreadyHas = studentDatesMap[name].some(d => {
+                  if (isTarget && isTargetTeacher(d.teacher)) {
+                    return d.date.getTime() === dateObj.getTime();
+                  } else if (selectedTeam === '취업팀') {
+                    return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                  } else {
+                    return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                  }
+                });
+                if (!alreadyHas) isNew = true;
+              }
 
               if (isNew) {
-                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher });
               }
 
               if (hasExplicitCount) {
                 const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
                 const explicitCount = parseInt(matchObj[1], 10);
-                const currentLen = studentDatesMap[name].length;
+                const currentLen = studentDatesMap[name] ? studentDatesMap[name].length : 0;
                 const newOffset = explicitCount - currentLen;
                 studentOffsetsMap[name] = newOffset;
               }

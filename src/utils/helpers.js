@@ -234,3 +234,5 @@ export function getShiftWeight(shift) {
 }
 
 export const teamList = ["1íŒ€", "2íŒ€", "3íŒ€", "ì·¨ì—…íŒ€"];
+
+export const isTargetTeacher = (teacher) => teacher && (teacher.includes('ÃµÀº¼±') || teacher.includes('¼­½ÂÈñ'));

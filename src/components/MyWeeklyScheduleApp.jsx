@@ -238,6 +238,31 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
     const studentOffsetsMap = {};
     const seenDateShiftMap = {}; // name -> Set of "date|shift" already processed
     
+    const dayStatusMap = {};
+    allTeamRecords.forEach(hRow => {
+      if (!hRow.student) return;
+      const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+      names.forEach((name, nameIdx) => {
+        let personalStatus = hRow.status || "";
+        if (personalStatus.includes('/')) {
+          const segments = personalStatus.split('/');
+          if (segments.length > nameIdx) personalStatus = segments[nameIdx].trim();
+        }
+        const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
+        const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
+        const isAttended = hasAttendance && !hasEndOrCancel;
+        const isAbsent = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
+        
+        if (!dayStatusMap[name]) dayStatusMap[name] = {};
+        
+        if (isAttended) {
+          dayStatusMap[name][hRow.log_date] = 'attended';
+        } else if (isAbsent && dayStatusMap[name][hRow.log_date] !== 'attended') {
+          dayStatusMap[name][hRow.log_date] = 'absent';
+        }
+      });
+    });
+
     allTeamRecords.forEach(hRow => {
       if (!hRow.student) return;
       const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
@@ -258,25 +283,40 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
         const hasExplicitCount = memoMatches.length > 0;
         
-        if (!isAbsent || hasExplicitCount) {
+        const dateObj = hRow.log_date;
+        const dayStatus = dayStatusMap[name] && dayStatusMap[name][dateObj];
+
+        const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
+        const isTarget = isTargetTeacher(hRow.teacher);
+
+        let isValidDay = false;
+        if (isTarget) {
+          isValidDay = (dayStatus === 'attended');
+        } else {
+          isValidDay = !isAbsent;
+        }
+
+        if (hasExplicitCount || isValidDay) {
            if (!studentHistoryMap[name]) studentHistoryMap[name] = [];
            if (!studentOffsetsMap[name]) studentOffsetsMap[name] = [];
            if (!seenDateShiftMap[name]) seenDateShiftMap[name] = new Set();
            
            const hGroup = getTeacherGroup(team, hRow.teacher);
            const hShift = mapShiftToOfficial(team, hRow.teacher, hRow.shift);
-           const dateObj = hRow.log_date;
-           const dateShiftKey = `${dateObj}|${hShift}|${hGroup}`;
-           // 이미 처리한 date+shift+group 조합이면 스킵 (빈 상태 중복 레코드 방지)
+           
+           const dateShiftKey = isTarget ? `${dateObj}|target` : `${dateObj}|${hShift}|${hGroup}`;
+           // 이미 처리한 조합이면 스킵 (빈 상태 중복 레코드 방지)
            if (seenDateShiftMap[name].has(dateShiftKey)) {
              return;
            }
            seenDateShiftMap[name].add(dateShiftKey);
            
            let isNew = false;
-           if (!isAbsent) {
+           if (isValidDay) {
                const alreadyHas = studentHistoryMap[name].some(d => {
-                   if (team === '취업팀') {
+                   if (isTarget && isTargetTeacher(d.teacher)) {
+                       return d.date === dateObj;
+                   } else if (team === '취업팀') {
                        return d.date === dateObj && d.shift === hShift && d.group === hGroup;
                    } else {
                        return d.date === dateObj && d.group === hGroup;
@@ -286,7 +326,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            }
            
            if (isNew) {
-               studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+               studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher });
            }
 
            if (hasExplicitCount) {
@@ -296,12 +336,6 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                const newOffset = explicitCount - currentLen;
                studentOffsetsMap[name].push({ date: dateObj, shift: hShift, offset: newOffset });
            }
-        } else {
-           if (!seenDateShiftMap[name]) seenDateShiftMap[name] = new Set();
-           const hShift = mapShiftToOfficial(team, hRow.teacher, hRow.shift);
-           const dateObj = hRow.log_date;
-           const dateShiftKey = `${dateObj}|${hShift}`;
-           seenDateShiftMap[name].add(dateShiftKey);
         }
       });
     });

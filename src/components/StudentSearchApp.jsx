@@ -244,6 +244,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
 
     let currentSession = 0;
     let countedDates = new Set();
+    let attendedKeys = new Set();
 
     allForStudent.forEach(r => {
       const textToMatch = (r.memo || "");
@@ -255,29 +256,68 @@ export default function StudentSearchApp({ onNavigateBack }) {
       const isAttended = !isAbsentOrCanceled && r.attendanceTag && r.attendanceTag !== "기록있음";
 
       const dateKey = r.colDate.getTime();
-      // 취업팀이 아닌 경우: 같은 날 같은 그룹이면 시간대 무관하게 동일 회차로 처리
-      const specificKey = r.team === '취업팀'
-        ? `${dateKey}_${r.time}_${r.group}`
-        : `${dateKey}_${r.group}`;
+      const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
+      const isTarget = isTargetTeacher(r.teacher);
+      
+      let keys = [];
+      const classKey = r.team === '취업팀' ? `${dateKey}_${r.time}_${r.group}` : `${dateKey}_${r.group}`;
+      keys.push(classKey);
+      if (isTarget) {
+          keys.push(`${dateKey}_target`);
+      }
+
+      if (memoMatch || isAttended) {
+          keys.forEach(k => attendedKeys.add(k));
+      }
+    });
+
+    allForStudent.forEach(r => {
+      const textToMatch = (r.memo || "");
+      const memoMatch = textToMatch.match(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/);
+      
+      const attTag = r.attendanceTag || "";
+      const hasAtt = /(^|[,/])\s*(1|출석)\s*([,/]|$)/.test(attTag);
+      const isAbsentOrCanceled = (attTag.includes("결석") && !hasAtt) || (attTag.includes("선생님휴가") && !hasAtt) || (attTag.includes("종료") && !hasAtt) || (attTag.includes("취소") && !hasAtt);
+      const isAttended = !isAbsentOrCanceled && r.attendanceTag && r.attendanceTag !== "기록있음";
+
+      const dateKey = r.colDate.getTime();
+      const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
+      const isTarget = isTargetTeacher(r.teacher);
+      
+      let keys = [];
+      const classKey = r.team === '취업팀' ? `${dateKey}_${r.time}_${r.group}` : `${dateKey}_${r.group}`;
+      keys.push(classKey);
+      if (isTarget) {
+          keys.push(`${dateKey}_target`);
+      }
 
       if (memoMatch) {
          currentSession = parseInt(memoMatch[1], 10);
          r.computedSession = `${currentSession}회차`;
-         countedDates.add(specificKey); // 명시적 회차가 있을 때도 중복 카운트 방지를 위해 등록
+         keys.forEach(k => countedDates.add(k)); // 명시적 회차가 있을 때도 중복 카운트 방지를 위해 등록
       } else {
          if (isAttended) {
-            // 해당 날짜(특정키)에 아직 출석 처리(회차 증가)를 안 했다면 증가
-            if (!countedDates.has(specificKey)) {
-                countedDates.add(specificKey);
+            // 해당 날짜(키들 중 하나라도)에 아직 출석 처리(회차 증가)를 안 했다면 증가
+            const alreadyCounted = keys.some(k => countedDates.has(k));
+            if (!alreadyCounted) {
                 currentSession++;
             }
-         }
-         
-         // 결석한 날에도 현재까지의 누적 회차 표시
-         if (currentSession > 0) {
+            keys.forEach(k => countedDates.add(k));
             r.computedSession = `${currentSession}회차`;
          } else {
-            r.computedSession = ""; 
+            // 결석/빈 기록인 경우
+            const willBeAttended = keys.some(k => attendedKeys.has(k));
+            if (willBeAttended) {
+                // 같은 키들에 출석 기록이 있다면, 이 기록에서는 회차를 표시하지 않음
+                r.computedSession = "";
+            } else {
+                // 출석 기록이 아예 없는 순수 결석/휴강일인 경우 누적 회차 표시
+                if (currentSession > 0) {
+                   r.computedSession = `${currentSession}회차`;
+                } else {
+                   r.computedSession = ""; 
+                }
+            }
          }
       }
       

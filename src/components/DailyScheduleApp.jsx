@@ -548,6 +548,36 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
       const studentDatesMap = {};
       const studentOffsetsMap = {};
+
+      const dayStatusMap = {};
+      allTeamRecords.forEach(hRow => {
+        if (!hRow.student) return;
+        const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+        names.forEach((name, nameIdx) => {
+          let personalStatus = hRow.status || "";
+          if (personalStatus.includes('/')) {
+            const segments = personalStatus.split('/');
+            if (segments.length > nameIdx) {
+              personalStatus = segments[nameIdx].trim();
+            }
+          }
+          const hasEndOrCancel = checkIsCanceled(personalStatus);
+          const hasAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
+          const isAttended = hasAttendance && !hasEndOrCancel;
+          const isAbsentOrCanceled = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
+          
+          if (!dayStatusMap[name]) dayStatusMap[name] = {};
+          const dParts = hRow.log_date.split('-');
+          const dateObjTime = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10)).getTime();
+
+          if (isAttended) {
+            dayStatusMap[name][dateObjTime] = 'attended';
+          } else if (isAbsentOrCanceled && dayStatusMap[name][dateObjTime] !== 'attended') {
+            dayStatusMap[name][dateObjTime] = 'absent';
+          }
+        });
+      });
+
       allTeamRecords.forEach(hRow => {
         if (!hRow.student) return;
         const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
@@ -570,32 +600,50 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
           const hasExplicitCount = memoMatches.length > 0;
 
-          if (!isAbsentOrCanceled || hasExplicitCount) {
-            if (hRow.log_date === dateStr) return; // SKIP TODAY'S RECORDS
+          if (hRow.log_date === dateStr) return; // SKIP TODAY'S RECORDS
 
+          const dParts = hRow.log_date.split('-');
+          const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
+          const dayStatus = dayStatusMap[name] && dayStatusMap[name][dateObj.getTime()];
+
+          const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
+          const isTarget = isTargetTeacher(hRow.teacher);
+
+          let isValidDay = false;
+          if (isTarget) {
+            isValidDay = (dayStatus === 'attended');
+          } else {
+            isValidDay = !isAbsentOrCanceled;
+          }
+
+          if (hasExplicitCount || isValidDay) {
             if (!studentDatesMap[name]) {
               studentDatesMap[name] = [];
             }
             if (studentOffsetsMap[name] === undefined) studentOffsetsMap[name] = 0;
-            const dParts = hRow.log_date.split('-');
-            const dateObj = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
             const hGroup = getTeacherGroup(teamName, hRow.teacher);
             const hShift = hRow.shift || "";
 
-            const alreadyHas = studentDatesMap[name].some(d => {
-              if (teamName === '취업팀') {
-                return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
-              } else {
-                return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
-              }
-            });
-            if (!alreadyHas) {
-              studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup });
+            let alreadyHas = false;
+            if (isValidDay) {
+              alreadyHas = studentDatesMap[name].some(d => {
+                if (isTarget && isTargetTeacher(d.teacher)) {
+                  return d.date.getTime() === dateObj.getTime();
+                } else if (teamName === '취업팀') {
+                  return d.date.getTime() === dateObj.getTime() && d.shift === hShift && d.group === hGroup;
+                } else {
+                  return d.date.getTime() === dateObj.getTime() && d.group === hGroup;
+                }
+              });
+            }
+
+            if (!alreadyHas && isValidDay) {
+              studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher });
             }
             if (hasExplicitCount) {
               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
               const explicitCount = parseInt(matchObj[1], 10);
-              const currentLen = studentDatesMap[name].length;
+              const currentLen = studentDatesMap[name] ? studentDatesMap[name].length : 0;
               const newOffset = explicitCount - currentLen;
               studentOffsetsMap[name] = newOffset;
             }
@@ -649,6 +697,33 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         return getT(a.time) - getT(b.time);
       });
 
+      const dayStatusMapToday = {};
+      timeSortedData.forEach(row => {
+        if (!row.student || row.student.trim() === '-') return;
+        const names = row.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+        names.forEach((name, nameIdx) => {
+          let personalStatus = row.status || "";
+          if (personalStatus.includes('/')) {
+            const segments = personalStatus.split('/');
+            if (segments.length > nameIdx) {
+              personalStatus = segments[nameIdx].trim();
+            }
+          }
+          const hasCurrentEndOrCancel = checkIsCanceled(personalStatus);
+          const hasCurrentAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
+          const isAttended = hasCurrentAttendance && !hasCurrentEndOrCancel;
+          const isAbsent = (personalStatus.includes("결석") && !hasCurrentAttendance) || (personalStatus.includes("선생님휴가") && !hasCurrentAttendance) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
+          
+          if (!dayStatusMapToday[name]) dayStatusMapToday[name] = {};
+          
+          if (isAttended) {
+            dayStatusMapToday[name][todayDateObj.getTime()] = 'attended';
+          } else if (isAbsent && dayStatusMapToday[name][todayDateObj.getTime()] !== 'attended') {
+            dayStatusMapToday[name][todayDateObj.getTime()] = 'absent';
+          }
+        });
+      });
+
       timeSortedData.forEach(row => {
         if (!row.student || row.student.trim() === '-') {
           row.sessionCounts = null;
@@ -679,20 +754,37 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           if (!currentDatesMap[name]) currentDatesMap[name] = [];
           if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
 
-          if (!isAbsent || hasExplicitCount) {
+          const dayStatusToday = dayStatusMapToday[name] && dayStatusMapToday[name][todayDateObj.getTime()];
+
+          const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
+          const isTarget = isTargetTeacher(row.teacher);
+
+          let isValidDayToday = false;
+          if (isTarget) {
+            isValidDayToday = (dayStatusToday === 'attended');
+          } else {
+            isValidDayToday = !isAbsent;
+          }
+
+          if (hasExplicitCount || isValidDayToday) {
             let isNew = false;
-            const alreadyHas = currentDatesMap[name].some(d => {
-              if (teamName === '취업팀') {
-                return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
-              } else {
-                return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+            
+            if (isValidDayToday) {
+              const alreadyHas = currentDatesMap[name].some(d => {
+                if (isTarget && isTargetTeacher(d.teacher)) {
+                  return d.date.getTime() === todayDateObj.getTime();
+                } else if (teamName === '취업팀') {
+                  return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
+                } else {
+                  return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+                }
+              });
+              if (!alreadyHas) {
+                isNew = true;
               }
-            });
-            if (!alreadyHas) {
-              isNew = true;
             }
             if (isNew) {
-              currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group });
+              currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group, teacher: row.teacher });
             }
 
             const getTLocal = (s) => {
