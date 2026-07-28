@@ -477,10 +477,10 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         if (isSystemHoliday) {
                           const hInfo = holidayDates.get(mmdd);
                           cellContent = (
-                            <div className="flex flex-col items-center justify-center leading-tight h-full">
-                              <span className="font-extrabold text-red-600 text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] break-keep">{hInfo.name}</span>
-                              {hInfo.content1 && <span className="text-red-500/80 font-bold text-[10px] min-[360px]:text-[11px] landscape:text-[16px] md:text-[17px] mt-1 break-keep">{hInfo.content1}</span>}
-                              {hInfo.content2 && <span className="text-red-500/80 font-bold text-[10px] min-[360px]:text-[11px] landscape:text-[16px] md:text-[17px] mt-1 break-keep">{hInfo.content2}</span>}
+                            <div className="flex flex-col items-center justify-center leading-tight h-full px-0.5">
+                              <span className="font-extrabold text-red-600 text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] break-all">{hInfo.name}</span>
+                              {hInfo.content1 && <span className="text-red-500/80 font-bold text-[10px] min-[360px]:text-[11px] landscape:text-[16px] md:text-[17px] mt-1 break-all">{hInfo.content1}</span>}
+                              {hInfo.content2 && <span className="text-red-500/80 font-bold text-[10px] min-[360px]:text-[11px] landscape:text-[16px] md:text-[17px] mt-1 break-all">{hInfo.content2}</span>}
                             </div>
                           );
                         } else if (isAvailable) {
