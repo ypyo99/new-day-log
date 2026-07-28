@@ -466,6 +466,8 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
                         const mmdd = dateStr.substring(5);
                         const isSystemHoliday = holidayDates.has(mmdd);
 
+                        if (isSystemHoliday && ti > 0) return null;
+
                         const isAvailable = state === '사용가능';
                         const cellBg = isSystemHoliday ? 'bg-red-50' : (isAvailable ? 'bg-green-200' : 'bg-pink-100');
                         const textCol = isSystemHoliday ? 'text-red-700' : (isAvailable ? 'text-green-900' : 'text-pink-800');
@@ -473,28 +475,28 @@ CREATE POLICY "Allow public all access" ON public.classroom_schedules FOR ALL US
 
                         let cellContent = null;
                         if (isSystemHoliday) {
-                          if (ti === 0) {
-                            const hInfo = holidayDates.get(mmdd);
-                            cellContent = (
-                              <div className="flex flex-col items-center justify-center leading-tight">
-                                <span className="font-extrabold text-red-600 text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] whitespace-nowrap">{hInfo.name}</span>
-                                {hInfo.content1 && <span className="text-red-500/80 font-bold text-[9px] min-[360px]:text-[10px] landscape:text-[16px] md:text-[17px] mt-0.5 whitespace-nowrap">{hInfo.content1}</span>}
-                                {hInfo.content2 && <span className="text-red-500/80 font-bold text-[9px] min-[360px]:text-[10px] landscape:text-[16px] md:text-[17px] mt-0.5 whitespace-nowrap">{hInfo.content2}</span>}
-                              </div>
-                            );
-                          } else {
-                            cellContent = null;
-                          }
+                          const hInfo = holidayDates.get(mmdd);
+                          cellContent = (
+                            <div className="flex flex-col items-center justify-center leading-tight h-full">
+                              <span className="font-extrabold text-red-600 text-[11px] min-[360px]:text-[12px] landscape:text-[20px] md:text-[22px] break-keep">{hInfo.name}</span>
+                              {hInfo.content1 && <span className="text-red-500/80 font-bold text-[10px] min-[360px]:text-[11px] landscape:text-[16px] md:text-[17px] mt-1 break-keep">{hInfo.content1}</span>}
+                              {hInfo.content2 && <span className="text-red-500/80 font-bold text-[10px] min-[360px]:text-[11px] landscape:text-[16px] md:text-[17px] mt-1 break-keep">{hInfo.content2}</span>}
+                            </div>
+                          );
                         } else if (isAvailable) {
                           cellContent = <span>사용<br />가능</span>;
                         } else {
                           cellContent = <span>사용<br />불가</span>;
                         }
 
+                        const todayBorderClass = isToday 
+                          ? ((isLastRow || isSystemHoliday) ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-red-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-red-500 relative z-10')
+                          : 'border-r border-gray-400';
+
                         return (
-                          <td key={di} onClick={() => { if (isSystemHoliday) return; toggleAvailability(dateStr, time); }}
-                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${(isManagerMode && !isSystemHoliday) ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${isToday ? (isLastRow ? 'border-x-[4px] sm:border-x-[6px] border-b-[4px] sm:border-b-[6px] border-red-500 relative z-10' : 'border-x-[4px] sm:border-x-[6px] border-red-500 relative z-10') : 'border-r border-gray-400'}`}>
-                            <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol}`}>
+                          <td key={di} rowSpan={isSystemHoliday ? timeSlots.length : 1} onClick={() => { if (isSystemHoliday) return; toggleAvailability(dateStr, time); }}
+                            className={`${cellPadding} transition-all h-10 min-[360px]:h-12 md:h-16 touch-manipulation ${(isManagerMode && !isSystemHoliday) ? 'cursor-pointer hover:brightness-95 active:scale-95' : 'cursor-default'} ${cellBg} ${todayBorderClass}`}>
+                            <span className={`text-[12px] min-[360px]:text-[13px] landscape:text-[22px] md:text-[24px] leading-tight inline-block font-semibold ${textCol} w-full`}>
                               {cellContent}
                             </span>
                           </td>
