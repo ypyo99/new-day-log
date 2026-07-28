@@ -629,7 +629,7 @@ export default function MainApp({
     const loadHolidays = async () => {
       try {
         // date와 함께 name, content1 도 함께 가져옴 (specialAlerts 표시를 위해)
-        const { data, error } = await supabaseClient.from('holidays').select('date, name, content1, content2');
+        const { data, error } = await supabaseClient.from('holidays').select('date, name, content1, content2, vacation_available');
         if (data && !error) {
           const dates = data.map(d => d.date);
           setHolidaysDbList(dates);
@@ -3203,12 +3203,11 @@ export default function MainApp({
           <div className="px-5 pb-5 pt-3">
             <form onSubmit={handleSubmit} className="space-y-6">
               {(() => {
-                if (currentSelectedHoliday) {
-                  return (
-                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 sm:p-8 text-center shadow-lg my-4 animate-fadeIn">
-                      <div className="flex justify-center mb-4">
-                        <div className="bg-red-100 p-3 rounded-full">
-                          <span className="text-4xl sm:text-5xl">
+                const holidayBanner = currentSelectedHoliday ? (
+                    <div className={`bg-red-50 border-2 border-red-300 rounded-2xl text-center shadow-lg animate-fadeIn ${currentSelectedHoliday.vacation_available ? 'p-4 sm:p-5 mb-6' : 'p-6 sm:p-8 my-4'}`}>
+                      <div className={`flex justify-center ${currentSelectedHoliday.vacation_available ? 'mb-2 sm:mb-4' : 'mb-4'}`}>
+                        <div className={`bg-red-100 rounded-full ${currentSelectedHoliday.vacation_available ? 'p-2 sm:p-3' : 'p-3'}`}>
+                          <span className={`${currentSelectedHoliday.vacation_available ? 'text-3xl sm:text-5xl' : 'text-4xl sm:text-5xl'}`}>
                             {(() => {
                               const text = `${currentSelectedHoliday.name || ''} ${currentSelectedHoliday.content1 || ''} ${currentSelectedHoliday.content2 || ''}`;
                               if (/설날|추석|명절|한가위|설 연휴/.test(text)) return '🌕';
@@ -3227,25 +3226,29 @@ export default function MainApp({
                           </span>
                         </div>
                       </div>
-                      <h3 className="text-2xl sm:text-3xl font-black text-red-700 mb-3 tracking-tight">
+                      <h3 className={`${currentSelectedHoliday.vacation_available ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-3xl'} font-black text-red-700 tracking-tight ${currentSelectedHoliday.vacation_available ? 'mb-2 sm:mb-3' : 'mb-3'}`}>
                         {currentSelectedHoliday.name}
                       </h3>
                       {currentSelectedHoliday.content1 && (
-                        <p className="text-lg sm:text-xl font-bold text-red-600 mb-2 whitespace-pre-wrap">
+                        <p className={`${currentSelectedHoliday.vacation_available ? 'text-base sm:text-xl mb-1 sm:mb-2' : 'text-lg sm:text-xl mb-2'} font-bold text-red-600 whitespace-pre-wrap`}>
                           {currentSelectedHoliday.content1}
                         </p>
                       )}
                       {currentSelectedHoliday.content2 && (
-                        <p className="text-[15px] sm:text-lg font-medium text-red-500 bg-white/50 inline-block px-4 py-2 rounded-xl border border-red-100 mt-2 whitespace-pre-wrap break-keep leading-snug">
+                        <p className={`font-medium text-red-500 bg-white/50 inline-block rounded-xl border border-red-100 whitespace-pre-wrap break-keep leading-snug ${currentSelectedHoliday.vacation_available ? 'text-[14px] sm:text-lg px-3 py-1.5 sm:px-4 sm:py-2 mt-1 sm:mt-2' : 'text-[15px] sm:text-lg px-4 py-2 mt-2'}`}>
                           {currentSelectedHoliday.content2}
                         </p>
                       )}
                     </div>
-                  );
+                ) : null;
+
+                if (currentSelectedHoliday && !currentSelectedHoliday.vacation_available) {
+                  return holidayBanner;
                 }
 
                 return (
                   <>
+                    {holidayBanner}
                     <div className="space-y-7">
                       {shifts.map((shift, index) => {
                         const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || (selectedTeam !== '취업팀' && (!logs[index].location || !logs[index].location.trim()))) : true;
@@ -3297,7 +3300,7 @@ export default function MainApp({
                                   })()}
                                 </span>
 
-                                {counts && counts.length > 0 && !logs[index].student?.includes("간담회") ? (
+                                {counts && counts.length > 0 && !currentSelectedHoliday && !logs[index].student?.includes("간담회") ? (
                                   <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
                                     {counts.map((c, cIdx) => {
                                       let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
@@ -3328,7 +3331,7 @@ export default function MainApp({
                                 ) : null}
                               </div>
 
-                              {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (
+                              {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && !currentSelectedHoliday && (
                                 <button
                                   type="button"
                                   onClick={() => handleRepeatScheduleForShift(index)}

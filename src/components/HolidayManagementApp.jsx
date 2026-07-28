@@ -7,7 +7,7 @@ import { getShiftWeight } from '../utils/helpers';
 
 export default function HolidayManagementApp({ onNavigateBack }) {
   const [holidays, setHolidays] = useState([]);
-  const [formData, setFormData] = useState({ date: '', name: '', content1: '', content2: '' });
+  const [formData, setFormData] = useState({ date: '', name: '', content1: '', content2: '', vacation_available: false });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -91,8 +91,8 @@ export default function HolidayManagementApp({ onNavigateBack }) {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleAdd = async () => {
@@ -124,6 +124,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
       payload.name = payload.name.trim();
       payload.content1 = payload.content1 ? payload.content1.trim() : '';
       payload.content2 = payload.content2 ? payload.content2.trim() : '';
+      payload.vacation_available = payload.vacation_available || false;
 
       // ID 시퀀스 오류(duplicate key) 방지를 위해 수동으로 가장 큰 id를 찾아 +1 할당
       const { data: maxData } = await supabaseClient
@@ -147,7 +148,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
       setNotice("성공적으로 추가되었습니다.");
       setTimeout(() => setNotice(""), 3000);
 
-      setFormData({ date: '', name: '', content1: '', content2: '' });
+      setFormData({ date: '', name: '', content1: '', content2: '', vacation_available: false });
       await fetchHolidays();
     } catch (err) {
       console.error(err);
@@ -203,6 +204,29 @@ export default function HolidayManagementApp({ onNavigateBack }) {
       if (error) throw error;
 
       setNotice("수정사항이 저장되었습니다.");
+      setTimeout(() => setNotice(""), 3000);
+      await fetchHolidays();
+    } catch (err) {
+      console.error(err);
+      alert("수정 중 오류가 발생했습니다: " + err.message);
+      await fetchHolidays();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleVacation = async (date, currentValue) => {
+    setSaving(true);
+    setNotice("");
+    try {
+      const { error } = await supabaseClient
+        .from('holidays')
+        .update({ vacation_available: !currentValue })
+        .eq('date', date);
+
+      if (error) throw error;
+
+      setNotice("휴가가능 상태가 변경되었습니다.");
       setTimeout(() => setNotice(""), 3000);
       await fetchHolidays();
     } catch (err) {
@@ -444,22 +468,28 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                 추가
               </button>
             </div>
-            <div className="flex gap-1.5 sm:gap-2">
-              <div className="w-[18%] min-w-0">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <div className="w-[22%] sm:w-[18%] min-w-0">
                 <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">날짜 *</label>
                 <input type="text" name="date" value={formData.date} onChange={handleInputChange} placeholder="MM-DD" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
-              <div className="w-[27%] min-w-0">
+              <div className="w-[26%] sm:w-[22%] min-w-0">
                 <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">공휴일 이름 *</label>
                 <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="예: 삼일절" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
-              <div className="w-[27%] min-w-0">
+              <div className="w-[26%] sm:w-[22%] min-w-0">
                 <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">내용1</label>
-                <input type="text" name="content1" value={formData.content1} onChange={handleInputChange} placeholder="예: 복지관 휴관" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+                <input type="text" name="content1" value={formData.content1} onChange={handleInputChange} placeholder="예: 휴관" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
               </div>
-              <div className="w-[28%] min-w-0">
+              <div className="w-[20%] sm:w-[18%] min-w-0">
                 <label className="block text-[11px] sm:text-xs font-bold text-blue-600 mb-1 truncate">내용2</label>
-                <input type="text" name="content2" value={formData.content2} onChange={handleInputChange} placeholder="예: 휴일 휴강" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+                <input type="text" name="content2" value={formData.content2} onChange={handleInputChange} placeholder="예: 휴강" className="w-full p-1.5 sm:p-2 border border-gray-300 rounded-lg text-[13px] sm:text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium" />
+              </div>
+              <div className="w-full sm:w-auto flex items-end mt-2 sm:mt-0">
+                <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 sm:py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors w-full sm:w-auto">
+                  <input type="checkbox" name="vacation_available" checked={formData.vacation_available} onChange={handleInputChange} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                  <span className="text-[12px] sm:text-sm font-bold text-blue-800">휴가가능</span>
+                </label>
               </div>
             </div>
           </div>
@@ -488,11 +518,12 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                   <tr className="bg-gray-200 text-gray-700 border-b border-gray-300 font-bold whitespace-nowrap">
                     <th rowSpan={2} className="p-3 w-28 sm:w-32 border-r border-gray-300 align-middle text-center">날짜</th>
                     <th className="p-3 w-32 sm:w-40 border-r border-gray-300">공휴일 이름</th>
-                    <th className="p-3 min-w-[100px]">내용1</th>
+                    <th className="p-3 min-w-[100px] border-r border-gray-300">내용1</th>
+                    <th rowSpan={2} className="p-3 w-24 text-center border-r border-gray-300 align-middle">휴가<br/>가능여부</th>
+                    <th rowSpan={2} className="p-3 text-center align-middle">{isAdmin ? '관리' : ''}</th>
                   </tr>
                   <tr className="bg-gray-200 text-gray-700 border-b-2 border-gray-400 font-bold whitespace-nowrap">
-                    <th className="p-3 border-r border-gray-300">내용2</th>
-                    <th className="p-3 text-left">{isAdmin ? '관리' : ''}</th>
+                    <th colSpan={2} className="p-3 border-r border-gray-300">내용2</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -503,20 +534,35 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                         <td className="pt-2 pb-0.5 px-3 border-r border-gray-200">
                           {renderCell(h, 'name', 'text-gray-800 font-bold')}
                         </td>
-                        <td className="pt-2 pb-0.5 px-3">
+                        <td className="pt-2 pb-0.5 px-3 border-r border-gray-200">
                           {renderCell(h, 'content1', 'text-gray-700 font-bold')}
                         </td>
-                      </tr>
-                      <tr className="border-b-2 border-gray-300 hover:bg-gray-50 transition-colors">
-                        <td className="pt-0.5 pb-2 px-3 border-r border-gray-200">
-                          {renderCell(h, 'content2', 'text-gray-900')}
+                        <td rowSpan={2} className="pt-2.5 pb-2.5 px-3 border-r border-gray-200 text-center align-middle">
+                          {isAdmin ? (
+                            <button 
+                              onClick={() => handleToggleVacation(h.date, h.vacation_available)}
+                              disabled={saving || loading}
+                              className={`px-3 py-1 rounded-full text-xs font-bold transition-colors shadow-sm ${h.vacation_available ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200' : 'bg-gray-100 text-gray-500 border border-gray-300 hover:bg-gray-200'}`}
+                            >
+                              {h.vacation_available ? '가능 O' : '불가 X'}
+                            </button>
+                          ) : (
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${h.vacation_available ? 'bg-green-50 text-green-700' : 'text-gray-400'}`}>
+                              {h.vacation_available ? 'O' : '-'}
+                            </span>
+                          )}
                         </td>
-                        <td className="pt-0.5 pb-2 px-3 text-left whitespace-nowrap bg-gray-50/50 align-middle">
+                        <td rowSpan={2} className="px-3 text-center whitespace-nowrap bg-gray-50/50 align-middle border-l border-gray-200">
                           {isAdmin && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center gap-2">
                               <button onClick={() => handleDelete(h.date)} disabled={saving || loading} className="px-4 py-1.5 bg-red-400 text-white border border-red-500 hover:bg-red-500 rounded-md disabled:opacity-50 text-xs font-bold transition-colors shadow-sm">삭제</button>
                             </div>
                           )}
+                        </td>
+                      </tr>
+                      <tr className="border-b-2 border-gray-300 hover:bg-gray-50 transition-colors">
+                        <td colSpan={2} className="pt-0.5 pb-2 px-3 border-r border-gray-200">
+                          {renderCell(h, 'content2', 'text-gray-900')}
                         </td>
                       </tr>
                     </React.Fragment>
