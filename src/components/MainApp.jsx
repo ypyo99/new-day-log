@@ -3004,7 +3004,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260723-class-count
+            v260728
           </div>
         </div>
       </div>
