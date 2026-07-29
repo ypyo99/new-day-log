@@ -1423,7 +1423,11 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               })();
 
                               if (item.status.includes('선생님휴가')) {
-                                statusTextClass = 'text-gray-300';
+                                statusTextClass = 'text-gray-500';
+                              } else if (item.status.includes('결석')) {
+                                statusTextClass = 'text-red-700';
+                              } else if (item.status.includes('종료')) {
+                                statusTextClass = 'text-red-400';
                               } else if (hasIndAbsence || hasCancel) {
                                 statusTextClass = 'text-gray-300';
                               } else if (item.status.includes('휴가')) {
