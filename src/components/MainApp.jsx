@@ -3246,7 +3246,7 @@ export default function MainApp({
                         <button
                           type="button"
                           onClick={() => setShowDetailedSchedule(!showDetailedSchedule)}
-                          className="bg-white border-2 border-red-300 text-red-600 font-bold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all text-[15px] sm:text-lg hover:bg-red-50"
+                          className="bg-red-200 border-2 border-red-300 text-red-900 font-bold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all text-[15px] sm:text-lg hover:bg-red-300"
                         >
                           {showDetailedSchedule ? '상세 일정 감추기' : '상세 일정 보기'}
                         </button>
