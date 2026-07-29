@@ -169,6 +169,8 @@ export default function MainApp({
   const [validationErrorMsg, setValidationErrorMsg] = useState("");
   const [validationErrorIndex, setValidationErrorIndex] = useState(null);
   const [validationErrorType, setValidationErrorType] = useState(""); // 에러 유형 (attendance, headcount 등)
+  const [showDetailedSchedule, setShowDetailedSchedule] = useState(false);
+
 
   const [saveProgress, setSaveProgress] = useState([]);
   const [isSaveComplete, setIsSaveComplete] = useState(false);
@@ -3239,6 +3241,17 @@ export default function MainApp({
                           {currentSelectedHoliday.content2}
                         </p>
                       )}
+                      {currentSelectedHoliday.vacation_available && (
+                        <div className="mt-4 flex justify-center w-full">
+                          <button
+                            type="button"
+                            onClick={() => setShowDetailedSchedule(!showDetailedSchedule)}
+                            className="bg-white border-2 border-red-300 text-red-600 font-bold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all text-[15px] sm:text-lg hover:bg-red-50"
+                          >
+                            {showDetailedSchedule ? '상세 일정 감추기' : '상세 일정 보기'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                 ) : null;
 
@@ -3249,8 +3262,10 @@ export default function MainApp({
                 return (
                   <>
                     {holidayBanner}
-                    <div className="space-y-7">
-                      {shifts.map((shift, index) => {
+                    {(!currentSelectedHoliday || !currentSelectedHoliday.vacation_available || showDetailedSchedule) && (
+                      <>
+                        <div className="space-y-7">
+                          {shifts.map((shift, index) => {
                         const isInfoMissing = logs[index] ? (!logs[index].student || !logs[index].student.trim() || (selectedTeam !== '취업팀' && (!logs[index].location || !logs[index].location.trim()))) : true;
                         const locLen = logs[index] && logs[index].location ? logs[index].location.length : 0;
 
@@ -3488,15 +3503,17 @@ export default function MainApp({
                           </div>
                         );
                       })}
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isDataLoading || !hasChanges}
-                      onMouseDown={(e) => e.preventDefault()}
-                      className={`w-full py-4 md:py-5 mt-4 md:mt-6 mb-8 sm:mb-2 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-transform duration-150 active:scale-[0.98] flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}
-                    >
-                      {isSubmitting ? <><Clock className="w-6 h-6 mr-2 animate-spin" />저장 중...</> : <><SaveIcon className="w-6 h-6 mr-2" />데이터베이스에 저장</>}
-                    </button>
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={isDataLoading || !hasChanges}
+                          onMouseDown={(e) => e.preventDefault()}
+                          className={`w-full py-4 md:py-5 mt-4 md:mt-6 mb-8 sm:mb-2 font-bold rounded-xl text-2xl md:text-3xl text-white shadow-lg transition-transform duration-150 active:scale-[0.98] flex items-center justify-center touch-manipulation ${(isDataLoading || !hasChanges) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#3366ff] hover:bg-[#1e3a8a]'}`}
+                        >
+                          {isSubmitting ? <><Clock className="w-6 h-6 mr-2 animate-spin" />저장 중...</> : <><SaveIcon className="w-6 h-6 mr-2" />데이터베이스에 저장</>}
+                        </button>
+                      </>
+                    )}
                   </>
                 );
               })()}
