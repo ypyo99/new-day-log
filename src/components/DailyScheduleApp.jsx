@@ -1105,7 +1105,8 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                   else if (/대체공휴일|임시공휴일|휴일|휴무/.test(text)) icon = '🏖️';
 
                   return (
-                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 sm:p-8 text-center shadow-lg my-3 sm:my-4 mx-auto max-w-2xl w-full animate-fadeIn">
+                    <>
+                      <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 sm:p-8 text-center shadow-lg my-3 sm:my-4 mx-auto max-w-2xl w-full animate-fadeIn">
                       <div className="flex justify-center mb-3 sm:mb-4">
                         <div className="bg-red-100 p-2.5 sm:p-3 rounded-full">
                           <span className="text-3xl sm:text-5xl">{icon}</span>
@@ -1125,8 +1126,38 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                         </p>
                       )}
                     </div>
-                  );
-                }
+                    
+                    {(() => {
+                      const vacationTeachers = Array.from(new Set(
+                        scheduleData.filter(row => row.status && (
+                          row.status.includes('선생님휴가') ||
+                          row.status.includes('선생님 휴가') ||
+                          row.status.includes('강사휴가') ||
+                          row.status.includes('강사 휴가') ||
+                          (row.status.includes('휴가') && (!row.student || row.student.trim() === '-'))
+                        )).map(row => typeof row.teacher === 'string' ? row.teacher.trim() : row.teacher)
+                      )).filter(Boolean);
+
+                      if (vacationTeachers.length === 0) return null;
+
+                      return (
+                        <div className="bg-white border border-blue-200 rounded-xl p-2.5 sm:p-3 shadow-sm flex flex-col sm:flex-row items-center justify-center gap-2 mx-auto max-w-2xl w-full overflow-hidden mb-3 sm:mb-4">
+                          <span className="font-bold text-blue-800 text-xs sm:text-sm flex items-center shrink-0">
+                            🏖️ 오늘 휴가인 선생님 :
+                          </span>
+                          <div className="flex flex-wrap justify-center gap-1.5">
+                            {vacationTeachers.map((teacher, idx) => (
+                              <span key={idx} className="bg-blue-50 border border-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs sm:text-sm font-bold shadow-sm whitespace-nowrap">
+                                {teacher}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                );
+              }
 
                 return (
                   <div className="bg-white rounded-xl shadow-sm border border-gray-400 w-full flex-1 flex flex-col overflow-hidden">
@@ -1346,6 +1377,34 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                         </tbody>
                       </table>
                     </div>
+                    {(() => {
+                      const vacationTeachers = Array.from(new Set(
+                        scheduleData.filter(row => row.status && (
+                          row.status.includes('선생님휴가') ||
+                          row.status.includes('선생님 휴가') ||
+                          row.status.includes('강사휴가') ||
+                          row.status.includes('강사 휴가') ||
+                          (row.status.includes('휴가') && (!row.student || row.student.trim() === '-'))
+                        )).map(row => typeof row.teacher === 'string' ? row.teacher.trim() : row.teacher)
+                      )).filter(Boolean);
+
+                      if (vacationTeachers.length === 0) return null;
+
+                      return (
+                        <div className="bg-blue-50 border-t border-blue-100 px-3 py-2.5 sm:px-4 sm:py-3 flex flex-wrap items-center gap-2 shrink-0">
+                          <span className="font-bold text-blue-800 text-xs sm:text-sm flex items-center shrink-0">
+                            🏖️ 오늘 휴가인 선생님 :
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {vacationTeachers.map((teacher, idx) => (
+                              <span key={idx} className="bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded-md text-xs sm:text-sm font-bold shadow-sm">
+                                {teacher}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
