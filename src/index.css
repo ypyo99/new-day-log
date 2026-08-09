@@ -130,3 +130,25 @@ input[type="date"].opacity-0::-webkit-calendar-picker-indicator {
   animation: shineText 2.5s linear infinite;
   display: inline;
 }
+
+@keyframes waveGradientRight {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes waveY {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-2px); }
+  75% { transform: translateY(2px); }
+}
+
+.wave-red-text {
+  background: linear-gradient(90deg, #ff0000 0%, #ff8888 25%, #ff0000 50%, #ff8888 75%, #ff0000 100%);
+  background-size: 200% 100%;
+  color: transparent !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: waveGradientRight 2s linear infinite, waveY 1.5s ease-in-out infinite;
+  display: inline-block;
+  font-weight: 900;
+}

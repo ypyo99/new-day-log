@@ -705,7 +705,8 @@ export default function MainApp({
         const mm = String(holidayObj.getMonth() + 1);
         const dd = String(holidayObj.getDate());
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-        const dayName = dayNames[holidayObj.getDay()];
+        const dayOfWeek = holidayObj.getDay();
+        const dayName = dayNames[dayOfWeek];
 
         const name = h.name || '';
         // name과 content1이 동일하면 content1을 표시하지 않음 (중복 방지)
@@ -713,7 +714,7 @@ export default function MainApp({
 
         const alertMsg = `${mm}/${dd} ${dayName} — ${name}${content1}`;
 
-        alerts.push({ diffDays, msg: alertMsg });
+        alerts.push({ diffDays, msg: alertMsg, dayOfWeek });
       }
     });
 
@@ -3168,9 +3169,23 @@ export default function MainApp({
                           {specialAlerts.map((alert, idx) => {
                             // 3일 이내인 일정인지 확인합니다
                             const isClose = alert.diffDays <= 3;
+                            // 오늘과 같은 요일인지 확인합니다
+                            const isSameDayOfWeek = alert.dayOfWeek === new Date().getDay();
+                            
+                            let textClass = 'text-blue-700';
+                            let spanClass = '';
+                            
+                            if (isSameDayOfWeek) {
+                              textClass = ''; // wave-red-text 클래스가 폰트와 애니메이션 제어
+                              spanClass = 'wave-red-text';
+                            } else if (isClose) {
+                              textClass = '';
+                              spanClass = 'shine-text-top';
+                            }
+
                             return (
-                              <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${isClose ? '' : 'text-blue-700'}`}>
-                                <span className={isClose ? 'shine-text-top' : ''}>
+                              <p key={idx} className={`font-bold text-[13.5px] min-[360px]:text-[14.5px] min-[380px]:text-[15.5px] sm:text-[18px] leading-tight tracking-tighter whitespace-nowrap overflow-x-auto pb-0.5 scrollbar-hide w-full block ${textClass}`}>
+                                <span className={spanClass}>
                                   • {alert.msg}
                                 </span>
                               </p>
