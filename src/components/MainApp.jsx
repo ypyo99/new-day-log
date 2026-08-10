@@ -720,7 +720,7 @@ export default function MainApp({
 
     // 날짜 순서대로 정렬
     alerts.sort((a, b) => a.diffDays - b.diffDays);
-    // 일정 3일전부터 폰트 색상을 변경하기 위해 msg뿐만 아니라 diffDays도 함께 저장합니다.
+    // 일정 3일전부터 폰트 색상을 변경하기 위해 msg 뿐만 아니라 diffDays도 함께 저장합니다.
     setSpecialAlerts(alerts);
   }, [date, holidaysFullList]);
 
@@ -3171,10 +3171,10 @@ export default function MainApp({
                             const isClose = alert.diffDays <= 3;
                             // 오늘과 같은 요일인지 확인합니다
                             const isSameDayOfWeek = alert.dayOfWeek === new Date().getDay();
-                            
+
                             let textClass = 'text-blue-700';
                             let spanClass = '';
-                            
+
                             if (isSameDayOfWeek) {
                               textClass = ''; // wave-red-text 클래스가 폰트와 애니메이션 제어
                               spanClass = 'wave-red-text';
