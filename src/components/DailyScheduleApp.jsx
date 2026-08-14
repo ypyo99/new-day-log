@@ -621,10 +621,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           const isTarget = isTargetTeacher(hRow.teacher);
 
           const isOnlyAbsent = (personalStatus.includes("결석") && !hasAttendance) && !(personalStatus.includes("선생님휴가") && !hasAttendance) && !(hasEndOrCancel && !hasAttendance);
+          const isOnlyEnd = teamName === '취업팀' && personalStatus.includes('종료') && !hasAttendance;
           let isValidDay = false;
           if (isTarget) {
             isValidDay = (dayStatus === 'attended');
           } else if (teamName === '취업팀' && isOnlyAbsent) {
+            isValidDay = true;
+          } else if (isOnlyEnd) {
             isValidDay = true;
           } else {
             isValidDay = !isAbsentOrCanceled;
@@ -804,10 +807,13 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
           const isTarget = isTargetTeacher(row.teacher);
 
+          const isOnlyEndCurrent = teamName === '취업팀' && personalStatus.includes('종료') && !hasCurrentAttendance;
           let isValidDayToday = false;
           if (isTarget) {
             isValidDayToday = (dayStatusToday === 'attended');
           } else if (teamName === '취업팀' && isOnlyAbsentCurrent) {
+            isValidDayToday = true;
+          } else if (isOnlyEndCurrent) {
             isValidDayToday = true;
           } else {
             isValidDayToday = !isAbsent;
