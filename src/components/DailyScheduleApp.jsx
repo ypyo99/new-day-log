@@ -668,12 +668,14 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
             if (!alreadyHas && isValidDay) {
               const isAbsentEntry = teamName === '취업팀' && isOnlyAbsent;
+              const isEndEntry = teamName === '취업팀' && (hRow.memo || '').includes('종료');
               studentDatesMap[name].push({
                 date: dateObj,
                 shift: hShift,
                 group: hGroup,
                 teacher: hRow.teacher,
                 isAbsent: isAbsentEntry,
+                isEnd: isEndEntry,
                 explicitCount: explicitVal
               });
             } else if (hasExplicitCount) {
@@ -844,12 +846,14 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               }
             }
             if (isNew) {
+              const isEndEntryCurrent = teamName === '취업팀' && (row.memo || '').includes('종료');
               currentDatesMap[name].push({
                 date: todayDateObj,
                 shift: row.time,
                 group: row.group,
                 teacher: row.teacher,
                 isAbsent: isJobTeamAbsent,
+                isEnd: isEndEntryCurrent,
                 explicitCount: currentExplicitVal
               });
             } else if (hasExplicitCount) {
@@ -1505,8 +1509,11 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                   const today = new Date();
                   const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
                   const isAbsentDay = !!d.isAbsent;
+                  const isEndDay = !!d.isEnd;
                   let cellClass = '';
-                  if (isAbsentDay) {
+                  if (isEndDay) {
+                    cellClass = 'bg-gray-400 border-gray-500 shadow-md text-white';
+                  } else if (isAbsentDay) {
                     cellClass = 'bg-orange-400 border-orange-500 shadow-md text-white';
                   } else if (isToday) {
                     cellClass = 'bg-purple-300 border-purple-500 shadow-md text-purple-950';
