@@ -621,9 +621,12 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           const isTargetTeacher = (t) => t && (t.includes("천은선") || t.includes("서승희"));
           const isTarget = isTargetTeacher(hRow.teacher);
 
+          const isOnlyAbsent = (personalStatus.includes("결석") && !hasAttendance) && !(personalStatus.includes("선생님휴가") && !hasAttendance) && !(hasEndOrCancel && !hasAttendance);
           let isValidDay = false;
           if (isTarget) {
             isValidDay = (dayStatus === 'attended');
+          } else if (teamName === '취업팀' && isOnlyAbsent) {
+            isValidDay = true;
           } else {
             isValidDay = !isAbsentOrCanceled;
           }
@@ -658,15 +661,25 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               });
             }
 
-            if (!alreadyHas && isValidDay) {
-              studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher });
-            }
+            let explicitVal = null;
             if (hasExplicitCount) {
               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-              const explicitCount = parseInt(matchObj[1], 10);
-              const currentLen = studentDatesMap[name] ? studentDatesMap[name].length : 0;
-              const newOffset = explicitCount - currentLen;
-              studentOffsetsMap[name] = newOffset;
+              explicitVal = parseInt(matchObj[1], 10);
+            }
+
+            if (!alreadyHas && isValidDay) {
+              const isAbsentEntry = teamName === '취업팀' && isOnlyAbsent;
+              studentDatesMap[name].push({
+                date: dateObj,
+                shift: hShift,
+                group: hGroup,
+                teacher: hRow.teacher,
+                isAbsent: isAbsentEntry,
+                explicitCount: explicitVal
+              });
+            } else if (hasExplicitCount) {
+              const existing = studentDatesMap[name].find(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift);
+              if (existing) existing.explicitCount = explicitVal;
             }
           }
         });
@@ -682,6 +695,14 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
           };
           return getT(a.shift) - getT(b.shift);
+        });
+
+        let runningOffset = 0;
+        studentDatesMap[name].forEach((d, idx) => {
+          if (d.explicitCount !== null && d.explicitCount !== undefined) {
+            runningOffset = d.explicitCount - (idx + 1);
+          }
+          d.sessionNum = (idx + 1) + runningOffset;
         });
       });
 
@@ -768,6 +789,8 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           const hasCurrentEndOrCancel = checkIsCanceled(personalStatus);
           const hasCurrentAttendance = hasIndependentKeyword(personalStatus, ["1", "출석"]);
           const isAbsent = (personalStatus.includes("결석") && !hasCurrentAttendance) || (personalStatus.includes("선생님휴가") && !hasCurrentAttendance) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
+          const isOnlyAbsentCurrent = (personalStatus.includes("결석") && !hasCurrentAttendance) && !(personalStatus.includes("선생님휴가") && !hasCurrentAttendance) && !(hasCurrentEndOrCancel && !hasCurrentAttendance);
+          const isJobTeamAbsent = teamName === '취업팀' && isOnlyAbsentCurrent;
           const textToMatch = (row.memo || row.status || "");
           const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
           const hasExplicitCount = memoMatches.length > 0;
@@ -783,8 +806,16 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
           let isValidDayToday = false;
           if (isTarget) {
             isValidDayToday = (dayStatusToday === 'attended');
+          } else if (teamName === '취업팀' && isOnlyAbsentCurrent) {
+            isValidDayToday = true;
           } else {
             isValidDayToday = !isAbsent;
+          }
+
+          let currentExplicitVal = null;
+          if (hasExplicitCount) {
+            const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+            currentExplicitVal = parseInt(matchObj[1], 10);
           }
 
           if (hasExplicitCount || isValidDayToday) {
@@ -814,7 +845,17 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               }
             }
             if (isNew) {
-              currentDatesMap[name].push({ date: todayDateObj, shift: row.time, group: row.group, teacher: row.teacher });
+              currentDatesMap[name].push({
+                date: todayDateObj,
+                shift: row.time,
+                group: row.group,
+                teacher: row.teacher,
+                isAbsent: isJobTeamAbsent,
+                explicitCount: currentExplicitVal
+              });
+            } else if (hasExplicitCount) {
+              const existing = currentDatesMap[name].find(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time);
+              if (existing) existing.explicitCount = currentExplicitVal;
             }
 
             const getTLocal = (s) => {
@@ -881,10 +922,26 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             }
             return false;
           });
-          const offset = currentOffsetsMap[name] || 0;
+
+          validDates.sort((a, b) => {
+            if (a.date.getTime() !== b.date.getTime()) return a.date.getTime() - b.date.getTime();
+            return getTLocal(a.shift) - getTLocal(b.shift);
+          });
+
+          let runningOffset = 0;
+          validDates.forEach((d, idx) => {
+            if (d.explicitCount !== null && d.explicitCount !== undefined) {
+              runningOffset = d.explicitCount - (idx + 1);
+            }
+            d.sessionNum = (idx + 1) + runningOffset;
+          });
+
+          const lastValidDate = validDates[validDates.length - 1];
+          const finalCount = lastValidDate && lastValidDate.sessionNum !== undefined ? lastValidDate.sessionNum : (validDates.length + (currentOffsetsMap[name] || 0));
+
           countsForThisRow.push({
             name: name,
-            count: validDates.length + offset,
+            count: finalCount,
             dates: [...validDates]
           });
         });
@@ -1438,25 +1495,35 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-3 sm:p-4" onClick={() => setSelectedStudentDates(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
             <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-base sm:text-lg md:text-xl">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-xs sm:text-sm md:text-base">({selectedStudentDates.count}회)</span></h3>
+              <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
               <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform p-1">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
-            <div className="p-3 sm:p-5 overflow-y-auto">
-              <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="p-3 sm:p-4 overflow-y-auto">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {selectedStudentDates.dates.map((d, idx) => {
                   const today = new Date();
                   const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
+                  const isAbsentDay = !!d.isAbsent;
+                  let cellClass = '';
+                  if (isAbsentDay) {
+                    cellClass = 'bg-orange-400 border-orange-500 shadow-md text-white';
+                  } else if (isToday) {
+                    cellClass = 'bg-purple-300 border-purple-500 shadow-md text-purple-950';
+                  } else {
+                    cellClass = 'bg-purple-50 border-purple-200 shadow-sm text-purple-900';
+                  }
                   return (
-                    <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950 font-black' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900 font-bold'} rounded-lg py-2 sm:py-2.5 px-1 text-center text-xs sm:text-sm md:text-base flex justify-center items-center whitespace-nowrap tracking-tight`}>
+                    <div key={idx} className={`${cellClass} border rounded-lg py-2 sm:py-2.5 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
+                      <span className={`absolute top-0.5 left-1 text-[12px] sm:text-[14px] font-black leading-none opacity-75`}>{d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}</span>
                       {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
                 })}
               </div>
               {selectedStudentDates.dates.length === 0 && (
-                <div className="text-center text-gray-500 py-4 font-bold text-sm sm:text-base">출석 기록이 없습니다.</div>
+                <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
               )}
             </div>
           </div>
