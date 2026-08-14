@@ -1274,7 +1274,7 @@ export default function MainApp({
               if (isNew) {
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
                 const isAbsentEntry = selectedTeam === '취업팀' && isOnlyAbsent;
-                const isEndEntry = personalStatus.includes('종료');
+                const isEndEntry = personalStatus.split(/[,/]+/).map(t => t.trim()).some(t => t === '종료');
                 studentDatesMap[name].push({
                   date: dateObj,
                   shift: hShift,
@@ -1419,7 +1419,7 @@ export default function MainApp({
 
               if (isNew) {
                 const currentTeacher = log ? log.teacher : currentUser;
-                const isEndEntryCurrent = currentStatus.includes('종료');
+                const isEndEntryCurrent = currentStatus.split(/[,/]+/).map(t => t.trim()).some(t => t === '종료');
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
                 currentDatesMap[name].push({
                   date: todayDateObj,
