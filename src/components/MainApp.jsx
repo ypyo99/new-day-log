@@ -3941,7 +3941,7 @@ export default function MainApp({
                   const isAbsentDay = !!d.isAbsent;
                   let cellClass = '';
                   if (isAbsentDay) {
-                    cellClass = 'bg-red-500 border-red-700 shadow-md text-white';
+                    cellClass = 'bg-orange-400 border-orange-500 shadow-md text-white';
                   } else if (isToday) {
                     cellClass = 'bg-purple-300 border-purple-500 shadow-md text-purple-950';
                   } else {
