@@ -1265,18 +1265,26 @@ export default function MainApp({
                 if (!alreadyHas) isNew = true;
               }
 
+              let explicitVal = null;
+              if (hasExplicitCount) {
+                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+                explicitVal = parseInt(matchObj[1], 10);
+              }
+
               if (isNew) {
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
                 const isAbsentEntry = selectedTeam === '취업팀' && isOnlyAbsent;
-                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher, isAbsent: isAbsentEntry });
-              }
-
-              if (hasExplicitCount) {
-                const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-                const explicitCount = parseInt(matchObj[1], 10);
-                const currentLen = studentDatesMap[name] ? studentDatesMap[name].length : 0;
-                const newOffset = explicitCount - currentLen;
-                studentOffsetsMap[name] = newOffset;
+                studentDatesMap[name].push({ 
+                  date: dateObj, 
+                  shift: hShift, 
+                  group: hGroup, 
+                  teacher: hRow.teacher, 
+                  isAbsent: isAbsentEntry,
+                  explicitCount: explicitVal
+                });
+              } else if (hasExplicitCount) {
+                const existing = studentDatesMap[name].find(d => d.date.getTime() === dateObj.getTime() && d.shift === hShift);
+                if (existing) existing.explicitCount = explicitVal;
               }
             }
           });
@@ -1292,6 +1300,14 @@ export default function MainApp({
               return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
             };
             return getT(a.shift) - getT(b.shift);
+          });
+
+          let runningOffset = 0;
+          studentDatesMap[name].forEach((d, idx) => {
+            if (d.explicitCount !== null && d.explicitCount !== undefined) {
+              runningOffset = d.explicitCount - (idx + 1);
+            }
+            d.sessionNum = (idx + 1) + runningOffset;
           });
         });
         const newCounts = {};
@@ -1393,11 +1409,26 @@ export default function MainApp({
               });
               if (!alreadyHas) isNew = true;
 
-              if (isNew) {
-                const currentTeacher = log ? log.teacher : currentUser;
-                // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
-                currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup, teacher: currentTeacher, isAbsent: isJobTeamAbsent });
-              }
+            let currentExplicitVal = null;
+            if (hasExplicitCount) {
+              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+              currentExplicitVal = parseInt(matchObj[1], 10);
+            }
+
+            if (isNew) {
+              const currentTeacher = log ? log.teacher : currentUser;
+              // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
+              currentDatesMap[name].push({ 
+                date: todayDateObj, 
+                shift: shift, 
+                group: currentUserGroup, 
+                teacher: currentTeacher, 
+                isAbsent: isJobTeamAbsent,
+                explicitCount: currentExplicitVal
+              });
+            } else if (hasExplicitCount) {
+              const existing = currentDatesMap[name].find(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift);
+              if (existing) existing.explicitCount = currentExplicitVal;
             }
 
             const getTLocal = (s) => {
@@ -1420,16 +1451,23 @@ export default function MainApp({
               return false;
             });
 
-            if (hasExplicitCount) {
-              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-              const explicitCount = parseInt(matchObj[1], 10);
-              const currentLen = validDates.length;
-              const newOffset = explicitCount - currentLen;
-              currentOffsetsMap[name] = newOffset;
-            }
+            validDates.sort((a, b) => {
+              if (a.date.getTime() !== b.date.getTime()) return a.date.getTime() - b.date.getTime();
+              return getTLocal(a.shift) - getTLocal(b.shift);
+            });
 
-            const offset = currentOffsetsMap[name] || 0;
-            countsForSlot.push({ name, count: validDates.length + offset, offset, dates: [...validDates] });
+            let runningOffset = 0;
+            validDates.forEach((d, idx) => {
+              if (d.explicitCount !== null && d.explicitCount !== undefined) {
+                runningOffset = d.explicitCount - (idx + 1);
+              }
+              d.sessionNum = (idx + 1) + runningOffset;
+            });
+
+            const lastValidDate = validDates[validDates.length - 1];
+            const finalCount = lastValidDate && lastValidDate.sessionNum !== undefined ? lastValidDate.sessionNum : validDates.length;
+
+            countsForSlot.push({ name, count: finalCount, dates: [...validDates] });
           });
           if (countsForSlot.length > 0) newCounts[index] = countsForSlot;
         });
@@ -3910,7 +3948,7 @@ export default function MainApp({
                   }
                   return (
                     <div key={idx} className={`${cellClass} border rounded-lg py-2 sm:py-2.5 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
-                      <span className={`absolute top-0.5 left-1 text-[9px] sm:text-[10px] font-black leading-none opacity-60`}>{idx + 1 + (selectedStudentDates.offset || 0)}</span>
+                      <span className={`absolute top-0.5 left-1 text-[9px] sm:text-[10px] font-black leading-none opacity-60`}>{d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}</span>
                       {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
