@@ -1274,11 +1274,11 @@ export default function MainApp({
               if (isNew) {
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
                 const isAbsentEntry = selectedTeam === '취업팀' && isOnlyAbsent;
-                studentDatesMap[name].push({ 
-                  date: dateObj, 
-                  shift: hShift, 
-                  group: hGroup, 
-                  teacher: hRow.teacher, 
+                studentDatesMap[name].push({
+                  date: dateObj,
+                  shift: hShift,
+                  group: hGroup,
+                  teacher: hRow.teacher,
                   isAbsent: isAbsentEntry,
                   explicitCount: explicitVal
                 });
@@ -1418,11 +1418,11 @@ export default function MainApp({
               if (isNew) {
                 const currentTeacher = log ? log.teacher : currentUser;
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
-                currentDatesMap[name].push({ 
-                  date: todayDateObj, 
-                  shift: shift, 
-                  group: currentUserGroup, 
-                  teacher: currentTeacher, 
+                currentDatesMap[name].push({
+                  date: todayDateObj,
+                  shift: shift,
+                  group: currentUserGroup,
+                  teacher: currentTeacher,
                   isAbsent: isJobTeamAbsent,
                   explicitCount: currentExplicitVal
                 });
@@ -3058,7 +3058,7 @@ export default function MainApp({
           </div>
 
           <div className="mt-6 sm:mt-8 text-center text-[12px] text-gray-400 font-bold tracking-wider">
-            v260802-leave
+            v260814-class count
           </div>
         </div>
       </div>
