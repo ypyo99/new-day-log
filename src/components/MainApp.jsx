@@ -3949,7 +3949,7 @@ export default function MainApp({
                   }
                   return (
                     <div key={idx} className={`${cellClass} border rounded-lg py-2 sm:py-2.5 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
-                      <span className={`absolute top-0.5 left-1 text-[9px] sm:text-[10px] font-black leading-none opacity-60`}>{d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}</span>
+                      <span className={`absolute top-0.5 left-1 text-[12px] sm:text-[14px] font-black leading-none opacity-75`}>{d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}</span>
                       {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
