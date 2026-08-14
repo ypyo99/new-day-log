@@ -668,7 +668,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
 
             if (!alreadyHas && isValidDay) {
               const isAbsentEntry = teamName === '취업팀' && isOnlyAbsent;
-              const isEndEntry = teamName === '취업팀' && (hRow.memo || '').includes('종료');
+              const isEndEntry = teamName === '취업팀' && ((hRow.memo || '').includes('종료') || personalStatus.includes('종료'));
               studentDatesMap[name].push({
                 date: dateObj,
                 shift: hShift,
@@ -846,7 +846,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               }
             }
             if (isNew) {
-              const isEndEntryCurrent = teamName === '취업팀' && (row.memo || '').includes('종료');
+              const isEndEntryCurrent = teamName === '취업팀' && ((row.memo || '').includes('종료') || personalStatus.includes('종료'));
               currentDatesMap[name].push({
                 date: todayDateObj,
                 shift: row.time,
