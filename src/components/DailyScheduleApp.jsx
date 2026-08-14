@@ -1528,7 +1528,14 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                   }
                   return (
                     <div key={idx} className={`${cellClass} border rounded-lg py-2 sm:py-2.5 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
-                      <span className={`absolute top-0.5 left-1 text-[12px] sm:text-[14px] font-black leading-none opacity-75`}>{d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}</span>
+                      <span className={`absolute top-0.5 left-1 text-[11px] sm:text-[13px] font-black leading-none opacity-90 flex items-center gap-0.5`}>
+                        {d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}
+                        {(isAbsentDay || isEndDay) && (
+                          <span className="text-[9px] sm:text-[10px] font-bold opacity-90 ml-0.5">
+                            {isEndDay ? '종료' : '결석'}
+                          </span>
+                        )}
+                      </span>
                       {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
