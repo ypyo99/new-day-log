@@ -516,47 +516,46 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         }
       });
 
-      let allTeamRecords = [];
-      let histFrom = 0;
-      const histStep = 1000;
-      let histHasMore = true;
+      const allStudents = [];
+      const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
 
-      while (histHasMore) {
-        const histTo = histFrom + histStep - 1;
+      parsedData.forEach(row => {
+        if (!row.student || row.student.trim() === '-') return;
+        const names = row.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+        names.forEach(name => {
+          if (!excludeKeywords.some(kw => name.includes(kw))) {
+            if (!allStudents.includes(name)) allStudents.push(name);
+          }
+        });
+      });
+
+      let allTeamRecords = [];
+      if (allStudents.length > 0) {
+        const orConditions = allStudents.map(name => `student.ilike.%${name}%`).join(',');
         const { data: histData, error: histError } = await supabaseClient
           .from('daily_logs')
           .select('log_date, student, status, teacher, shift')
           .neq('student', '')
           .not('student', 'is', null)
           .lte('log_date', dateStr)
-          .order('log_date', { ascending: true })
-          .order('id', { ascending: true })
-          .range(histFrom, histTo);
+          .or(orConditions)
+          .order('log_date', { ascending: true });
 
         if (histError) throw histError;
-        if (histData && histData.length > 0) {
-          allTeamRecords = allTeamRecords.concat(histData);
-          if (histData.length < histStep) {
-            histHasMore = false;
-          } else {
-            histFrom += histStep;
-          }
-        } else {
-          histHasMore = false;
+        if (histData) {
+          const getT = (s) => {
+            if (!s) return 9999;
+            const m = s.match(/(\d+):(\d+)/);
+            return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
+          };
+          allTeamRecords = histData.sort((a, b) => {
+            const dateA = new Date(a.log_date).getTime();
+            const dateB = new Date(b.log_date).getTime();
+            if (dateA !== dateB) return dateA - dateB;
+            return getT(a.shift) - getT(b.shift);
+          });
         }
       }
-
-      const getT = (s) => {
-        if (!s) return 9999;
-        const m = s.match(/(\d+):(\d+)/);
-        return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
-      };
-      allTeamRecords.sort((a, b) => {
-        const dateA = new Date(a.log_date).getTime();
-        const dateB = new Date(b.log_date).getTime();
-        if (dateA !== dateB) return dateA - dateB;
-        return getT(a.shift) - getT(b.shift);
-      });
 
       const studentDatesMap = {};
       const studentOffsetsMap = {};
