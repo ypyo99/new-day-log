@@ -720,7 +720,7 @@ export default function MainApp({
 
     // 날짜 순서대로 정렬
     alerts.sort((a, b) => a.diffDays - b.diffDays);
-    // 일정 3일전부터 폰트 색상을 변경하기 위해 msg 뿐만 아니라 diffDays도 함께 저장합니다.
+    // 일정 3일전부터 폰트 색상을 변경하기 위해 msg뿐만 아니라 diffDays도 함께 저장합니다.
     setSpecialAlerts(alerts);
   }, [date, holidaysFullList]);
 
@@ -1219,9 +1219,15 @@ export default function MainApp({
             const dayStatus = dayStatusMap[name] && dayStatusMap[name][dateObj.getTime()];
             const isTarget = isTargetTeacher(hRow.teacher);
 
+            // 취업팀 소속 선생님의 경우 결석(결석 키워드)이어도 회차를 증가시킴
+            // 단, 선생님휴가 / 취소는 기존과 동일하게 차감
+            const isOnlyAbsent = (personalStatus.includes("결석") && !hasAttendance) && !(personalStatus.includes("선생님휴가") && !hasAttendance) && !(hasEndOrCancel && !hasAttendance);
             let isValidDay = false;
             if (isTarget) {
               isValidDay = (dayStatus === 'attended');
+            } else if (selectedTeam === '취업팀' && isOnlyAbsent) {
+              // 취업팀: 결석이어도 회차 포함
+              isValidDay = true;
             } else {
               isValidDay = !isAbsentOrCanceled;
             }
@@ -1260,7 +1266,9 @@ export default function MainApp({
               }
 
               if (isNew) {
-                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher });
+                // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
+                const isAbsentEntry = selectedTeam === '취업팀' && isOnlyAbsent;
+                studentDatesMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher, isAbsent: isAbsentEntry });
               }
 
               if (hasExplicitCount) {
@@ -1350,6 +1358,9 @@ export default function MainApp({
             // 결석이거나, (선생님휴가이되 출석은 없는 경우)이거나, 출석 없이 취소만 있는 경우 결석(isAbsent = true)으로 판정합니다.
             // 이 판정 결과에 따라 화면의 렌더링 회차가 즉시 1 차감됩니다.
             const isAbsent = (currentStatus.includes("결석") && !hasCurrentAttendance) || (currentStatus.includes("선생님휴가") && !hasCurrentAttendance) || (hasCurrentEndOrCancel && !hasCurrentAttendance);
+            // 취업팀의 경우 '결석' 단독 체크(선생님휴가/취소 제외)이면 회차에 포함
+            const isOnlyAbsentCurrent = (currentStatus.includes("결석") && !hasCurrentAttendance) && !(currentStatus.includes("선생님휴가") && !hasCurrentAttendance) && !(hasCurrentEndOrCancel && !hasCurrentAttendance);
+            const isJobTeamAbsent = selectedTeam === '취업팀' && isOnlyAbsentCurrent;
             const textToMatch = (log.memo || fullRealtimeStatus);
             // [수정된 부분 끝]
             const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
@@ -1358,7 +1369,7 @@ export default function MainApp({
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
             if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
 
-            if (!isAbsent || hasExplicitCount) {
+            if (!isAbsent || hasExplicitCount || isJobTeamAbsent) {
               let isNew = false;
               const alreadyHas = currentDatesMap[name].some(d => {
                 const currentTeacher = log ? log.teacher : currentUser;
@@ -1384,7 +1395,8 @@ export default function MainApp({
 
               if (isNew) {
                 const currentTeacher = log ? log.teacher : currentUser;
-                currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup, teacher: currentTeacher });
+                // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
+                currentDatesMap[name].push({ date: todayDateObj, shift: shift, group: currentUserGroup, teacher: currentTeacher, isAbsent: isJobTeamAbsent });
               }
             }
 
@@ -3887,8 +3899,17 @@ export default function MainApp({
                 {selectedStudentDates.dates.map((d, idx) => {
                   const today = new Date();
                   const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
+                  const isAbsentDay = !!d.isAbsent;
+                  let cellClass = '';
+                  if (isAbsentDay) {
+                    cellClass = 'bg-red-500 border-red-700 shadow-md text-white';
+                  } else if (isToday) {
+                    cellClass = 'bg-purple-300 border-purple-500 shadow-md text-purple-950';
+                  } else {
+                    cellClass = 'bg-purple-50 border-purple-200 shadow-sm text-purple-900';
+                  }
                   return (
-                    <div key={idx} className={`${isToday ? 'bg-purple-300 border-purple-500 shadow-md text-purple-950' : 'bg-purple-50 border-purple-200 shadow-sm text-purple-900'} rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal`}>
+                    <div key={idx} className={`${cellClass} border rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
                       {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
