@@ -1429,7 +1429,7 @@ export default function MainApp({
             }
 
             const offset = currentOffsetsMap[name] || 0;
-            countsForSlot.push({ name, count: validDates.length + offset, dates: [...validDates] });
+            countsForSlot.push({ name, count: validDates.length + offset, offset, dates: [...validDates] });
           });
           if (countsForSlot.length > 0) newCounts[index] = countsForSlot;
         });
@@ -3908,10 +3908,11 @@ export default function MainApp({
                   } else {
                     cellClass = 'bg-purple-50 border-purple-200 shadow-sm text-purple-900';
                   }
+                  const sessionNum = (selectedStudentDates.offset || 0) + idx + 1;
                   return (
                     <div key={idx} className={`${cellClass} border rounded-lg py-2.5 sm:py-3 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
-                      <span className={`absolute top-0.5 left-1 text-[9px] sm:text-[10px] font-black leading-none ${isAbsentDay ? 'opacity-80' : 'opacity-50'}`}>{idx + 1}</span>
-                      {d.date.getMonth() + 1}/{d.date.getDate()} ({['\uc77c', '\uc6d4', '\ud654', '\uc218', '\ubaa9', '\uae08', '\ud1a0'][d.date.getDay()]})
+                      <span className={`absolute top-0.5 left-1 text-[9px] sm:text-[10px] font-black leading-none ${isAbsentDay ? 'text-red-100' : isToday ? 'text-purple-700' : 'text-purple-400'} opacity-80`}>{sessionNum}</span>
+                      {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
                     </div>
                   );
                 })}
