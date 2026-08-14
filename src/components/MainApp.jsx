@@ -1274,12 +1274,14 @@ export default function MainApp({
               if (isNew) {
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
                 const isAbsentEntry = selectedTeam === '취업팀' && isOnlyAbsent;
+                const isEndEntry = (hRow.memo || '').includes('종료');
                 studentDatesMap[name].push({
                   date: dateObj,
                   shift: hShift,
                   group: hGroup,
                   teacher: hRow.teacher,
                   isAbsent: isAbsentEntry,
+                  isEnd: isEndEntry,
                   explicitCount: explicitVal
                 });
               } else if (hasExplicitCount) {
@@ -1417,6 +1419,7 @@ export default function MainApp({
 
               if (isNew) {
                 const currentTeacher = log ? log.teacher : currentUser;
+                const isEndEntryCurrent = (log?.memo || '').includes('종료');
                 // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
                 currentDatesMap[name].push({
                   date: todayDateObj,
@@ -1424,6 +1427,7 @@ export default function MainApp({
                   group: currentUserGroup,
                   teacher: currentTeacher,
                   isAbsent: isJobTeamAbsent,
+                  isEnd: isEndEntryCurrent,
                   explicitCount: currentExplicitVal
                 });
               } else if (hasExplicitCount) {
@@ -3939,8 +3943,11 @@ export default function MainApp({
                   const today = new Date();
                   const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
                   const isAbsentDay = !!d.isAbsent;
+                  const isEndDay = !!d.isEnd;
                   let cellClass = '';
-                  if (isAbsentDay) {
+                  if (isEndDay) {
+                    cellClass = 'bg-gray-400 border-gray-500 shadow-md text-white';
+                  } else if (isAbsentDay) {
                     cellClass = 'bg-orange-400 border-orange-500 shadow-md text-white';
                   } else if (isToday) {
                     cellClass = 'bg-purple-300 border-purple-500 shadow-md text-purple-950';
