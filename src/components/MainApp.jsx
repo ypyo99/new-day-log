@@ -1385,8 +1385,14 @@ export default function MainApp({
             if (!currentDatesMap[name]) currentDatesMap[name] = [];
             if (currentOffsetsMap[name] === undefined) currentOffsetsMap[name] = 0;
 
+            let isNew = false;
+            let currentExplicitVal = null;
+            if (hasExplicitCount) {
+              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
+              currentExplicitVal = parseInt(matchObj[1], 10);
+            }
+
             if (!isAbsent || hasExplicitCount || isJobTeamAbsent) {
-              let isNew = false;
               const alreadyHas = currentDatesMap[name].some(d => {
                 const currentTeacher = log ? log.teacher : currentUser;
                 const isTarget = isTargetTeacher(currentTeacher);
@@ -1409,26 +1415,21 @@ export default function MainApp({
               });
               if (!alreadyHas) isNew = true;
 
-            let currentExplicitVal = null;
-            if (hasExplicitCount) {
-              const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
-              currentExplicitVal = parseInt(matchObj[1], 10);
-            }
-
-            if (isNew) {
-              const currentTeacher = log ? log.teacher : currentUser;
-              // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
-              currentDatesMap[name].push({ 
-                date: todayDateObj, 
-                shift: shift, 
-                group: currentUserGroup, 
-                teacher: currentTeacher, 
-                isAbsent: isJobTeamAbsent,
-                explicitCount: currentExplicitVal
-              });
-            } else if (hasExplicitCount) {
-              const existing = currentDatesMap[name].find(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift);
-              if (existing) existing.explicitCount = currentExplicitVal;
+              if (isNew) {
+                const currentTeacher = log ? log.teacher : currentUser;
+                // 취업팀 결석 여부를 플래그로 저장해 날짜 팝업에서 빨간색으로 표시
+                currentDatesMap[name].push({ 
+                  date: todayDateObj, 
+                  shift: shift, 
+                  group: currentUserGroup, 
+                  teacher: currentTeacher, 
+                  isAbsent: isJobTeamAbsent,
+                  explicitCount: currentExplicitVal
+                });
+              } else if (hasExplicitCount) {
+                const existing = currentDatesMap[name].find(d => d.date.getTime() === todayDateObj.getTime() && d.shift === shift);
+                if (existing) existing.explicitCount = currentExplicitVal;
+              }
             }
 
             const getTLocal = (s) => {
