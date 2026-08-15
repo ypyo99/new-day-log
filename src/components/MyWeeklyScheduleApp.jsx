@@ -289,6 +289,8 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         const hasEndOrCancel = hasIndependentKeyword(personalStatus, ["취소"]);
         const hasAttendance = hasIndependentKeyword(personalStatus, ["1"]);
         const isAbsent = (personalStatus.includes("결석") && !hasAttendance) || (personalStatus.includes("선생님휴가") && !hasAttendance) || (hasEndOrCancel && !hasAttendance);
+        // 취업팀: 결석 단독(선생님휴가/취소 제외)이면 회차 포함
+        const isOnlyAbsent = (personalStatus.includes("결석") && !hasAttendance) && !(personalStatus.includes("선생님휴가") && !hasAttendance) && !(hasEndOrCancel && !hasAttendance);
         
         const textToMatch = (hRow.memo || hRow.status || "");
         const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
@@ -303,6 +305,9 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
         let isValidDay = false;
         if (isTarget) {
           isValidDay = (dayStatus === 'attended');
+        } else if (team === '취업팀' && isOnlyAbsent) {
+          // 취업팀: 결석이어도 회차 포함
+          isValidDay = true;
         } else {
           isValidDay = !isAbsent;
         }
