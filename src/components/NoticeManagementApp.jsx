@@ -683,7 +683,17 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
         </div>
 
         <button
-          onClick={onNavigateBack}
+          onClick={async () => {
+            if (isEditing && hasChanges) {
+              const wantsToSave = window.confirm("공지사항을 저장하시겠습니까?");
+              if (wantsToSave) {
+                try {
+                  await handleSave({ preventDefault: () => {} }, true);
+                } catch (e) {}
+              }
+            }
+            onNavigateBack();
+          }}
           className="text-xs flex flex-col items-center font-bold p-2 rounded-lg shadow-md transition-all touch-manipulation bg-blue-800 text-white opacity-90 active:scale-95"
         >
           <Home className="w-5 h-5 mb-1" /> 처음으로
