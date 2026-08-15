@@ -54,6 +54,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   const [dbHolidays, setDbHolidays] = useState([]);
   const [noDataMessage, setNoDataMessage] = useState("");
   const [teamLeader, setTeamLeader] = useState(null);
+  const [selectedStudentDates, setSelectedStudentDates] = useState(null);
 
   const weekDays = ['월', '화', '수', '목', '금'];
   const [timeSlots, setTimeSlots] = useState([]);
@@ -351,7 +352,9 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
            }
            
            if (isNew) {
-               studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher });
+               const isAbsentEntry = team === '취업팀' && isOnlyAbsent;
+               const isEndEntry = team === '취업팀' && personalStatus.split(/[,/]+/).map(t => t.trim()).some(t => t === '종료') && !hasAttendance;
+               studentHistoryMap[name].push({ date: dateObj, shift: hShift, group: hGroup, teacher: hRow.teacher, isAbsent: isAbsentEntry, isEnd: isEndEntry });
            }
 
            if (hasExplicitCount) {
@@ -521,7 +524,38 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                 });
                 
                 if (count > 0 || applicableOffset > 0) {
-                    countsForCell.push({ name: name, count: count + applicableOffset });
+                    // dates 배열 구성 (sessionNum 포함)
+                    const validDatesForCell = validDates.slice().sort((a, b) => {
+                      if (a.date !== b.date) return a.date.localeCompare(b.date);
+                      const getT2 = (s) => {
+                        if (!s) return 9999;
+                        const m2 = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
+                        return m2 ? parseInt(m2[1]) * 60 + (m2[2] ? parseInt(m2[2]) : 0) : 9999;
+                      };
+                      return getT2(a.shift) - getT2(b.shift);
+                    });
+                    // sessionNum 계산 (offset 적용)
+                    const offsetsForName = studentOffsetsMap[name] || [];
+                    let runningOffset = 0;
+                    const dateObjList = validDatesForCell.map((h, hIdx) => {
+                      const dParts = h.date.split('-');
+                      const dateObj2 = new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10));
+                      // offset 적용
+                      const applicableOff = offsetsForName.filter(o => o.date < h.date || (o.date === h.date && getTLocal(o.shift) <= getTLocal(h.shift)));
+                      if (applicableOff.length > 0) {
+                        runningOffset = applicableOff[applicableOff.length - 1].offset;
+                      }
+                      return {
+                        date: dateObj2,
+                        shift: h.shift,
+                        group: h.group,
+                        teacher: h.teacher,
+                        sessionNum: (hIdx + 1) + runningOffset,
+                        isAbsent: !!h.isAbsent,
+                        isEnd: !!h.isEnd
+                      };
+                    });
+                    countsForCell.push({ name: name, count: count + applicableOffset, dates: dateObjList });
                 }
             });
 
@@ -722,49 +756,24 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                 </div>
                               )}
                               {cellData.sessionCounts && !cellData.student?.includes("간담회") && (
-                                <div className="flex flex-wrap gap-1.5 justify-center w-full mb-1">
-                                  {(() => {
-                                    if (cellData.sessionCounts.length > 1) {
-                                      const maxCount = Math.max(...cellData.sessionCounts.map(sc => sc.count));
-                                      let sessionCellBg = "bg-gray-300";
-                                      let sessionTextCol = "text-black";
-                                      if (maxCount >= 15) {
-                                        sessionCellBg = "bg-orange-600";
-                                        sessionTextCol = "text-white";
-                                      } else if (maxCount >= 10) {
-                                        sessionCellBg = "bg-purple-900";
-                                        sessionTextCol = "text-white";
-                                      } else if (maxCount >= 7) {
-                                        sessionCellBg = "bg-purple-400";
-                                        sessionTextCol = "text-white";
-                                      }
-                                      return (
-                                        <span className={`px-2 py-1 rounded-md text-[clamp(0.8rem,1.6vw,1.05rem)] font-extrabold border shadow-sm leading-tight whitespace-pre-wrap text-center overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
-                                          {cellData.sessionCounts.map(sc => `${sc.count}회차`).join('/\n')}
-                                        </span>
-                                      );
-                                    } else {
-                                      return cellData.sessionCounts.map((sc, scIdx) => {
-                                        let sessionCellBg = "bg-gray-300";
-                                        let sessionTextCol = "text-black";
-                                        if (sc.count >= 15) {
-                                          sessionCellBg = "bg-orange-600";
-                                          sessionTextCol = "text-white";
-                                        } else if (sc.count >= 10) {
-                                          sessionCellBg = "bg-purple-900";
-                                          sessionTextCol = "text-white";
-                                        } else if (sc.count >= 7) {
-                                          sessionCellBg = "bg-purple-400";
-                                          sessionTextCol = "text-white";
-                                        }
-                                        return (
-                                          <span key={scIdx} className={`px-2 py-0.5 rounded-md text-[clamp(0.8rem,1.6vw,1.05rem)] font-extrabold border shadow-sm leading-none whitespace-nowrap overflow-hidden text-ellipsis ${sessionCellBg} ${sessionTextCol}`}>
-                                            {sc.count}회차
-                                          </span>
-                                        );
-                                      });
-                                    }
-                                  })()}
+                                <div className="flex flex-wrap gap-1 justify-center w-full mb-1">
+                                  {cellData.sessionCounts.map((sc, scIdx) => {
+                                    let sessionCellBg = "bg-gray-300";
+                                    let sessionTextCol = "text-black";
+                                    if (sc.count >= 15) { sessionCellBg = "bg-orange-600"; sessionTextCol = "text-white"; }
+                                    else if (sc.count >= 10) { sessionCellBg = "bg-purple-900"; sessionTextCol = "text-white"; }
+                                    else if (sc.count >= 7) { sessionCellBg = "bg-purple-400"; sessionTextCol = "text-white"; }
+                                    return (
+                                      <button
+                                        key={scIdx}
+                                        type="button"
+                                        onClick={() => setSelectedStudentDates(sc)}
+                                        className={`flex flex-col items-center px-2 py-0.5 rounded-md text-[clamp(0.75rem,1.5vw,1rem)] font-extrabold border shadow-sm leading-tight whitespace-nowrap cursor-pointer hover:brightness-95 active:scale-95 transition-all ${sessionCellBg} ${sessionTextCol}`}
+                                      >
+                                        {sc.count}회차
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               )}
                               {cellData.student && <div className={`font-bold ${isHoliday ? 'text-white w-full' : (cellData.isSpecial ? 'text-red-700 w-full' : 'text-gray-900 w-full')} text-[clamp(1.1rem,2.6vw,1.7rem)] leading-tight break-all whitespace-pre-wrap text-center flex-shrink-0`}>{cellData.student.replace(/\n/g, ' ').replace(/부처님오신날/g, '부처님\n오신날').replace(/보조강사\s*/g, '보조강사\n').replace(/\//g, '/\n').trim()}</div>}
@@ -791,6 +800,55 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
           </div>
         </div>
       </main>
+
+      {selectedStudentDates && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-3 sm:p-4" onClick={() => setSelectedStudentDates(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
+            <div className="bg-purple-600 text-white py-3 px-4 flex justify-between items-center shrink-0">
+              <h3 className="font-bold text-[18px] sm:text-[20px]">{selectedStudentDates.name}님의 출석 일자 <span className="text-purple-200 text-[15px] sm:text-[16px]">({selectedStudentDates.count}회)</span></h3>
+              <button onClick={() => setSelectedStudentDates(null)} className="text-white hover:text-gray-200 active:scale-90 transition-transform p-1">
+                <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-3 sm:p-4 overflow-y-auto">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                {(selectedStudentDates.dates || []).map((d, idx) => {
+                  const today = new Date();
+                  const isToday = d.date.getFullYear() === today.getFullYear() && d.date.getMonth() === today.getMonth() && d.date.getDate() === today.getDate();
+                  const isAbsentDay = !!d.isAbsent;
+                  const isEndDay = !!d.isEnd;
+                  let cellClass = '';
+                  if (isEndDay) {
+                    cellClass = 'bg-gray-400 border-gray-500 shadow-md text-white';
+                  } else if (isAbsentDay) {
+                    cellClass = 'bg-orange-400 border-orange-500 shadow-md text-white';
+                  } else if (isToday) {
+                    cellClass = 'bg-purple-300 border-purple-500 shadow-md text-purple-950';
+                  } else {
+                    cellClass = 'bg-purple-50 border-purple-200 shadow-sm text-purple-900';
+                  }
+                  return (
+                    <div key={idx} className={`${cellClass} border rounded-lg py-2 sm:py-2.5 px-0.5 sm:px-1 text-center text-[13.5px] min-[360px]:text-[15.5px] sm:text-[18px] font-bold flex justify-center items-center whitespace-nowrap tracking-tighter sm:tracking-normal relative`}>
+                      <span className="absolute top-0.5 left-1 text-[11px] sm:text-[13px] font-black leading-none opacity-90 flex items-center gap-0.5">
+                        {d.sessionNum !== undefined ? d.sessionNum : (idx + 1)}
+                        {(isAbsentDay || isEndDay) && (
+                          <span className="text-[9px] sm:text-[10px] font-bold opacity-90 ml-0.5">
+                            {isEndDay ? '종료' : '결석'}
+                          </span>
+                        )}
+                      </span>
+                      {d.date.getMonth() + 1}/{d.date.getDate()} ({['일', '월', '화', '수', '목', '금', '토'][d.date.getDay()]})
+                    </div>
+                  );
+                })}
+              </div>
+              {(!selectedStudentDates.dates || selectedStudentDates.dates.length === 0) && (
+                <div className="text-center text-gray-500 py-4 font-bold text-[16px] sm:text-[18px]">출석 기록이 없습니다.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
