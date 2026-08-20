@@ -2515,35 +2515,18 @@ export default function MainApp({
   const minDate = availableDates.length > 0 ? availableDates[0] : "";
   const maxDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : "";
 
-  const isSkipDate = (d) => {
-    const targetData = allScheduleData[d] || {};
-    const items = Object.keys(targetData).map(shiftTime => getMyOriginalRecord(d, shiftTime)).filter(s => (s?.student || "").trim() !== "");
-    if (items.length === 0) return false;
-
-    return items.every(s => {
-      const student = (s?.student || "").trim();
-      const location = (s?.location || "").trim();
-
-      // 학생이름이 '팀장간담회'인 경우에는 날짜를 스킵하지 않고 정상적으로 수정할 수 있도록 함
-      if (student.includes("팀장간담회")) return false;
-
-      const text = student + " " + location;
-      return /간담회|소양교육/.test(text);
-    });
-  };
-
   useEffect(() => {
     if (availableDates.length === 0) return;
     if (isFetchingSchedule || isSyncing) return;
 
     const todayStr = getInitialWeekday();
-    if (date === todayStr && !isSkipDate(date)) return;
+    if (date === todayStr) return;
 
-    if (!availableDates.includes(date) || isSkipDate(date)) {
-      const futureDates = availableDates.filter(d => d > date && !isSkipDate(d));
+    if (!availableDates.includes(date)) {
+      const futureDates = availableDates.filter(d => d > date);
       if (futureDates.length > 0) setDate(futureDates[0]);
       else {
-        const pastDates = availableDates.filter(d => d < date && !isSkipDate(d));
+        const pastDates = availableDates.filter(d => d < date);
         if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
       }
     }
@@ -2552,7 +2535,7 @@ export default function MainApp({
   const handlePrevDay = async () => {
     if (isDataLoading) return;
     if (!(await performAutoSave())) return;
-    const pastDates = availableDates.filter(d => d < date && !isSkipDate(d));
+    const pastDates = availableDates.filter(d => d < date);
     if (pastDates.length > 0) setDate(pastDates[pastDates.length - 1]);
     else {
       setErrorMessage("⚠️ 이전 근무 기록이 없습니다.");
@@ -2563,7 +2546,7 @@ export default function MainApp({
   const handleNextDay = async () => {
     if (isDataLoading) return;
     if (!(await performAutoSave())) return;
-    const futureDates = availableDates.filter(d => d > date && !isSkipDate(d));
+    const futureDates = availableDates.filter(d => d > date);
     if (futureDates.length > 0) setDate(futureDates[0]);
     else {
       setErrorMessage("⚠️ 이후 근무 기록이 없습니다.");
@@ -3090,7 +3073,26 @@ export default function MainApp({
     }
     if (!holidayObj) return false;
     return holidayObj.getTime() === selectedDateObj.getTime();
-  });
+  }) || (() => {
+    const targetData = allScheduleData[date] || {};
+    const myItems = Object.keys(targetData).map(shiftTime => getMyOriginalRecord(date, shiftTime)).filter(s => (s?.student || "").trim() !== "");
+    if (myItems.length > 0 && myItems.every(s => {
+      const student = (s?.student || "").trim();
+      const location = (s?.location || "").trim();
+      if (student.includes("팀장간담회")) return false;
+      const text = student + " " + location;
+      return /간담회|소양교육|공휴일/.test(text);
+    })) {
+      const first = myItems[0];
+      return {
+        name: first.student || '간담회',
+        content1: first.location || '소양교육',
+        content2: first.status || '',
+        vacation_available: false
+      };
+    }
+    return null;
+  })();
 
   return (
     <div className="min-h-[100dvh] bg-transparent font-sans pb-6">
