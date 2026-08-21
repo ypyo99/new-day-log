@@ -517,7 +517,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
       });
 
       const allStudents = [];
-      const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+      const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육", "안전교율", "직무교육"];
 
       parsedData.forEach(row => {
         if (!row.student || row.student.trim() === '-') return;
@@ -593,7 +593,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         if (!hRow.student) return;
         const names = hRow.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
         names.forEach((name, nameIdx) => {
-          const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+          const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육", "안전교율", "직무교육"];
           if (excludeKeywords.some(keyword => name.includes(keyword))) return;
 
           let personalStatus = hRow.status || "";
@@ -780,7 +780,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
         const countsForThisRow = [];
 
         names.forEach((name, nameIdx) => {
-          const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+          const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육", "안전교율", "직무교육"];
           if (excludeKeywords.some(keyword => name.includes(keyword))) return;
 
           let personalStatus = row.status || "";
@@ -1406,9 +1406,8 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                                       </div>
                                     )}
                                   </td>
-
                                   <td className={`${tdClass} font-bold text-center text-xs sm:text-sm transition-colors`} style={topBorderStyle}>
-                                    {row.sessionCounts && !row.student?.includes("간담회") ? (
+                                    {row.sessionCounts && !row.student?.includes("간담회") && !row.student?.includes("안전교육") && !row.student?.includes("안전교율") && !row.student?.includes("직무교육") ? (
                                       <div className="flex flex-col w-full justify-center items-center gap-1">
                                         {row.sessionCounts.map((sc, scIdx) => {
                                           let sessionCellBg = "bg-gray-300";

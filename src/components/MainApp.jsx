@@ -1109,7 +1109,7 @@ export default function MainApp({
     }
 
     let isMounted = true;
-    const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육"];
+    const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육", "직무교육"];
 
     const calcCounts = async () => {
       try {
@@ -2280,7 +2280,7 @@ export default function MainApp({
       const student = (log?.student || "").trim();
       const location = (log?.location || "").trim();
 
-      if (student.includes("안전교육")) {
+      if (student.includes("안전교육") || student.includes("직무교육")) {
         result[i] = false;
         return;
       }
@@ -3147,7 +3147,7 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && !currentSelectedHoliday && (
+                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && !currentSelectedHoliday && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육')) && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
@@ -3392,7 +3392,7 @@ export default function MainApp({
                                       })()}
                                     </span>
 
-                                    {counts && counts.length > 0 && !currentSelectedHoliday && !logs[index].student?.includes("간담회") && !logs[index].student?.includes("안전교육") ? (
+                                    {counts && counts.length > 0 && !currentSelectedHoliday && !logs[index].student?.includes("간담회") && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") ? (
                                       <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
                                         {counts.map((c, cIdx) => {
                                           let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
@@ -3423,7 +3423,7 @@ export default function MainApp({
                                     ) : null}
                                   </div>
 
-                                  {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && !currentSelectedHoliday && !logs[index].student?.includes("안전교육") && (
+                                  {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && !currentSelectedHoliday && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") && (
                                     <button
                                       type="button"
                                       onClick={() => handleRepeatScheduleForShift(index)}
