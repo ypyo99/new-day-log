@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
-import { getSavedItem, getLocalDateString } from '../utils/helpers';
+import { getSavedItem, setSavedItem, safeJsonSetItem, getLocalDateString } from '../utils/helpers';
 import { LucideCalendar, Home } from './Icons';
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
@@ -33,13 +33,13 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
 
   const [schedule, setSchedule] = useState(() => {
     try {
-      const cached = window.localStorage.getItem('classroom_schedule_backup');
+      const cached = getSavedItem('classroom_schedule_backup', null);
       return cached ? JSON.parse(cached) : {};
     } catch (e) { return {}; }
   });
 
   const [memo, setMemo] = useState(() => {
-    return window.localStorage.getItem('classroom_memo_backup') || "";
+    return getSavedItem('classroom_memo_backup', "");
   });
 
   const [isTyping, setIsTyping] = useState(false);
@@ -131,8 +131,8 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
         } else if (data) {
           setSchedule(data.data || {});
           setMemo(data.memo || "");
-          window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(data.data || {}));
-          window.localStorage.setItem('classroom_memo_backup', data.memo || "");
+          safeJsonSetItem('classroom_schedule_backup', data.data || {});
+          setSavedItem('classroom_memo_backup', data.memo || "");
         }
       } catch (err) {
         console.error("Supabase exception:", err);
@@ -170,7 +170,7 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
     });
     const newSchedule = { ...schedule, ...optimisticData };
     setSchedule(newSchedule);
-    window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(newSchedule));
+    safeJsonSetItem('classroom_schedule_backup', newSchedule);
   };
 
   const getScheduleKey = (dateStr, timeSlot) => {
@@ -185,7 +185,7 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
     const newValue = currentValue === '사용가능' ? '사용불가' : '사용가능';
     const newSchedule = { ...schedule, [key]: newValue };
     setSchedule(newSchedule);
-    window.localStorage.setItem('classroom_schedule_backup', JSON.stringify(newSchedule));
+    safeJsonSetItem('classroom_schedule_backup', newSchedule);
   };
 
   const toggleAll = () => {
@@ -244,7 +244,7 @@ export default function ClassroomApp({ onNavigateBack, onNavigateToNangmanStudio
   useEffect(() => {
     if (!isTyping) return;
     const timer = setTimeout(() => {
-      window.localStorage.setItem('classroom_memo_backup', memo);
+      setSavedItem('classroom_memo_backup', memo);
       setIsTyping(false);
       isTypingRef.current = false;
     }, 1000);

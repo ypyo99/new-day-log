@@ -75,6 +75,9 @@ import { supabaseClient } from '../utils/supabase';
 import {
   getSavedItem,
   setSavedItem,
+  removeSavedItem,
+  safeJsonSetItem,
+  clearExpendableStorage,
   getSessionItem,
   setSessionItem,
   getInitialWeekday,
@@ -339,7 +342,7 @@ export default function MainApp({
         const targetDateStr = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
 
         // 캐시 확인 (하루 한 번만 호출, 단 시간대별 예보를 저장하여 현재 시간에 맞게 렌더링)
-        const cachedData = window.localStorage.getItem('sungdong_weather_v3');
+        const cachedData = getSavedItem('sungdong_weather_v3', null);
         if (cachedData) {
           try {
             const parsed = JSON.parse(cachedData);
@@ -503,7 +506,7 @@ export default function MainApp({
 
             const resultData = { minTemp, maxTemp, hourlyDesc, amPop, pmPop, isRain, isTomorrow: false };
             setWeatherData({ ...resultData, weatherDesc });
-            window.localStorage.setItem('sungdong_weather_v3', JSON.stringify({ date: targetDateStr, data: resultData }));
+            safeJsonSetItem('sungdong_weather_v3', { date: targetDateStr, data: resultData });
           } else {
             setWeatherData({ error: true, msg: '데이터 없음' });
           }
@@ -525,7 +528,7 @@ export default function MainApp({
 
   const [todayNotices, setTodayNotices] = useState(() => {
     try {
-      const cached = window.localStorage.getItem('sungdong_today_notices');
+      const cached = getSavedItem('sungdong_today_notices', null);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) return parsed;
@@ -572,7 +575,7 @@ export default function MainApp({
             return diffA - diffB;
           });
           setTodayNotices(sorted);
-          try { window.localStorage.setItem('sungdong_today_notices', JSON.stringify(sorted)); } catch (e) { }
+          safeJsonSetItem('sungdong_today_notices', sorted);
         } else {
           setTodayNotices([]);
         }
@@ -606,7 +609,7 @@ export default function MainApp({
 
   const [dbTeachers, setDbTeachers] = useState(() => {
     try {
-      const stored = window.localStorage.getItem('sungdong_teacher_list');
+      const stored = getSavedItem('sungdong_teacher_list', null);
       if (!stored) return [];
       const parsed = JSON.parse(stored);
       return Array.isArray(parsed) ? parsed : [];
@@ -615,7 +618,7 @@ export default function MainApp({
 
   const [holidaysDbList, setHolidaysDbList] = useState(() => {
     try {
-      const cached = window.localStorage.getItem('sungdong_holidays');
+      const cached = getSavedItem('sungdong_holidays', null);
       if (!cached) return [];
       const parsed = JSON.parse(cached);
       return Array.isArray(parsed) ? parsed : [];
@@ -636,7 +639,7 @@ export default function MainApp({
           const dates = data.map(d => d.date);
           setHolidaysDbList(dates);
           setHolidaysFullList(data); // 전체 정보 보관
-          window.localStorage.setItem('sungdong_holidays', JSON.stringify(dates));
+          safeJsonSetItem('sungdong_holidays', dates);
         } else if (error) {
           console.error("holidays fetch error:", error);
         }
@@ -802,7 +805,7 @@ export default function MainApp({
       const clean = currentUser.replace(/\s/g, "");
       if (clean === "천은선" || clean === "서승희" || clean === "천은선서승희") {
         setCurrentUser("");
-        window.localStorage.removeItem('sungdong_teacher');
+        removeSavedItem('sungdong_teacher');
       }
     }
   }, [selectedTeam, currentUser]);
@@ -877,7 +880,7 @@ export default function MainApp({
         fetchedTeachers = ["이름입력(직접타이핑)"];
       }
       setTeachers(fetchedTeachers);
-      try { window.localStorage.setItem(`sungdong_teachers_${team}`, JSON.stringify(fetchedTeachers)); } catch (e) { console.warn('localStorage 용량 초과: 선생님 목록 캐싱 생략'); }
+      safeJsonSetItem(`sungdong_teachers_${team}`, fetchedTeachers);
     } catch (error) {
       console.error("⚠️ 선생님 목록 로딩 에러:", error);
     } finally {
@@ -895,8 +898,8 @@ export default function MainApp({
 
     let isMounted = true;
 
-    const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-    const cachedSchedule = window.localStorage.getItem(cacheKey);
+    const cacheKey = `sungdong_schedule_${selectedTeam}`;
+    const cachedSchedule = getSavedItem(cacheKey, null);
     if (cachedSchedule) {
       try {
         setAllScheduleData(JSON.parse(cachedSchedule));
@@ -948,7 +951,7 @@ export default function MainApp({
         }
         if (isMounted) {
           setAllScheduleData(scheduleData);
-          try { window.localStorage.setItem(cacheKey, JSON.stringify(scheduleData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
+          safeJsonSetItem(cacheKey, scheduleData);
         }
       } catch (error) {
         console.error(error);
@@ -1823,7 +1826,7 @@ export default function MainApp({
             }
           }));
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
-          window.localStorage.removeItem(backupKey);
+          removeSavedItem(backupKey);
 
           // deleteShifts에 포함된 경우(완전 삭제)에는 이후 로직 생략
           if (isDeleted) return;
@@ -1833,7 +1836,7 @@ export default function MainApp({
 
           setLogs(prev => ({ ...prev, [item.index]: { ...prev[item.index], location: finalUrl } }));
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${item.index}`;
-          window.localStorage.removeItem(backupKey);
+          removeSavedItem(backupKey);
         }
 
         validRecords.push({
@@ -1904,9 +1907,9 @@ export default function MainApp({
           }
         });
 
-        if (selectedTeam && currentUser) {
-          const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-          try { window.localStorage.setItem(cacheKey, JSON.stringify(newData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
+        if (selectedTeam) {
+          const cacheKey = `sungdong_schedule_${selectedTeam}`;
+          safeJsonSetItem(cacheKey, newData);
         }
 
         return newData;
@@ -1927,7 +1930,7 @@ export default function MainApp({
   const executeLogout = () => {
     setIsLoggedIn(false);
     setRecords([]);
-    window.localStorage.removeItem('sungdong_admin_logged_in');
+    removeSavedItem('sungdong_admin_logged_in');
   };
 
   const handleLogout = async () => {
@@ -2189,9 +2192,9 @@ export default function MainApp({
           newData[record.date][record.shift] = shiftArr;
         });
 
-        if (selectedTeam && currentUser) {
-          const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-          try { window.localStorage.setItem(cacheKey, JSON.stringify(newData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
+        if (selectedTeam) {
+          const cacheKey = `sungdong_schedule_${selectedTeam}`;
+          safeJsonSetItem(cacheKey, newData);
         }
 
         return newData;
@@ -2505,9 +2508,9 @@ export default function MainApp({
           newData[record.date][record.shift] = shiftArr;
         });
 
-        if (selectedTeam && currentUser) {
-          const cacheKey = `sungdong_schedule_${selectedTeam}_${currentUser}`;
-          try { window.localStorage.setItem(cacheKey, JSON.stringify(newData)); } catch (e) { console.warn('localStorage 용량 초과: 일정 캐시 생략'); }
+        if (selectedTeam) {
+          const cacheKey = `sungdong_schedule_${selectedTeam}`;
+          safeJsonSetItem(cacheKey, newData);
         }
 
         return newData;
@@ -2613,7 +2616,7 @@ export default function MainApp({
         }
       }));
       const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-      window.localStorage.removeItem(backupKey);
+      removeSavedItem(backupKey);
     } else {
       setLogs(prev => ({ ...prev, [index]: { ...prev[index], [field]: value } }));
     }
@@ -2623,9 +2626,9 @@ export default function MainApp({
     if (field === 'memo') {
       const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
       if (value && value.trim() !== "") {
-        try { window.localStorage.setItem(backupKey, value); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
+        setSavedItem(backupKey, value);
       } else {
-        window.localStorage.removeItem(backupKey);
+        removeSavedItem(backupKey);
       }
     }
   };
@@ -2677,7 +2680,7 @@ export default function MainApp({
 
         if (loadedMemo.trim() !== "") {
           const backupKey = `log_backup_${selectedTeam}_${currentUser}_${date}_${index}`;
-          try { window.localStorage.setItem(backupKey, loadedMemo); } catch (e) { console.warn('localStorage 용량 초과: 메모 백업 생략'); }
+          setSavedItem(backupKey, loadedMemo);
         }
 
         return newLogs;

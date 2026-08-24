@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
-import { getSavedItem, getLocalDateString } from '../utils/helpers';
+import { getSavedItem, setSavedItem, safeJsonSetItem, getLocalDateString } from '../utils/helpers';
 import { LucideCalendar, Home } from './Icons';
 
 const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
@@ -32,13 +32,13 @@ export default function NangmanStudioApp({ onNavigateBack, onNavigateToClassroom
 
   const [schedule, setSchedule] = useState(() => {
     try {
-      const cached = window.localStorage.getItem('nangman_schedule_backup');
+      const cached = getSavedItem('nangman_schedule_backup', null);
       return cached ? JSON.parse(cached) : {};
     } catch (e) { return {}; }
   });
 
   const [memo, setMemo] = useState(() => {
-    return window.localStorage.getItem('nangman_memo_backup') || "";
+    return getSavedItem('nangman_memo_backup', "");
   });
 
   const [isTyping, setIsTyping] = useState(false);
@@ -131,8 +131,8 @@ export default function NangmanStudioApp({ onNavigateBack, onNavigateToClassroom
         } else if (data) {
           setSchedule(data.data || {});
           setMemo(data.memo || "");
-          window.localStorage.setItem('nangman_schedule_backup', JSON.stringify(data.data || {}));
-          window.localStorage.setItem('nangman_memo_backup', data.memo || "");
+          safeJsonSetItem('nangman_schedule_backup', data.data || {});
+          setSavedItem('nangman_memo_backup', data.memo || "");
         }
       } catch (err) {
         console.error("Supabase exception:", err);
@@ -170,7 +170,7 @@ export default function NangmanStudioApp({ onNavigateBack, onNavigateToClassroom
     });
     const newSchedule = { ...schedule, ...optimisticData };
     setSchedule(newSchedule);
-    window.localStorage.setItem('nangman_schedule_backup', JSON.stringify(newSchedule));
+    safeJsonSetItem('nangman_schedule_backup', newSchedule);
 
     // 즉시 DB 저장
     try {
@@ -208,7 +208,7 @@ export default function NangmanStudioApp({ onNavigateBack, onNavigateToClassroom
 
     const newSchedule = { ...schedule, [key]: finalValue };
     setSchedule(newSchedule);
-    window.localStorage.setItem('nangman_schedule_backup', JSON.stringify(newSchedule));
+    safeJsonSetItem('nangman_schedule_backup', newSchedule);
     setEditingCell(null);
 
     // 즉시 DB 저장
@@ -335,7 +335,7 @@ export default function NangmanStudioApp({ onNavigateBack, onNavigateToClassroom
   useEffect(() => {
     if (!isTyping) return;
     const timer = setTimeout(async () => {
-      window.localStorage.setItem('nangman_memo_backup', memo);
+      setSavedItem('nangman_memo_backup', memo);
       setIsTyping(false);
       isTypingRef.current = false;
 

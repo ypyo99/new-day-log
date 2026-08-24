@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { Home, LucideCalendar } from './Icons';
+import { getSavedItem, setSavedItem, removeSavedItem } from '../utils/helpers';
 
 const FloatingScrollButton = ({ listRef, show }) => {
   const [isListVisible, setIsListVisible] = useState(false);
@@ -92,7 +93,7 @@ const linkifyHtml = (html) => {
 };
 
 export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => getSavedItem('sungdong_admin_logged_in', 'false') === 'true');
 
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [pwdInput, setPwdInput] = useState("");
@@ -329,7 +330,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
         }
       }
       setIsAdmin(false);
-      window.localStorage.removeItem('sungdong_admin_logged_in');
+      removeSavedItem('sungdong_admin_logged_in');
       setIsEditing(false);
       setSelectedNotice(null);
       setSelectedImg(null);
@@ -343,7 +344,7 @@ export default function NoticeManagementApp({ onNavigateBack, initialNotice }) {
   const checkPassword = () => {
     if (pwdInput === import.meta.env.VITE_ADMIN_PASSWORD) {
       setIsAdmin(true);
-      window.localStorage.setItem('sungdong_admin_logged_in', 'true');
+      setSavedItem('sungdong_admin_logged_in', 'true');
       setShowPwdModal(false);
       if (selectedNotice) {
         setIsEditing(true);
@@ -1171,7 +1172,7 @@ CREATE POLICY "Allow public all access" ON public.notices FOR ALL USING (true) W
                 setPwdInput(val);
                 if (val === import.meta.env.VITE_ADMIN_PASSWORD) {
                   setIsAdmin(true);
-                  window.localStorage.setItem('sungdong_admin_logged_in', 'true');
+                  setSavedItem('sungdong_admin_logged_in', 'true');
                   setShowPwdModal(false);
                   if (selectedNotice) {
                     setIsEditing(true);

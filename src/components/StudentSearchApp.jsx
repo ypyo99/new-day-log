@@ -7,7 +7,11 @@ import {
   fetchAllTeachersFromDb,
   getTeamTeacherNames,
   getTeacherSortWeight,
-  getTeacherGroup
+  getTeacherGroup,
+  getSavedItem,
+  setSavedItem,
+  removeSavedItem,
+  safeJsonSetItem
 } from '../utils/helpers';
 import { Home, Clock } from './Icons';
 
@@ -22,7 +26,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
-      const saved = localStorage.getItem('sungdong_recent_searches');
+      const saved = getSavedItem('sungdong_recent_searches', null);
       return saved ? JSON.parse(saved) : [];
     } catch (e) { return []; }
   });
@@ -483,7 +487,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
                         <button
                           onClick={() => {
                             setRecentSearches([]);
-                            localStorage.removeItem('sungdong_recent_searches');
+                            removeSavedItem('sungdong_recent_searches');
                           }}
                           className="text-[14px] md:text-[15px] text-blue-700 hover:text-blue-800 font-extrabold"
                         >
@@ -524,7 +528,7 @@ export default function StudentSearchApp({ onNavigateBack }) {
                                 setRecentSearches(prev => {
                                   const filtered = prev.filter(n => n !== newName);
                                   const updated = [newName, ...filtered].slice(0, 10);
-                                  localStorage.setItem('sungdong_recent_searches', JSON.stringify(updated));
+                                  safeJsonSetItem('sungdong_recent_searches', updated);
                                   return updated;
                                 });
                               }

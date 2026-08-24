@@ -5,6 +5,7 @@ import { supabaseClient } from '../utils/supabase';
 import {
   getSavedItem,
   setSavedItem,
+  removeSavedItem,
   getTeacherGroup,
   getTeacherSortWeight
 } from '../utils/helpers';
@@ -13,11 +14,7 @@ import { Home, LucideCalendar } from './Icons';
 
 export default function AutoScheduleApp({ onNavigateBack }) {
   const [isAdmin, setIsAdmin] = useState(() => {
-    try {
-      return window.localStorage.getItem('sungdong_admin_logged_in') === 'true';
-    } catch (e) {
-      return false;
-    }
+    return getSavedItem('sungdong_admin_logged_in', 'false') === 'true';
   });
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [pwdInput, setPwdInput] = useState("");
@@ -38,7 +35,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     try {
       if (isAdmin) {
         setIsAdmin(false);
-        window.localStorage.removeItem('sungdong_admin_logged_in');
+        removeSavedItem('sungdong_admin_logged_in');
       } else {
         setShowPwdModal(true);
         setPwdInput("");
@@ -53,7 +50,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     try {
       if (pwdInput === import.meta.env.VITE_ADMIN_PASSWORD) {
         setIsAdmin(true);
-        window.localStorage.setItem('sungdong_admin_logged_in', 'true');
+        setSavedItem('sungdong_admin_logged_in', 'true');
         setShowPwdModal(false);
       } else {
         setPwdError(true);
@@ -1288,7 +1285,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                 setPwdInput(val);
                 if (val === import.meta.env.VITE_ADMIN_PASSWORD) {
                   setIsAdmin(true);
-                  window.localStorage.setItem('sungdong_admin_logged_in', 'true');
+                  setSavedItem('sungdong_admin_logged_in', 'true');
                   setShowPwdModal(false);
                 }
               }}

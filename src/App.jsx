@@ -10,16 +10,23 @@ import {
 
 const lazyWithRetry = (componentImport) =>
   lazy(async () => {
-    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
-      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
-    );
+    let pageHasAlreadyBeenForceRefreshed = false;
+    try {
+      pageHasAlreadyBeenForceRefreshed = JSON.parse(
+        window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+      );
+    } catch (e) {}
     try {
       const component = await componentImport();
-      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      try {
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      } catch (e) {}
       return component;
     } catch (error) {
       if (!pageHasAlreadyBeenForceRefreshed) {
-        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        try {
+          window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        } catch (e) {}
         window.location.reload(true);
         return new Promise(() => {});
       }

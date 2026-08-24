@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '../utils/supabase';
 import { Home } from './Icons';
-import { getShiftWeight } from '../utils/helpers';
+import { getShiftWeight, getSavedItem, setSavedItem, removeSavedItem } from '../utils/helpers';
 
 export default function HolidayManagementApp({ onNavigateBack }) {
   const [holidays, setHolidays] = useState([]);
@@ -18,11 +18,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
   const [popupMessage, setPopupMessage] = useState("");
 
   const [isAdmin, setIsAdmin] = useState(() => {
-    try {
-      return window.localStorage.getItem('sungdong_admin_logged_in') === 'true';
-    } catch (e) {
-      return false;
-    }
+    return getSavedItem('sungdong_admin_logged_in', 'false') === 'true';
   });
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [pwdInput, setPwdInput] = useState("");
@@ -43,7 +39,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
     try {
       if (isAdmin) {
         setIsAdmin(false);
-        window.localStorage.removeItem('sungdong_admin_logged_in');
+        removeSavedItem('sungdong_admin_logged_in');
       } else {
         setShowPwdModal(true);
         setPwdInput("");
@@ -58,7 +54,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
     try {
       if (pwdInput === import.meta.env.VITE_ADMIN_PASSWORD) {
         setIsAdmin(true);
-        window.localStorage.setItem('sungdong_admin_logged_in', 'true');
+        setSavedItem('sungdong_admin_logged_in', 'true');
         setShowPwdModal(false);
       } else {
         setPwdError(true);
@@ -291,13 +287,13 @@ export default function HolidayManagementApp({ onNavigateBack }) {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
       }
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
       });
     };
 
-    if (!confirm('공휴일 데이터를 수업스케줄에 적용하시겠습니까?')) return;
+    if (!confirm('공휴일 데이터를 일정표에 적용하시겠습니까?')) return;
 
     setApplying(true);
     setNotice("");
@@ -488,7 +484,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
               <div className="w-full sm:w-auto flex items-end mt-2 sm:mt-0">
                 <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 sm:py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors w-full sm:w-auto">
                   <input type="checkbox" name="vacation_available" checked={formData.vacation_available} onChange={handleInputChange} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
-                  <span className="text-[12px] sm:text-sm font-bold text-blue-800">휴가가능</span>
+                  <span className="text-[12px] sm:text-sm font-bold text-blue-800">개별수업가능</span>
                 </label>
               </div>
             </div>
@@ -519,7 +515,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                     <th rowSpan={2} className="p-3 w-28 sm:w-32 border-r border-gray-300 align-middle text-center">날짜</th>
                     <th className="p-3 w-32 sm:w-40 border-r border-gray-300">공휴일 이름</th>
                     <th className="p-3 min-w-[100px] border-r border-gray-300">내용1</th>
-                    <th rowSpan={2} className="p-3 w-24 text-center border-r border-gray-300 align-middle">휴가<br/>가능여부</th>
+                    <th rowSpan={2} className="p-3 w-24 text-center border-r border-gray-300 align-middle">개별수업<br />가능여부</th>
                     <th rowSpan={2} className="p-3 text-center align-middle">{isAdmin ? '관리' : ''}</th>
                   </tr>
                   <tr className="bg-gray-200 text-gray-700 border-b-2 border-gray-400 font-bold whitespace-nowrap">
@@ -539,7 +535,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                         </td>
                         <td rowSpan={2} className="pt-2.5 pb-2.5 px-3 border-r border-gray-200 text-center align-middle">
                           {isAdmin ? (
-                            <button 
+                            <button
                               onClick={() => handleToggleVacation(h.date, h.vacation_available)}
                               disabled={saving || loading}
                               className={`px-3 py-1 rounded-full text-xs font-bold transition-colors shadow-sm ${h.vacation_available ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200' : 'bg-gray-100 text-gray-500 border border-gray-300 hover:bg-gray-200'}`}
@@ -588,7 +584,7 @@ export default function HolidayManagementApp({ onNavigateBack }) {
                 setPwdInput(val);
                 if (val === import.meta.env.VITE_ADMIN_PASSWORD) {
                   setIsAdmin(true);
-                  window.localStorage.setItem('sungdong_admin_logged_in', 'true');
+                  setSavedItem('sungdong_admin_logged_in', 'true');
                   setShowPwdModal(false);
                 }
               }}
