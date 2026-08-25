@@ -73,7 +73,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
       const { data: hData, error: hError } = await supabaseClient
         .from('holidays')
-        .select('date, name, content1, content2');
+        .select('date, name, content1, content2, vacation_available');
       if (hError) throw hError;
       setHolidaysList(hData || []);
 
@@ -180,7 +180,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
       const { data: hData, error: hError } = await supabaseClient
         .from('holidays')
-        .select('date, name, content1, content2');
+        .select('date, name, content1, content2, vacation_available');
       if (hError) throw hError;
       const holidays = hData || [];
 
@@ -450,13 +450,13 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
           const mmdd1 = `${m}-${d}`;
           const mmdd2 = `${parseInt(m)}-${parseInt(d)}`;
           const mmdd3 = `${parseInt(m)}/${parseInt(d)}`;
-          return holidays.find(h => h.date === mmdd1 || h.date === mmdd2 || h.date === mmdd3) || null;
+          return holidays.find(h => h.date === mmdd1 || h.date === mmdd2 || h.date === mmdd3 || h.date === dateStr) || null;
         };
 
         const holidayDates = {};
         dateList.forEach(d => {
           const holInfo = getHolidayInfo(d.dateStr);
-          if (holInfo) {
+          if (holInfo && !holInfo.vacation_available) {
             holidayDates[d.dateStr] = holInfo;
           }
         });
@@ -965,13 +965,13 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
     const mmdd1 = `${m}-${d}`;
     const mmdd2 = `${parseInt(m)}-${parseInt(d)}`;
     const mmdd3 = `${parseInt(m)}/${parseInt(d)}`;
-    return holidaysList.find(h => h.date === mmdd1 || h.date === mmdd2 || h.date === mmdd3) || null;
+    return holidaysList.find(h => h.date === mmdd1 || h.date === mmdd2 || h.date === mmdd3 || h.date === dateStr) || null;
   };
 
   const holidayDates = {};
   uniqueDates.forEach(dateStr => {
     const holInfo = getHolidayInfo(dateStr);
-    if (holInfo) {
+    if (holInfo && !holInfo.vacation_available) {
       holidayDates[dateStr] = holInfo;
     }
   });
@@ -1390,7 +1390,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                               : (isNewTeacher ? { borderTop: '1px solid #e2e8f0' } : {});
 
                             const holidayInfo = getHolidayInfo(item.log_date);
-                            const isHoliday = !!holidayInfo;
+                            const isHoliday = !!holidayInfo && !holidayInfo.vacation_available;
                             const isMeeting = !isHoliday && item.student && item.student.includes("간담회");
 
                             // 배경색 style 계산

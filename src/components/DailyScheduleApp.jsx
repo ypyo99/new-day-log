@@ -1155,7 +1155,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                 const _currentDateStrShort = `${_m}-${_d}`;
                 const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
 
-                if (currentHoliday) {
+                if (currentHoliday && !currentHoliday.vacation_available) {
                   const text = `${currentHoliday.name || ''} ${currentHoliday.content1 || ''} ${currentHoliday.content2 || ''}`;
                   let icon = '💡';
                   if (/설날|추석|명절|한가위|설 연휴/.test(text)) icon = '🌕';
@@ -1482,7 +1482,7 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
               const _currentDateStr = `${_y}-${_m}-${_d}`;
               const _currentDateStrShort = `${_m}-${_d}`;
               const currentHoliday = holidaysDbList.find(h => h.date === _currentDateStr || h.date === _currentDateStrShort || (h.date && h.date.endsWith(_currentDateStrShort)));
-              if (currentHoliday) return null;
+              if (currentHoliday && !currentHoliday.vacation_available) return null;
 
               return (
                 <SummarySection

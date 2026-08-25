@@ -3150,7 +3150,7 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && !currentSelectedHoliday && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육')) && (
+                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육')) && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
@@ -3395,7 +3395,7 @@ export default function MainApp({
                                       })()}
                                     </span>
 
-                                    {counts && counts.length > 0 && !currentSelectedHoliday && !logs[index].student?.includes("간담회") && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") ? (
+                                    {counts && counts.length > 0 && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !logs[index].student?.includes("간담회") && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") ? (
                                       <div className="flex items-center overflow-hidden ml-2 sm:ml-3 gap-1.5 sm:gap-2 flex-wrap">
                                         {counts.map((c, cIdx) => {
                                           let sessionColorClass = "bg-gray-300 text-black border-gray-400 font-bold";
@@ -3426,7 +3426,7 @@ export default function MainApp({
                                     ) : null}
                                   </div>
 
-                                  {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && !currentSelectedHoliday && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") && (
+                                  {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") && (
                                     <button
                                       type="button"
                                       onClick={() => handleRepeatScheduleForShift(index)}

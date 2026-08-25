@@ -245,7 +245,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
   useEffect(() => {
     if (!teacher || !currentWeekStart) return;
 
-    const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일"];
+    const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육", "안전교율", "직무교육"];
     const studentHistoryMap = {};
     const studentOffsetsMap = {};
     const seenDateShiftMap = {}; // name -> Set of "date|shift" already processed
@@ -400,14 +400,22 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
       const dateStr = getLocalDateString(day);
       const monthDayStr = dateStr.substring(5); // MM-DD 형식
       
-      const matchedHoliday = dbHolidays.find(h => h.date === monthDayStr);
+      const matchedHoliday = dbHolidays.find(h => {
+        if (!h || !h.date) return false;
+        return h.date === monthDayStr || h.date === dateStr || (h.date && h.date.endsWith(monthDayStr));
+      });
+
       if (matchedHoliday) {
-        newSpecialDays[dateStr] = {
-          student: matchedHoliday.name || "공휴일",
-          location: matchedHoliday.content1 || "",
-          memo: matchedHoliday.content2 || ""
-        };
-        return; // DB에 공휴일이 있으면 우선 적용
+        if (!matchedHoliday.vacation_available) {
+          newSpecialDays[dateStr] = {
+            student: matchedHoliday.name || "공휴일",
+            location: matchedHoliday.content1 || "",
+            memo: matchedHoliday.content2 || ""
+          };
+          return; // DB에 공휴일이 있으면 우선 적용
+        }
+        // vacation_available이 true인 경우 개별 수업시간대 데이터가 표시되도록 specialDays로 등록하지 않고 통과
+        return;
       }
 
       if (teamLeader) {
@@ -755,7 +763,7 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
                                   })}
                                 </div>
                               )}
-                              {cellData.sessionCounts && !cellData.student?.includes("간담회") && (
+                              {cellData.sessionCounts && !cellData.student?.includes("간담회") && !cellData.student?.includes("안전교육") && !cellData.student?.includes("소양교육") && !cellData.student?.includes("직무교육") && (
                                 <div className="flex flex-wrap gap-1 justify-center w-full mb-1">
                                   {cellData.sessionCounts.map((sc, scIdx) => {
                                     let sessionCellBg = "bg-gray-300";
