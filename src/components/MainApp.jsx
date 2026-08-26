@@ -1970,6 +1970,15 @@ export default function MainApp({
 
   const handleRepeatSchedule = async () => {
     if (isDataLoading) return;
+    const hasSpecialStudentToday = Object.values(logs || {}).some(log => {
+      const s = (log?.student || '');
+      return s.includes('직무교육') || s.includes('안전교육') || s.includes('간담회');
+    });
+    if (hasSpecialStudentToday) {
+      setErrorMessage("⚠️ 간담회/교육 일정은 복제할 수 없습니다.");
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
       if (d <= date || new Date(d).getDay() !== currentDayOfWeek) return false;
@@ -2210,6 +2219,11 @@ export default function MainApp({
 
   const noNewScheduleToRepeat = useMemo(() => {
     if (isFetchingSchedule || isSyncing || isSubmitting) return null;
+    const hasSpecialStudentToday = Object.values(logs || {}).some(log => {
+      const s = (log?.student || '');
+      return s.includes('직무교육') || s.includes('안전교육') || s.includes('간담회');
+    });
+    if (hasSpecialStudentToday) return "special_student_today";
     const currentData = allScheduleData[date] || {};
     const isCurrentFalse20Days = Object.values(currentData).some(shiftArr =>
       Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
@@ -2260,6 +2274,11 @@ export default function MainApp({
 
   const shouldRepeatPerShift = useMemo(() => {
     if (isFetchingSchedule || isSyncing || isSubmitting) return {};
+    const hasSpecialStudentToday = Object.values(logs || {}).some(log => {
+      const s = (log?.student || '');
+      return s.includes('직무교육') || s.includes('안전교육') || s.includes('간담회');
+    });
+    if (hasSpecialStudentToday) return {};
     const currentData = allScheduleData[date] || {};
     const isCurrentFalse20Days = Object.values(currentData).some(shiftArr =>
       Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
@@ -2291,7 +2310,7 @@ export default function MainApp({
       const student = (log?.student || "").trim();
       const location = (log?.location || "").trim();
 
-      if (student.includes("안전교육") || student.includes("직무교육")) {
+      if (student.includes("안전교육") || student.includes("직무교육") || student.includes("간담회")) {
         result[i] = false;
         return;
       }
@@ -2320,6 +2339,13 @@ export default function MainApp({
 
   const handleRepeatScheduleForShift = async (index) => {
     if (isDataLoading) return;
+    const currentStudent = (logs[index]?.student || '');
+    const hasSpecialStudentToday = Object.values(logs || {}).some(log => (log?.student || '').includes('간담회'));
+    if (currentStudent.includes('안전교육') || currentStudent.includes('직무교육') || currentStudent.includes('간담회') || hasSpecialStudentToday) {
+      setErrorMessage("⚠️ 간담회/교육 일정은 복제할 수 없습니다.");
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
 
     const currentDayOfWeek = new Date(date).getDay();
     const targetDates = availableDates.filter(d => {
@@ -3166,7 +3192,7 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육')) && (
+                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육') || (log?.student || '').includes('간담회')) && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
@@ -3442,7 +3468,7 @@ export default function MainApp({
                                     ) : null}
                                   </div>
 
-                                  {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") && (
+                                  {shouldRepeatPerShift[index] && !noNewScheduleToRepeat && logsDate === date && isFutureOrToday && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !logs[index].student?.includes("안전교육") && !logs[index].student?.includes("직무교육") && !logs[index].student?.includes("간담회") && (
                                     <button
                                       type="button"
                                       onClick={() => handleRepeatScheduleForShift(index)}
