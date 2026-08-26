@@ -1980,14 +1980,14 @@ export default function MainApp({
       );
       if (hasFalse20Days) return false;
       if (selectedTeam === '취업팀') return true;
-      return Object.keys(targetData).some(shiftTime => {
+      const hasSpecialEvent = Object.keys(targetData).some(shiftTime => {
         const original = getMyOriginalRecord(d, shiftTime);
-        if (!original || !(original.teacher || "").trim()) return false;
-        const student = original?.student || "";
-        const location = original?.location || "";
+        const student = (original?.student || "").trim();
+        const location = (original?.location || "").trim();
         const combinedText = student + location;
-        return !combinedText.includes("공휴일") && !combinedText.includes("간담회") && !combinedText.includes("소양교육");
+        return combinedText.includes("공휴일") || combinedText.includes("간담회") || combinedText.includes("소양교육");
       });
+      return !hasSpecialEvent;
     });
 
     if (targetDates.length === 0) {
@@ -2225,14 +2225,14 @@ export default function MainApp({
       );
       if (hasFalse20Days) return false;
       if (selectedTeam === '취업팀') return true;
-      return Object.keys(targetData).some(shiftTime => {
+      const hasSpecialEvent = Object.keys(targetData).some(shiftTime => {
         const original = getMyOriginalRecord(d, shiftTime);
-        const student = original?.student || "";
-        const location = original?.location || "";
-        if (!student.trim()) return false;
+        const student = (original?.student || "").trim();
+        const location = (original?.location || "").trim();
         const combinedText = student + location;
-        return !combinedText.includes("공휴일") && !combinedText.includes("간담회") && !combinedText.includes("소양교육");
+        return combinedText.includes("공휴일") || combinedText.includes("간담회") || combinedText.includes("소양교육");
       });
+      return !hasSpecialEvent;
     });
     if (targetDates.length === 0) return "no_future_dates";
 
@@ -2274,7 +2274,15 @@ export default function MainApp({
         Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
       );
       if (hasFalse20Days) return false;
-      return true;
+      if (selectedTeam === '취업팀') return true;
+      const hasSpecialEvent = Object.keys(targetData).some(shiftTime => {
+        const original = getMyOriginalRecord(d, shiftTime);
+        const student = (original?.student || "").trim();
+        const location = (original?.location || "").trim();
+        const combinedText = student + location;
+        return combinedText.includes("공휴일") || combinedText.includes("간담회") || combinedText.includes("소양교육");
+      });
+      return !hasSpecialEvent;
     });
 
     const result = {};
@@ -2322,7 +2330,15 @@ export default function MainApp({
         Array.isArray(shiftArr) && shiftArr.some(r => r.is_20days === false)
       );
       if (hasFalse20Days) return false;
-      return true;
+      if (selectedTeam === '취업팀') return true;
+      const hasSpecialEvent = Object.keys(targetData).some(shiftTime => {
+        const original = getMyOriginalRecord(d, shiftTime);
+        const student = (original?.student || "").trim();
+        const location = (original?.location || "").trim();
+        const combinedText = student + location;
+        return combinedText.includes("공휴일") || combinedText.includes("간담회") || combinedText.includes("소양교육");
+      });
+      return !hasSpecialEvent;
     });
 
     if (targetDates.length === 0) {
