@@ -425,11 +425,21 @@ export default function MyWeeklyScheduleApp({ team, teacher, onNavigateBack }) {
           return content.includes("공휴일") || content.includes("간담회") || content.includes("소양교육");
         });
         if (specialRec) {
-          newSpecialDays[dateStr] = {
-            student: specialRec.student || "",
-            location: specialRec.location || "",
-            memo: specialRec.status || ""
-          };
+          let hasOwnSchedule = false;
+          if (teacher && teacher !== teamLeader && teacher !== "__ALL__") {
+            const ownRecords = supabaseRecords.filter(r => r.log_date === dateStr && r.teacher === teacher && (r.student || r.location || r.status));
+            if (ownRecords.length > 0) {
+              hasOwnSchedule = true;
+            }
+          }
+
+          if (!hasOwnSchedule) {
+            newSpecialDays[dateStr] = {
+              student: specialRec.student || "",
+              location: specialRec.location || "",
+              memo: specialRec.status || ""
+            };
+          }
         }
       }
     });
