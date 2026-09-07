@@ -282,7 +282,46 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           let targetRecords = dayRecords;
 
           if (!hasReal) {
-            targetRecords = []; // 정상 수업이 없는 경우 과거 기록을 추적하지 않고 템플릿을 비움
+            const teamDayRecords = baseLogs.filter(l => l.log_date === baseDate);
+            const teamHasReal = teamDayRecords.some(r => {
+              const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
+              return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
+            });
+            const isTeamOff = !teamHasReal;
+
+            if (isTeamOff) {
+              let loopCount = 0;
+              const MAX_LOOKBACK_WEEKS = 4;
+              let currentBaseDateStr = baseDate;
+
+            while (!hasReal && loopCount < MAX_LOOKBACK_WEEKS) {
+              loopCount++;
+              const d = new Date(currentBaseDateStr);
+              d.setDate(d.getDate() - 7);
+              currentBaseDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              
+              const { data: pastData } = await supabaseClient
+                .from('daily_logs')
+                .select('*')
+                .eq('team', team)
+                .eq('log_date', currentBaseDateStr);
+                
+              if (pastData && pastData.length > 0) {
+                const teacherPastRecords = pastData.filter(l => l.teacher.trim() === teacherName);
+                hasReal = teacherPastRecords.some(r => {
+                  const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
+                  return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
+                });
+                if (hasReal) {
+                  targetRecords = teacherPastRecords;
+                  break;
+                }
+              }
+            }
+            } // Close if (isTeamOff)
+            if (!hasReal) {
+              targetRecords = []; // 정상 수업이 없는 경우 템플릿을 비움
+            }
           }
 
           shifts.forEach(shift => {
