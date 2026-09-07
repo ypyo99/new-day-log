@@ -326,8 +326,14 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
           shifts.forEach(shift => {
             const match = targetRecords.find(r => r.shift.trim() === shift);
-            const student = match ? (match.student || "") : "";
-            const location = match ? (match.location || "") : "";
+            let student = match ? (match.student || "") : "";
+            let location = match ? (match.location || "") : "";
+
+            // 기준 주간 일정에 보조강사 일정이 포함된 경우 지우기
+            if (student.includes("보조강사")) {
+              student = "";
+              location = "";
+            }
 
             templates[teacherName][dayOfWeek][shift] = {
               student: student,
