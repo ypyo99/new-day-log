@@ -12,6 +12,13 @@ import {
 import ExcelJS from 'exceljs';
 import { Home, LucideCalendar } from './Icons';
 
+// 스마트폰 환경 등에서 날짜 파싱 오류 및 Timezone 문제를 방지하기 위해 로컬 타임으로 안전하게 파싱하는 공통 함수
+const parseDateLocal = (dateStr) => {
+  if (!dateStr || !dateStr.includes('-')) return new Date();
+  const [year, month, day] = dateStr.split('-');
+  return new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+};
+
 export default function AutoScheduleApp({ onNavigateBack }) {
   const [isAdmin, setIsAdmin] = useState(() => {
     return getSavedItem('sungdong_admin_logged_in', 'false') === 'true';
@@ -113,7 +120,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
   useEffect(() => { setSavedItem('sungdong_auto_team', team); }, [team]);
 
   const getPrevWeekDays = (startDateStr) => {
-    const d = new Date(startDateStr);
+    const d = parseDateLocal(startDateStr);
     d.setDate(d.getDate() - 7);
 
     const day = d.getDay();
@@ -134,8 +141,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
   const getWeekdaysInRange = (startStr, endStr) => {
     const list = [];
-    let curr = new Date(startStr);
-    const end = new Date(endStr);
+    let curr = parseDateLocal(startStr);
+    const end = parseDateLocal(endStr);
     while (curr <= end) {
       const day = curr.getDay();
       if (day !== 0 && day !== 6) {
@@ -208,24 +215,26 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const isHoliday = (dateStr) => {
         const [year, month, day] = dateStr.split('-');
         const mmdd = `${month}-${day}`;
-        const m_d = `${parseInt(month)}/${parseInt(day)}`;
-        const m_d_dash = `${parseInt(month)}-${parseInt(day)}`;
+        const m_d = `${parseInt(month, 10)}/${parseInt(day, 10)}`;
+        const m_d_dash = `${parseInt(month, 10)}-${parseInt(day, 10)}`;
+        const mm_dd_slash = `${month}/${day}`;
 
         return holidays.some(h => {
           const hDate = (h.date || "").trim();
-          return hDate === dateStr || hDate === mmdd || hDate === m_d || hDate === m_d_dash;
+          return hDate === dateStr || hDate === mmdd || hDate === m_d || hDate === m_d_dash || hDate === mm_dd_slash;
         });
       };
 
       const getHolidayObj = (dateStr) => {
         const [year, month, day] = dateStr.split('-');
         const mmdd = `${month}-${day}`;
-        const m_d = `${parseInt(month)}/${parseInt(day)}`;
-        const m_d_dash = `${parseInt(month)}-${parseInt(day)}`;
+        const m_d = `${parseInt(month, 10)}/${parseInt(day, 10)}`;
+        const m_d_dash = `${parseInt(month, 10)}-${parseInt(day, 10)}`;
+        const mm_dd_slash = `${month}/${day}`;
 
         return holidays.find(h => {
           const hDate = (h.date || "").trim();
-          return hDate === dateStr || hDate === mmdd || hDate === m_d || hDate === m_d_dash;
+          return hDate === dateStr || hDate === mmdd || hDate === m_d || hDate === m_d_dash || hDate === mm_dd_slash;
         });
       };
 
@@ -252,6 +261,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
       setProgressMsg("공휴일 및 휴강 일정 역추적 분석 중...");
       const EXCLUDE_KEYWORDS = ["공휴일", "대체공휴일", "근로자의날", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "선거일", "간담회", "소양교육", "자체학습", "휴가", "휴강", "준비", "자체학습"];
+      const pastDataCache = {}; // 특정 강사 휴가 등 역추적을 위한 캐싱
 
       for (const teacherName of teacherNames) {
         const teacherObj = teacherList.find(t => t.name.trim() === teacherName);
@@ -266,7 +276,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
 
         for (let dayOfWeek = 1; dayOfWeek <= 5; dayOfWeek++) {
           const baseDate = baseDates.find(dateStr => {
-            const d = new Date(dateStr);
+            const d = parseDateLocal(dateStr);
             return d.getDay() === dayOfWeek;
           });
 
@@ -282,32 +292,28 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           let targetRecords = dayRecords;
 
           if (!hasReal) {
-            const teamDayRecords = baseLogs.filter(l => l.log_date === baseDate);
-            const teamHasReal = teamDayRecords.some(r => {
-              const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
-              return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
-            });
-            const isTeamOff = !teamHasReal;
-
-            if (isTeamOff) {
-              let loopCount = 0;
-              const MAX_LOOKBACK_WEEKS = 4;
-              let currentBaseDateStr = baseDate;
+            let loopCount = 0;
+            const MAX_LOOKBACK_WEEKS = 4;
+            let currentBaseDateStr = baseDate;
 
             while (!hasReal && loopCount < MAX_LOOKBACK_WEEKS) {
               loopCount++;
-              const d = new Date(currentBaseDateStr);
+              const d = parseDateLocal(currentBaseDateStr);
               d.setDate(d.getDate() - 7);
               currentBaseDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
               
-              const { data: pastData } = await supabaseClient
-                .from('daily_logs')
-                .select('*')
-                .eq('team', team)
-                .eq('log_date', currentBaseDateStr);
+              if (!pastDataCache[currentBaseDateStr]) {
+                const { data: pastData } = await supabaseClient
+                  .from('daily_logs')
+                  .select('*')
+                  .eq('team', team)
+                  .eq('log_date', currentBaseDateStr);
+                pastDataCache[currentBaseDateStr] = pastData || [];
+              }
                 
-              if (pastData && pastData.length > 0) {
-                const teacherPastRecords = pastData.filter(l => l.teacher.trim() === teacherName);
+              const cachedData = pastDataCache[currentBaseDateStr];
+              if (cachedData && cachedData.length > 0) {
+                const teacherPastRecords = cachedData.filter(l => l.teacher.trim() === teacherName);
                 hasReal = teacherPastRecords.some(r => {
                   const combined = ((r.student || "") + (r.location || "")).replace(/\s+/g, "");
                   return combined && !EXCLUDE_KEYWORDS.some(kw => combined.includes(kw));
@@ -318,9 +324,8 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                 }
               }
             }
-            } // Close if (isTeamOff)
             if (!hasReal) {
-              targetRecords = []; // 정상 수업이 없는 경우 템플릿을 비움
+              targetRecords = []; // 과거 4주 내에도 정상 수업이 없는 경우 템플릿을 비움
             }
           }
 
@@ -375,7 +380,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
       const globalWorkDaysCount = {};
 
       targetDates.forEach(dateStr => {
-        const d = new Date(dateStr);
+        const d = parseDateLocal(dateStr);
         const dayOfWeek = d.getDay();
         const isHol = isHoliday(dateStr);
         const holidayObj = getHolidayObj(dateStr);
@@ -479,7 +484,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
     });
     setDraftRecords(prev => prev.map(r => {
       if (r.teacher !== teacherName || r.shift !== shift) return r;
-      const d = new Date(r.log_date);
+      const d = parseDateLocal(r.log_date);
       if (d.getDay() !== dayNum) return r;
       return { ...r, student: newStudent, location: newLocation };
     }));
@@ -925,7 +930,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
           alert("해당 기간의 주간시간표와 엑셀 데이터 중 일치하는 항목이 없습니다.");
         }, 100);
       }
-      
+
       setIsAssistantApplied(true); // 보조강사 데이터를 적용했으므로 상태를 true로 변경
 
     } catch (err) {
@@ -1262,7 +1267,7 @@ export default function AutoScheduleApp({ onNavigateBack }) {
                 {saving ? '시간표 저장 중...' : '③ 이 스케줄로 시간표 작성'}
               </button>
             </div>
-            
+
             {!isAssistantApplied && draftRecords.length > 0 && (
               <p className="text-center text-red-500 font-bold mt-4 text-sm">
                 * [② 보조강사 적용] 버튼을 눌러 보조강사 일정을 반영해야 시간표를 저장할 수 있습니다.
