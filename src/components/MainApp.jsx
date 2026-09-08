@@ -3192,7 +3192,7 @@ export default function MainApp({
                     <span className="hidden sm:inline">{isSubmitting ? '자동 저장 중...' : isSyncing ? '최신 데이터 확인 중...' : '데이터 로딩 중...'}</span>
                     <span className="inline sm:hidden">{isSubmitting ? '저장중...' : '로딩중...'}</span>
                   </span>
-                ) : (date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육') || (log?.student || '').includes('간담회')) && (
+                ) : (logsDate === date && date >= getLocalDateString(new Date()) && !noNewScheduleToRepeat && (!currentSelectedHoliday || currentSelectedHoliday.vacation_available) && !Object.values(logs || {}).some(log => (log?.student || '').includes('직무교육') || (log?.student || '').includes('안전교육') || (log?.student || '').includes('간담회')) && (
                   <button
                     type="button"
                     onClick={handleRepeatSchedule}
