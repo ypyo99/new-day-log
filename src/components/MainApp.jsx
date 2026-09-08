@@ -3510,14 +3510,6 @@ export default function MainApp({
                                       value={logs[index].location}
                                       onChange={(e) => handleLogChange(index, 'location', e.target.value)}
                                       onBlur={handleInputBlur}
-                                      onClick={() => {
-                                        const currentLoc = logs[index]?.location || "";
-                                        if (currentLoc === '복지관') {
-                                          handleLogChange(index, 'location', '낭만스튜디오');
-                                        } else if (currentLoc === '낭만스튜디오') {
-                                          handleLogChange(index, 'location', '복지관');
-                                        }
-                                      }}
                                       disabled={isDataLoading}
                                       className={`flex-1 min-w-0 py-1.5 sm:py-2 md:py-2.5 px-2 sm:px-3 md:px-4 border rounded-lg outline-none font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all ${locTextSize} leading-tight ${!logs[index].location ? 'caret-black' : 'caret-white'} ${!logs[index].location ? 'bg-gray-200 text-gray-800 placeholder-gray-500 border-gray-400' : (logs[index].location === '공휴일' || logs[index].location === '휴무일' ? 'bg-red-400 text-white placeholder-red-200 border-transparent' : 'bg-blue-600 text-white placeholder-blue-200 border-transparent')}`}
                                     />

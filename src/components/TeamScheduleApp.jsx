@@ -568,6 +568,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
 
               const isMeeting = item && item.student && item.student.includes("간담회");
               const isFirstShift = rowObj.shift === excelFirstShiftForTeacher[rowObj.teacher];
+              const isNov25First = dateObj.dateStr.endsWith("-11-25") && isFirstShift;
 
               if (isHolidayRaw) {
                 if (isFirstHolidayShift) {
@@ -595,7 +596,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                 }
               } else if (item) {
                 if (rowObj.category === "장소") {
-                  fillRGB = "FFFFFFFF";
+                  fillRGB = isNov25First ? "FFFCA5A5" : "FFFFFFFF";
                   const sigUrl = tName === "취업팀" && item.location && (item.location.startsWith("http://") || item.location.startsWith("https://")) ? item.location : null;
                   if (sigUrl) {
                     const promise = fetch(sigUrl)
@@ -623,7 +624,9 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                   }
                 } else {
                   if (rowObj.category === "대상") {
-                    if (item.student?.includes('보조강사')) {
+                    if (isNov25First) {
+                      fillRGB = "FFFCA5A5"; fontColorRGB = "FF000000"; isBold = true;
+                    } else if (item.student?.includes('보조강사')) {
                       fillRGB = "FFFFFF00"; fontColorRGB = "FF000000"; isBold = true;
                     } else if (item.student) {
                       fillRGB = "FFE0F2FE"; fontColorRGB = "FF000000"; isBold = true;
@@ -637,6 +640,10 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                       fillRGB = "FFF0FDF4"; fontColorRGB = "FF000000"; isBold = true;
                     }
                   }
+                }
+              } else {
+                if (isNov25First && (rowObj.category === "대상" || rowObj.category === "장소")) {
+                  fillRGB = "FFFCA5A5";
                 }
               }
 
@@ -1211,12 +1218,18 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                   }
                                 } else {
                                   cellContent = '';
-                                  cellClass = "bg-white text-gray-400 font-normal";
+                                  if (dateStr.endsWith("-11-25") && isFirstShift && (row.category === "대상" || row.category === "장소")) {
+                                    cellClass = "bg-red-300 text-gray-400 font-normal";
+                                  } else {
+                                    cellClass = "bg-white text-gray-400 font-normal";
+                                  }
                                 }
                               } else {
                                 if (row.category === "대상") {
                                   cellContent = item.student || '';
-                                  if (item.student?.includes('보조강사')) {
+                                  if (dateStr.endsWith("-11-25") && isFirstShift) {
+                                    cellClass = "bg-red-300 text-gray-950 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
+                                  } else if (item.student?.includes('보조강사')) {
                                     cellClass = "bg-yellow-300 text-gray-950 font-extrabold text-[12px] sm:text-[13px] md:text-sm lg:text-base py-1 px-1";
                                   } else if (item.student) {
                                     cellClass = "text-gray-955 font-bold bg-sky-100";
@@ -1229,14 +1242,14 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                         <img src={sigUrl} alt="서명" className="h-6 sm:h-8 md:h-10 object-contain" />
                                       </a>
                                     );
-                                    cellClass = "!bg-white";
+                                    cellClass = (dateStr.endsWith("-11-25") && isFirstShift) ? "!bg-red-300" : "!bg-white";
                                   } else {
                                     cellContent = (
                                       <span className="text-black font-medium truncate max-w-[75px] sm:max-w-[95px] lg:max-w-[125px] block mx-auto text-[11px] sm:text-[13px] md:text-sm lg:text-base">
                                         {item.location || ''}
                                       </span>
                                     );
-                                    cellClass = "!bg-white";
+                                    cellClass = (dateStr.endsWith("-11-25") && isFirstShift) ? "!bg-red-300" : "!bg-white";
                                   }
                                 } else if (row.category === "진행") {
                                   const rawStatus = item.status || '';
@@ -1280,7 +1293,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                 cellStyle.backgroundColor = "#ffffff";
                               }
                             } else if (row.category === "장소") {
-                              cellStyle.backgroundColor = "#ffffff";
+                              cellStyle.backgroundColor = (dateStr.endsWith("-11-25") && isFirstShift) ? "#fca5a5" : "#ffffff";
                             }
 
                             const alignClass = row.category === "진행" ? "align-top text-left" : "align-middle text-center";
