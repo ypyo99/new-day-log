@@ -588,7 +588,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                   } else if (rowObj.category === "장소") {
                     fontColorRGB = "FF374151";
                   } else if (rowObj.category === "진행") {
-                    fontColorRGB = "FFFFFFFF";
+                    fontColorRGB = "FF374151";
                   }
                 } else {
                   fillRGB = "FFFFFFFF";
@@ -1214,7 +1214,7 @@ export default function TeamScheduleApp({ team, onNavigateBack }) {
                                     cellClass = "font-extrabold text-[13px] sm:text-[14px] py-1 px-1 text-gray-700";
                                   } else if (row.category === "진행") {
                                     cellContent = item.status || '';
-                                    cellClass = "font-extrabold text-[13px] sm:text-[14px] py-1 px-1 text-white";
+                                    cellClass = "font-extrabold text-[13px] sm:text-[14px] py-1 px-1 text-gray-700";
                                   }
                                 } else {
                                   cellContent = '';
