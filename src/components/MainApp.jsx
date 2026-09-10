@@ -1806,6 +1806,59 @@ export default function MainApp({
         if (error) throw new Error("Supabase 저장 실패: " + error.message);
       }
 
+      // ── 같은 조 동일 학생 선생님에게 status 자동 동기화 ──
+      const myGroup = getTeacherGroup(selectedTeam, currentUser, dbTeachers);
+      const siblingUpsertData = [];
+
+      for (const item of batchItems) {
+        const myStudentNames = (item.student || '')
+          .split(/[/,]/)
+          .map(s => s.trim().split('(')[0].trim())
+          .filter(Boolean);
+        if (myStudentNames.length === 0) continue;
+        if (!item.status || item.status === '\u200B') continue;
+
+        const shiftArr = (allScheduleData[date] && allScheduleData[date][item.shift]) || [];
+        if (!Array.isArray(shiftArr)) continue;
+
+        for (const r of shiftArr) {
+          if ((r.teacher || '').trim() === currentUser.trim()) continue;
+          if (!(r.student || '').trim()) continue;
+
+          const siblingGroup = getTeacherGroup(selectedTeam, r.teacher, dbTeachers);
+          if (siblingGroup !== myGroup) continue;
+
+          const siblingNames = (r.student || '')
+            .split(/[/,]/)
+            .map(s => s.trim().split('(')[0].trim())
+            .filter(Boolean);
+          const hasCommon = myStudentNames.some(n => siblingNames.includes(n));
+          if (!hasCommon) continue;
+
+          siblingUpsertData.push({
+            team: selectedTeam,
+            log_date: date,
+            teacher: r.teacher,
+            shift: item.shift,
+            student: r.student || '',
+            location: r.location || '',
+            status: item.status
+          });
+        }
+      }
+
+      if (siblingUpsertData.length > 0) {
+        const { error: siblingError } = await supabaseClient
+          .from('daily_logs')
+          .upsert(siblingUpsertData, { onConflict: 'team, log_date, teacher, shift' });
+        if (siblingError) {
+          console.warn('같은 조 선생님 동기화 실패:', siblingError.message);
+        } else {
+          console.log('✅ 같은 조 선생님 status 동기화 완료:', siblingUpsertData.map(d => d.teacher));
+        }
+      }
+      // ──────────────────────────────────────────────────────
+
       const validRecords = [];
 
       batchItems.forEach(item => {
@@ -1906,6 +1959,23 @@ export default function MainApp({
             delete newData[date][shift];
           }
         });
+
+        // ── 같은 조 동일 학생 선생님 로컬 상태 동기화 ──
+        if (siblingUpsertData && siblingUpsertData.length > 0) {
+          siblingUpsertData.forEach(sib => {
+            if (!newData[sib.log_date]) newData[sib.log_date] = {};
+            const existingArr = newData[sib.log_date][sib.shift] || [];
+            const arr = Array.isArray(existingArr) ? [...existingArr] : [];
+            const idx = arr.findIndex(r => (r.teacher || '').trim() === sib.teacher.trim());
+            if (idx !== -1) {
+              arr[idx] = { ...arr[idx], status: sib.status };
+            } else {
+              arr.push({ teacher: sib.teacher, student: sib.student, location: sib.location, status: sib.status });
+            }
+            newData[sib.log_date][sib.shift] = arr;
+          });
+        }
+        // ────────────────────────────────────────────────────
 
         if (selectedTeam) {
           const cacheKey = `sungdong_schedule_${selectedTeam}`;
