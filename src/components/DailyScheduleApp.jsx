@@ -825,48 +825,73 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             currentExplicitVal = parseInt(matchObj[1], 10);
           }
 
-          if (hasExplicitCount || isValidDayToday) {
-            let isNew = false;
-            
-            if (isValidDayToday) {
-              const alreadyHas = currentDatesMap[name].some(d => {
-                if (isTarget) {
-                  const isSameTargetBucket = isTargetTeacher(d.teacher);
-                  let isSameClassBucket = false;
-                  if (teamName === '취업팀') {
-                    isSameClassBucket = (d.shift === row.time && d.group === row.group);
+            if (hasExplicitCount || isValidDayToday) {
+              let isNew = false;
+              
+              if (isValidDayToday) {
+                const alreadyHas = currentDatesMap[name].some(d => {
+                  if (isTarget) {
+                    const isSameTargetBucket = isTargetTeacher(d.teacher);
+                    let isSameClassBucket = false;
+                    if (teamName === '취업팀') {
+                      isSameClassBucket = (d.shift === row.time && d.group === row.group);
+                    } else {
+                      isSameClassBucket = (d.group === row.group);
+                    }
+                    return d.date.getTime() === todayDateObj.getTime() && (isSameTargetBucket || isSameClassBucket);
                   } else {
-                    isSameClassBucket = (d.group === row.group);
+                    if (teamName === '취업팀') {
+                      return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
+                    } else {
+                      return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
+                    }
                   }
-                  return d.date.getTime() === todayDateObj.getTime() && (isSameTargetBucket || isSameClassBucket);
-                } else {
-                  if (teamName === '취업팀') {
-                    return d.date.getTime() === todayDateObj.getTime() && d.shift === row.time && d.group === row.group;
-                  } else {
-                    return d.date.getTime() === todayDateObj.getTime() && d.group === row.group;
-                  }
+                });
+                if (!alreadyHas) {
+                  isNew = true;
                 }
-              });
-              if (!alreadyHas) {
-                isNew = true;
+              }
+              if (isNew) {
+                const isEndEntryCurrent = teamName === '취업팀' && personalStatus.split(/[,/]+/).map(t => t.trim()).some(t => t === '종료');
+                currentDatesMap[name].push({
+                  date: todayDateObj,
+                  shift: row.time,
+                  group: row.group,
+                  teacher: row.teacher,
+                  isAbsent: isJobTeamAbsent,
+                  isEnd: isEndEntryCurrent,
+                  explicitCount: currentExplicitVal
+                });
+              } else if (hasExplicitCount) {
+                const existing = currentDatesMap[name].find(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time);
+                if (existing) existing.explicitCount = currentExplicitVal;
               }
             }
-            if (isNew) {
-              const isEndEntryCurrent = teamName === '취업팀' && personalStatus.split(/[,/]+/).map(t => t.trim()).some(t => t === '종료');
-              currentDatesMap[name].push({
-                date: todayDateObj,
-                shift: row.time,
-                group: row.group,
-                teacher: row.teacher,
-                isAbsent: isJobTeamAbsent,
-                isEnd: isEndEntryCurrent,
-                explicitCount: currentExplicitVal
-              });
-            } else if (hasExplicitCount) {
-              const existing = currentDatesMap[name].find(d => d.date.getTime() === todayDateObj.getTime() && d.shift === row.time);
-              if (existing) existing.explicitCount = currentExplicitVal;
-            }
+          });
+        });
 
+        // 두 번째 패스: 회차 계산 및 할당
+        timeSortedData.forEach(row => {
+          if (!row.student || row.student.trim() === '-') return;
+
+          const names = row.student.split(/[/,]/).map(s => s.trim().split('(')[0].trim()).filter(Boolean);
+          const countsForThisRow = [];
+
+          names.forEach((name, nameIdx) => {
+            const excludeKeywords = ["보조강사", "자체학습", "대상자발굴", "도선복지관", "소양교육", "간담회", "수업", "준비", "컴기초", "공휴일", "근로자의날", "근로자의 날", "삼일절", "3.1절", "어린이날", "현충일", "광복절", "개천절", "한글날", "석가탄신일", "부처님오신날", "성탄절", "제헌절", "추석", "설날", "신정", "대체공휴일", "지방선거일", "지방 선거일", "선거일", "안전교육", "안전교율", "직무교육"];
+            if (excludeKeywords.some(keyword => name.includes(keyword))) return;
+            
+            let personalStatus = row.status || "";
+            if (personalStatus.includes('/')) {
+              const segments = personalStatus.split('/');
+              if (segments.length > nameIdx) {
+                personalStatus = segments[nameIdx].trim();
+              }
+            }
+            const textToMatch = (row.memo || row.status || "");
+            const memoMatches = Array.from(textToMatch.matchAll(/(\d+)\s*회차(?![가-힣a-zA-Z0-9])/g));
+            const hasExplicitCount = memoMatches.length > 0;
+            
             const getTLocal = (s) => {
               if (!s) return 9999;
               const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
@@ -874,15 +899,15 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
             };
             const currentShiftT = getTLocal(row.time);
 
-            const validDatesForOffset = currentDatesMap[name].filter(d => {
-              if (d.date.getTime() < todayDateObj.getTime()) return true;
-              if (d.date.getTime() === todayDateObj.getTime()) {
-                return getTLocal(d.shift) <= currentShiftT;
-              }
-              return false;
-            });
-
             if (hasExplicitCount) {
+              const validDatesForOffset = currentDatesMap[name].filter(d => {
+                if (d.date.getTime() < todayDateObj.getTime()) return true;
+                if (d.date.getTime() === todayDateObj.getTime()) {
+                  return getTLocal(d.shift) <= currentShiftT;
+                }
+                return false;
+              });
+
               const matchObj = memoMatches.length > nameIdx ? memoMatches[nameIdx] : memoMatches[0];
               const explicitCount = parseInt(matchObj[1], 10);
               const currentLen = validDatesForOffset.length;
@@ -912,57 +937,51 @@ export default function DailyScheduleApp({ initialTeam, onNavigateBack, onTeamCh
                 }
               });
             }
-          }
-          const dates = currentDatesMap[name];
-          const getTLocal = (s) => {
-            if (!s) return 9999;
-            const m = s.match(/(\d+):(\d+)/) || s.match(/(\d+)\s*시/);
-            return m ? parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0) : 9999;
-          };
-          const currentShiftT = getTLocal(row.time);
-          const validDates = dates.filter(d => {
-            if (d.date.getTime() < todayDateObj.getTime()) return true;
-            if (d.date.getTime() === todayDateObj.getTime()) {
-              if (teamName === '취업팀') {
-                return getTLocal(d.shift) <= currentShiftT;
-              } else {
-                return true;
+
+            const dates = currentDatesMap[name];
+            const validDates = dates.filter(d => {
+              if (d.date.getTime() < todayDateObj.getTime()) return true;
+              if (d.date.getTime() === todayDateObj.getTime()) {
+                if (teamName === '취업팀') {
+                  return getTLocal(d.shift) <= currentShiftT;
+                } else {
+                  return true;
+                }
               }
-            }
-            return false;
+              return false;
+            });
+
+            validDates.sort((a, b) => {
+              if (a.date.getTime() !== b.date.getTime()) return a.date.getTime() - b.date.getTime();
+              return getTLocal(a.shift) - getTLocal(b.shift);
+            });
+
+            let runningOffset = 0;
+            validDates.forEach((d, idx) => {
+              if (d.explicitCount !== null && d.explicitCount !== undefined) {
+                runningOffset = d.explicitCount - (idx + 1);
+              }
+              d.sessionNum = (idx + 1) + runningOffset;
+            });
+
+            const lastValidDate = validDates[validDates.length - 1];
+            const finalCount = lastValidDate && lastValidDate.sessionNum !== undefined ? lastValidDate.sessionNum : (validDates.length + (currentOffsetsMap[name] || 0));
+
+            countsForThisRow.push({
+              name: name,
+              count: finalCount,
+              dates: [...validDates]
+            });
           });
 
-          validDates.sort((a, b) => {
-            if (a.date.getTime() !== b.date.getTime()) return a.date.getTime() - b.date.getTime();
-            return getTLocal(a.shift) - getTLocal(b.shift);
-          });
-
-          let runningOffset = 0;
-          validDates.forEach((d, idx) => {
-            if (d.explicitCount !== null && d.explicitCount !== undefined) {
-              runningOffset = d.explicitCount - (idx + 1);
-            }
-            d.sessionNum = (idx + 1) + runningOffset;
-          });
-
-          const lastValidDate = validDates[validDates.length - 1];
-          const finalCount = lastValidDate && lastValidDate.sessionNum !== undefined ? lastValidDate.sessionNum : (validDates.length + (currentOffsetsMap[name] || 0));
-
-          countsForThisRow.push({
-            name: name,
-            count: finalCount,
-            dates: [...validDates]
-          });
+          if (countsForThisRow.length > 0) {
+            row.sessionCounts = countsForThisRow;
+          } else {
+            row.sessionCounts = null;
+          }
         });
 
-        if (countsForThisRow.length > 0) {
-          row.sessionCounts = countsForThisRow;
-        } else {
-          row.sessionCounts = null;
-        }
-      });
-
-      for (let i = 0; i < parsedData.length; i++) {
+        for (let i = 0; i < parsedData.length; i++) {
         parsedData[i].rowspan = { group: 1, teacher: 1, time: 1 };
         parsedData[i].render = { group: true, teacher: true, time: true };
       }

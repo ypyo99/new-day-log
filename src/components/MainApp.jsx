@@ -1232,7 +1232,7 @@ export default function MainApp({
               // 취업팀: 결석이어도 회차 포함
               isValidDay = true;
             } else {
-              isValidDay = !isAbsentOrCanceled;
+              isValidDay = !isAbsentOrCanceled || dayStatus === 'attended';
             }
 
             if (hasExplicitCount || isValidDay) {
@@ -1397,7 +1397,10 @@ export default function MainApp({
               currentExplicitVal = parseInt(matchObj[1], 10);
             }
 
-            if (!isAbsent || hasExplicitCount || isJobTeamAbsent) {
+            const todayDateObjTime = todayDateObj.getTime();
+            const dayStatusToday = dayStatusMap[name] && dayStatusMap[name][todayDateObjTime];
+
+            if (!isAbsent || hasExplicitCount || isJobTeamAbsent || dayStatusToday === 'attended') {
               const alreadyHas = currentDatesMap[name].some(d => {
                 const currentTeacher = log ? log.teacher : currentUser;
                 const isTarget = isTargetTeacher(currentTeacher);
