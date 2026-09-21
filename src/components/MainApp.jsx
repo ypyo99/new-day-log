@@ -1891,7 +1891,7 @@ export default function MainApp({
             teacher: currentUser,
             student: isStudentBlank ? "" : (logs[record.index].student || ""),
             location: record.location,
-            status: record.status,
+            status: record.status === "\u200B" ? "" : record.status,
             selectedTags: isStudentBlank ? [[]] : logs[record.index].selectedTags,
             memo: isStudentBlank ? "" : logs[record.index].memo,
             headcount: isStudentBlank ? "" : logs[record.index].headcount
